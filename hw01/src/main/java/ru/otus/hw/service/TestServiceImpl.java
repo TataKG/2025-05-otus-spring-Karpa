@@ -26,18 +26,18 @@ public class TestServiceImpl implements TestService {
 
     private void startTest(List<Question> questionList) {
         int questionIndex = 0;
-        int answerIndex;
+        char answerIndex;
 
         for (Question question : questionList) {
             questionIndex++;
             // Текст вопроса
             ioService.printLine(questionIndex + ". " + question.text());
             // Варианты ответов
-            answerIndex = 0;
+            answerIndex = 'a';
             for (Answer answer: question.answers()) {
+                ioService.printLine("  " + answerIndex + ". " + answer.text());
                 answerIndex++;
-                ioService.printLine("  " + questionIndex + "." + answerIndex + ". " + answer.text());
-              }
+            }
         }
     }
 }
