@@ -29,11 +29,15 @@ public class CsvQuestionDao implements QuestionDao {
         InputStream resource = loader.getResourceAsStream(fileNameProvider.getTestFileName());
 
         // Проверить, что ресурс был сформирован
-        if (resource ==  null){
+        if (resource == null) {
             throw new QuestionReadException(
-                    String.format("File access error - \"%s\"",fileNameProvider.getTestFileName()));
+                    String.format("File access error - \"%s\"", fileNameProvider.getTestFileName()));
         }
 
+        return readStreamToList(resource);
+    }
+
+    private List<Question> readStreamToList(InputStream resource) {
         try {
             List<QuestionDto> questionsDto = new CsvToBeanBuilder<QuestionDto>(
                     new InputStreamReader(resource))

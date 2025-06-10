@@ -11,6 +11,7 @@ import java.util.List;
 public class TestServiceImpl implements TestService {
 
     private final IOService ioService;
+
     private final QuestionDao questionDao;
 
     @Override
@@ -23,20 +24,20 @@ public class TestServiceImpl implements TestService {
         startTest(questionList);
     }
 
-    private void startTest(List<Question> questionList){
+    private void startTest(List<Question> questionList) {
         int questionIndex = 0;
         int answerIndex;
 
-        for (Question question : questionList){
+        for (Question question : questionList) {
             questionIndex++;
             // Текст вопроса
             ioService.printLine(questionIndex + ". " + question.text());
             // Варианты ответов
             answerIndex = 0;
-            for (Answer answer: question.answers()){
+            for (Answer answer: question.answers()) {
                 answerIndex++;
                 ioService.printLine("  " + questionIndex + "." + answerIndex + ". " + answer.text());
-            }
+              }
         }
     }
 }
