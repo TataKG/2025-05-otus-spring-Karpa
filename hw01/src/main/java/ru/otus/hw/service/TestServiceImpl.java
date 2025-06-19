@@ -25,7 +25,9 @@ public class TestServiceImpl implements TestService {
         ioService.printFormattedLine("Please answer the questions below%n");
 
         List<Question> questionList = questionDao.findAll();
-
+        if (questionList == null) {
+            throw new RuntimeException("List is null");
+        }
         startTest(questionList);
     }
 

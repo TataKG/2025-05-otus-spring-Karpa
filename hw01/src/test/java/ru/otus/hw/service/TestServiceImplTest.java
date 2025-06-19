@@ -6,13 +6,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import ru.otus.hw.config.TestFileNameProvider;
-import ru.otus.hw.dao.CsvQuestionDao;
 import ru.otus.hw.dao.QuestionDao;
 import ru.otus.hw.domain.Answer;
 import ru.otus.hw.domain.Question;
-import ru.otus.hw.exceptions.QuestionReadException;
-
 
 import java.util.List;
 
@@ -27,9 +23,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 class TestServiceImplTest {
     private static final String QUESTION_FORMAT = "%2d. %s";
 
-    private static final String ANSWER_FORMAT = "    %c) %s";
-
-    private static final String NO_QUESTIONS_FOUND = "No questions found";
+    private static final String ANSWER_FORMAT = "    %2d.%c) %s";
 
     @Mock
     private IOService ioService;
@@ -40,20 +34,18 @@ class TestServiceImplTest {
     @InjectMocks
     private TestServiceImpl testService;
 
-    @InjectMocks
-    CsvQuestionDao csvQuestionDao;
+    @Test
+    @DisplayName("Должен выдавать ошибку при null вопросах")
+    void shouldThrowExceptionWhenNullQuestions() {
 
-    @Mock
-    TestFileNameProvider fileNameProvider;
+        final String NO_QUESTIONS_FOUND = "List is null";
 
-//    @Test
-//    @DisplayName("Должен вернуть ошибку, если не удалось прочесть файл")
-//    void haveReturnExceptionWhenFileWrong(){
-//        given(fileNameProvider.getTestFileName()).willReturn(null);
-//
-//        IllegalStateException exception = assertThrows(IllegalStateException.class,
-//                () -> testService.executeTest());
-//    }
+        given(questionDao.findAll()).willReturn(null);
+
+        var exception = assertThrows(RuntimeException.class, () -> testService.executeTest());
+
+        assertTrue(exception.getMessage().contains(NO_QUESTIONS_FOUND));
+    }
 
     @Test
     @DisplayName("Проверка корректности вопросов и ответов")
@@ -61,8 +53,8 @@ class TestServiceImplTest {
 
        final String quizQuestion1 = "What's the most popular fruit?";
        final String quizQuestion2 = "What's the most popular vegetable?";
-       final String answer1_1 = "Banan";
-       final String answer1_2 = "Apple";
+       final String answer1_a = "Banan";
+       final String answer1_b = "Apple";
        final String answer1_3 = "Orange";
        final String answer2_1 = "Tomato";
        final String answer2_2 = "Potato";
@@ -70,8 +62,8 @@ class TestServiceImplTest {
 
        List<Question> questions = List.of(
                new Question( quizQuestion1,
-                       List.of( new Answer(answer1_1, false),
-                                new Answer(answer1_2, true),
+                       List.of( new Answer(answer1_a, false),
+                                new Answer(answer1_b, true),
                                 new Answer(answer1_3, false)
                        )),
                new Question(quizQuestion2,
@@ -93,31 +85,29 @@ class TestServiceImplTest {
        verify(ioService,times(1))
                .printFormattedLine("Please answer the questions below%n");
 
-//       verify(ioService,times(1))
-//               .printFormattedLine(QUESTION_FORMAT, 1, quizQuestion1);
-//
-//       verify(ioService,times(1))
-//               .printFormattedLine(ANSWER_FORMAT, 'a', answer1_1);
-//
-//       verify(ioService,times(1))
-//                .printFormattedLine(ANSWER_FORMAT, 'b', answer1_2);
-//
-//       verify(ioService,times(1))
-//                .printFormattedLine(ANSWER_FORMAT, 'c', answer1_3);
+       verify(ioService,times(1))
+               .printFormattedLine(QUESTION_FORMAT, 1, quizQuestion1);
 
-//       verify(ioService,times(1))
-//                .printFormattedLine(QUESTION_FORMAT, 2, quizQuestion2);
-//
-//       verify(ioService,times(1))
-//                .printFormattedLine(ANSWER_FORMAT, 'a', answer2_1);
-//
-//       verify(ioService,times(1))
-//                .printFormattedLine(ANSWER_FORMAT, 'b', answer2_2);
-//
-//       verify(ioService,times(1))
-//                .printFormattedLine(ANSWER_FORMAT, 'c', answer2_3);
+       verify(ioService,times(1))
+               .printFormattedLine(ANSWER_FORMAT, 1, 'a', answer1_a);
 
+       verify(ioService,times(1))
+                .printFormattedLine(ANSWER_FORMAT, 1, 'b', answer1_b);
 
+       verify(ioService,times(1))
+                .printFormattedLine(ANSWER_FORMAT, 1, 'c', answer1_3);
+
+       verify(ioService,times(1))
+                .printFormattedLine(QUESTION_FORMAT, 2, quizQuestion2);
+
+       verify(ioService,times(1))
+                .printFormattedLine(ANSWER_FORMAT, 2, 'a', answer2_1);
+
+       verify(ioService,times(1))
+                .printFormattedLine(ANSWER_FORMAT, 2, 'b', answer2_2);
+
+       verify(ioService,times(1))
+                .printFormattedLine(ANSWER_FORMAT, 2, 'c', answer2_3);
     }
 
 }
