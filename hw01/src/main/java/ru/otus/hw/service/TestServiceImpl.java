@@ -9,6 +9,11 @@ import java.util.List;
 
 @RequiredArgsConstructor
 public class TestServiceImpl implements TestService {
+    private static final String QUESTION_FORMAT = "%2d. %s";
+
+    private static final String ANSWER_FORMAT = "    %2d.%c) %s";
+
+    private static final char START_ANSWER_INDEX = 'a';
 
     private final IOService ioService;
 
@@ -18,9 +23,9 @@ public class TestServiceImpl implements TestService {
     public void executeTest() {
         ioService.printLine("");
         ioService.printFormattedLine("Please answer the questions below%n");
-        // Получить вопросы из дао и вывести их с вариантами ответ
+
         List<Question> questionList = questionDao.findAll();
-        // Провести тестирование
+
         startTest(questionList);
     }
 
@@ -30,12 +35,11 @@ public class TestServiceImpl implements TestService {
 
         for (Question question : questionList) {
             questionIndex++;
-            // Текст вопроса
-            ioService.printLine(questionIndex + ". " + question.text());
-            // Варианты ответов
-            answerIndex = 'a';
+            ioService.printFormattedLine(QUESTION_FORMAT, questionIndex, question.text());
+
+            answerIndex = START_ANSWER_INDEX;
             for (Answer answer: question.answers()) {
-                ioService.printLine("  " + answerIndex + ". " + answer.text());
+                ioService.printFormattedLine(ANSWER_FORMAT,questionIndex, answerIndex, answer.text());
                 answerIndex++;
             }
         }
