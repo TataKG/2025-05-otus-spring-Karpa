@@ -1,5 +1,6 @@
 package ru.otus.hw.dao;
 
+import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import lombok.RequiredArgsConstructor;
 
@@ -8,10 +9,11 @@ import ru.otus.hw.dao.dto.QuestionDto;
 import ru.otus.hw.domain.Question;
 import ru.otus.hw.exceptions.QuestionReadException;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class CsvQuestionDao implements QuestionDao {
@@ -24,33 +26,32 @@ public class CsvQuestionDao implements QuestionDao {
 
     @Override
     public List<Question> findAll() {
-
-        ClassLoader loader = getClass().getClassLoader();
-        InputStream resource = loader.getResourceAsStream(fileNameProvider.getTestFileName());
-
-        if (resource == null) {
-            throw new QuestionReadException(
-                    String.format("File access error - \"%s\"", fileNameProvider.getTestFileName()));
+        try (InputStream resource = getClass().getClassLoader().getResourceAsStream(
+                fileNameProvider.getTestFileName())) {
+            return readStreamToList(resource);
+        } catch (IOException | RuntimeException e) {
+            throw new QuestionReadException("Error Reading File", e);
         }
-
-        return readStreamToList(resource);
     }
 
     private List<Question> readStreamToList(InputStream resource) {
-        try {
-            List<QuestionDto> questionsDto = new CsvToBeanBuilder<QuestionDto>(
-                    new InputStreamReader(resource))
-                    .withSkipLines(COUNT_LINES_SKIP)
+        try (var reader = new BufferedReader(new InputStreamReader(resource))) {
+
+            CsvToBean<QuestionDto> csvToBean = new CsvToBeanBuilder<QuestionDto>(reader)
                     .withSeparator(SEPARATOR)
+                    .withSkipLines(COUNT_LINES_SKIP)
                     .withType(QuestionDto.class)
-                    .build().parse();
+                    .withOrderedResults(true)
+                    .build();
 
-            return questionsDto.stream()
-                    .map(QuestionDto::toDomainObject)
-                    .collect(Collectors.toList());
+            List<QuestionDto> questionsDto = csvToBean.stream().toList();
+            if (questionsDto.isEmpty()) {
+                throw new QuestionReadException("Question List is empty");
+            }
+            return questionsDto.stream().map(QuestionDto::toDomainObject).toList();
 
-        } catch (RuntimeException e) {
-            throw new QuestionReadException("File reading error", e);
+        } catch (RuntimeException | IOException e) {
+            throw new QuestionReadException("Parsing error", e);
         }
     }
 }

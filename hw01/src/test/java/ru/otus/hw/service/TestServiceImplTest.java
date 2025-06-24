@@ -6,9 +6,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import ru.otus.hw.config.TestFileNameProvider;
+import ru.otus.hw.dao.CsvQuestionDao;
 import ru.otus.hw.dao.QuestionDao;
 import ru.otus.hw.domain.Answer;
 import ru.otus.hw.domain.Question;
+import ru.otus.hw.exceptions.QuestionReadException;
 
 import java.util.List;
 
@@ -34,17 +37,34 @@ class TestServiceImplTest {
     @InjectMocks
     private TestServiceImpl testService;
 
+    @InjectMocks
+    private CsvQuestionDao csvQuestionDao;
+
+    @Mock
+    private TestFileNameProvider fileNameProvider;
+
     @Test
     @DisplayName("Должен выдавать ошибку при null вопросах")
     void shouldThrowExceptionWhenNullQuestions() {
 
-        final String NO_QUESTIONS_FOUND = "List is null";
+        final String NO_QUESTIONS_FOUND = "List question is null";
 
         given(questionDao.findAll()).willReturn(null);
 
         var exception = assertThrows(RuntimeException.class, () -> testService.executeTest());
+        System.out.println( exception.getMessage());
 
         assertTrue(exception.getMessage().contains(NO_QUESTIONS_FOUND));
+    }
+
+    @Test
+    @DisplayName("Должен вернуть ошибку, если что-то не так с файлом при его чтении")
+    void shouldReturnExceptionWhenFileRead() {
+        given(fileNameProvider.getTestFileName()).willReturn(null);
+
+        var exception = assertThrows(QuestionReadException.class, () -> csvQuestionDao.findAll());
+
+        assert(exception.getMessage().contains("Error Reading File"));
     }
 
     @Test

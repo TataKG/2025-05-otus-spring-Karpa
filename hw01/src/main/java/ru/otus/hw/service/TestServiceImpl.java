@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import ru.otus.hw.dao.QuestionDao;
 import ru.otus.hw.domain.Answer;
 import ru.otus.hw.domain.Question;
+import ru.otus.hw.exceptions.QuestionReadException;
 
 import java.util.List;
 
@@ -26,8 +27,9 @@ public class TestServiceImpl implements TestService {
 
         List<Question> questionList = questionDao.findAll();
         if (questionList == null) {
-            throw new RuntimeException("List is null");
+            throw new QuestionReadException("List question is null");
         }
+
         startTest(questionList);
     }
 
@@ -40,8 +42,8 @@ public class TestServiceImpl implements TestService {
             ioService.printFormattedLine(QUESTION_FORMAT, questionIndex, question.text());
 
             answerIndex = START_ANSWER_INDEX;
-            for (Answer answer: question.answers()) {
-                ioService.printFormattedLine(ANSWER_FORMAT,questionIndex, answerIndex, answer.text());
+            for (Answer answer : question.answers()) {
+                ioService.printFormattedLine(ANSWER_FORMAT, questionIndex, answerIndex, answer.text());
                 answerIndex++;
             }
         }
