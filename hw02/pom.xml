@@ -6,8 +6,10 @@
 
 
     <groupId>ru.otus.hw</groupId>
-    <artifactId>hw02-annotation-config</artifactId>
+    <artifactId>hw02-karpa</artifactId>
     <version>1.0</version>
+
+    <packaging>jar</packaging>
 
     <properties>
         <maven.compiler.target>17</maven.compiler.target>
@@ -16,9 +18,11 @@
         <spring.version>6.2.3</spring.version>
         <opencsv.version>5.9</opencsv.version>
         <junit.version>5.10.2</junit.version>
+        <shade.verion>3.3.0</shade.verion>
         <mockito.version>5.10.0</mockito.version>
         <assertj.version>3.25.2</assertj.version>
         <lombok.version>1.18.32</lombok.version>
+        <shade.verion>3.3.0</shade.verion>
         <checkstyle-plugin.version>3.3.1</checkstyle-plugin.version>
         <checkstyle.version>10.15.0</checkstyle.version>
         <checkstyle.config.url>
@@ -43,8 +47,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
-
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -104,8 +106,36 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.3.0</version>
-                <!--Настроить для создания jar с зависимостями-->
+                <version>${shade.verion}</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Main-Class>ru.otus.hw.Application</Main-Class>
+                                        <Build-Number>001</Build-Number>
+                                    </manifestEntries>
+                                </transformer>
+
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>META-INF/spring.handlers</resource>
+                                </transformer>
+
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>META-INF/spring.schemas</resource>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
