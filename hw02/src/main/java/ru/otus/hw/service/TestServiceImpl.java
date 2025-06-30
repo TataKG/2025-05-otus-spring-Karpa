@@ -34,45 +34,44 @@ public class TestServiceImpl implements TestService {
 
         try {
             var questions = questionDao.findAll();
-            startQuiz( questions, testResult);
-        }catch (QuestionReadException e){
-           ioService.printFormattedLine("Error reading test's question", e.getMessage());
-           testResult.clearResults();
+            startQuiz(questions, testResult);
+        } catch (QuestionReadException e) {
+            ioService.printFormattedLine("Error reading test's question", e.getMessage());
+            testResult.clearResults();
         }
 
         return testResult;
     }
 
-    private void startQuiz(List<Question> quiestionList, TestResult testResult){
+    private void startQuiz(List<Question> quiestionList, TestResult testResult) {
         int questionIndex = 0;
 
-        for (var question: quiestionList) {
+        for (var question : quiestionList) {
             questionIndex++;
             writeQuestion(question, questionIndex);
-            var isAnswerValid = listenUserAnswer(question,questionIndex); // Задать вопрос, получить ответ
+            var isAnswerValid = listenUserAnswer(question);
             testResult.applyAnswer(question, isAnswerValid);
         }
     }
 
-   private void writeQuestion(Question question, int questionIndex){
-       int answerIndex;
-       ioService.printFormattedLine(QUESTION_FORMAT, questionIndex, question.text());
-       answerIndex = MIN_ANSWER_INDEX;
-       for (Answer answer : question.answers()) {
-           ioService.printFormattedLine(ANSWER_FORMAT, questionIndex, answerIndex, answer.text());
-           answerIndex++;
-       }
-   }
+    private void writeQuestion(Question question, int questionIndex) {
+        int answerIndex;
+        ioService.printFormattedLine(QUESTION_FORMAT, questionIndex, question.text());
+        answerIndex = MIN_ANSWER_INDEX;
+        for (Answer answer : question.answers()) {
+            ioService.printFormattedLine(ANSWER_FORMAT, questionIndex, answerIndex, answer.text());
+            answerIndex++;
+        }
+    }
 
-   private boolean listenUserAnswer(Question question, int questionIndex){
-        int maxAnswerNumber = question.answers().size();
+    private boolean listenUserAnswer(Question question) {
         int userAnswer = ioService.readIntForRangeWithPrompt(
                 MIN_ANSWER_INDEX,
-                maxAnswerNumber,
-                "Write your answer",
+                question.answers().size(),
+                "Write your answer:",
                 "It's not allowed answer"
         );
         return question.answers().get(userAnswer - MIN_ANSWER_INDEX).isCorrect();
-   }
+    }
 
 }
