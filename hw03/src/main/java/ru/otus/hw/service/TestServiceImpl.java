@@ -31,13 +31,12 @@ public class TestServiceImpl implements TestService {
         ioService.printLineLocalized("TestService.answer.the.questions");
         ioService.printLine("");
 
-        //var questions = questionDao.findAll();
         var testResult = new TestResult(student);
 
         try {
             var questions = questionDao.findAll();
-            startQuiz( questions, testResult);
-        }catch (QuestionReadException e){
+            startQuiz(questions, testResult);
+        } catch (QuestionReadException e) {
             ioService.printFormattedLine("Error reading test's question", e.getMessage());
             testResult.clearResults();
         }
@@ -45,18 +44,18 @@ public class TestServiceImpl implements TestService {
         return testResult;
     }
 
-    private void startQuiz(List<Question> quiestionList, TestResult testResult){
+    private void startQuiz(List<Question> quiestionList, TestResult testResult) {
         int questionIndex = 0;
 
-        for (var question: quiestionList) {
+        for (var question : quiestionList) {
             questionIndex++;
             writeQuestion(question, questionIndex);
-            var isAnswerValid = listenUserAnswer(question,questionIndex); // Задать вопрос, получить ответ
+            var isAnswerValid = listenUserAnswer(question); // Задать вопрос, получить ответ
             testResult.applyAnswer(question, isAnswerValid);
         }
     }
 
-    private void writeQuestion(Question question, int questionIndex){
+    private void writeQuestion(Question question, int questionIndex) {
         int answerIndex;
         ioService.printFormattedLine(QUESTION_FORMAT, questionIndex, question.text());
         answerIndex = MIN_ANSWER_INDEX;
@@ -66,15 +65,13 @@ public class TestServiceImpl implements TestService {
         }
     }
 
-    private boolean listenUserAnswer(Question question, int questionIndex){
+    private boolean listenUserAnswer(Question question) {
         int maxAnswerNumber = question.answers().size();
-        int userAnswer = ioService.readIntForRangeWithPrompt(
-                MIN_ANSWER_INDEX,
+
+        int userAnswer = ioService.readIntForRangeWithPromptLocalized(MIN_ANSWER_INDEX,
                 maxAnswerNumber,
-                "Write your answer",
-                "It's not allowed answer"
-        );
+                "TestService.input.the.answer",
+                "TestService.is.not.allowed.answer");
         return question.answers().get(userAnswer - MIN_ANSWER_INDEX).isCorrect();
     }
-
 }

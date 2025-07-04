@@ -9,7 +9,7 @@ import java.util.Locale;
 import java.util.Map;
 
 @Setter
-@ConfigurationProperties
+@ConfigurationProperties(prefix = "test")
 public class AppProperties implements TestConfig, TestFileNameProvider, LocaleConfig {
 
     @Getter
@@ -26,6 +26,7 @@ public class AppProperties implements TestConfig, TestFileNameProvider, LocaleCo
 
     @Override
     public String getTestFileName() {
+
         return fileNameByLocaleTag.get(locale.toLanguageTag());
     }
 }
