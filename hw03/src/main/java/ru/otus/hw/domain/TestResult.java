@@ -24,4 +24,10 @@ public class TestResult {
             rightAnswersCount++;
         }
     }
+
+    public void clearResults(){
+        answeredQuestions.clear();
+        rightAnswersCount = 0;
+    }
+
 }
