@@ -35,7 +35,7 @@ public class TestServiceImpl implements TestService {
 
         try {
             var questions = questionDao.findAll();
-            startQuiz(questions, testResult);
+            performQuiz(questions, testResult);
         } catch (QuestionReadException e) {
             ioService.printFormattedLine("Error reading test's question", e.getMessage());
             testResult.clearResults();
@@ -44,28 +44,26 @@ public class TestServiceImpl implements TestService {
         return testResult;
     }
 
-    private void startQuiz(List<Question> quiestionList, TestResult testResult) {
+    private void performQuiz(List<Question> quiestionList, TestResult testResult) {
         int questionIndex = 0;
 
         for (var question : quiestionList) {
             questionIndex++;
             writeQuestion(question, questionIndex);
-            var isAnswerValid = listenUserAnswer(question); // Задать вопрос, получить ответ
-            testResult.applyAnswer(question, isAnswerValid);
+            testResult.applyAnswer(question, analyseUserAnswer(question));
         }
     }
 
     private void writeQuestion(Question question, int questionIndex) {
-        int answerIndex;
         ioService.printFormattedLine(QUESTION_FORMAT, questionIndex, question.text());
-        answerIndex = MIN_ANSWER_INDEX;
+        int answerIndex = MIN_ANSWER_INDEX;
         for (Answer answer : question.answers()) {
             ioService.printFormattedLine(ANSWER_FORMAT, questionIndex, answerIndex, answer.text());
             answerIndex++;
         }
     }
 
-    private boolean listenUserAnswer(Question question) {
+    private boolean analyseUserAnswer(Question question) {
         int maxAnswerNumber = question.answers().size();
 
         int userAnswer = ioService.readIntForRangeWithPromptLocalized(MIN_ANSWER_INDEX,
