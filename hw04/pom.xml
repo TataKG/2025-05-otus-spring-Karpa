@@ -12,7 +12,7 @@
     </parent>
 
     <groupId>ru.otus.hw</groupId>
-    <artifactId>hw04-shell-karpa</artifactId>
+    <artifactId>hw03-karpa</artifactId>
     <version>1.0</version>
 
     <properties>
@@ -49,11 +49,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
-<!--        <dependency>-->
-<!--            <groupId>org.springframework.shell</groupId>-->
-<!--            <artifactId>spring-shell-starter</artifactId>-->
-<!--        </dependency>-->
 
         <dependency>
             <groupId>org.projectlombok</groupId>
