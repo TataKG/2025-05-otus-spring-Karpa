@@ -5,7 +5,15 @@ spring:
     # Не дает свалиться в системную локаль если не найден файл для переданной в MessageSource
     # Если false то будут браться сообщения из дефолтного файла, если true, то из файла соответствующего системной локали
     fallbackToSystemLocale: false
-test:
+    output:
+      ansi:
+        enabled: ALWAYS
+    shell:
+      interactive:
+        enabled: true
+application:
+  title: "First Shell App"
+  version: 1.0
   rightAnswersCountToPass: 3
   locale: ru-RU
   fileNameByLocaleTag:

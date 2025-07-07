@@ -15,8 +15,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
 
-@RequiredArgsConstructor
 @Component
+@RequiredArgsConstructor
 public class CsvQuestionDao implements QuestionDao {
 
     private static final int COUNT_LINES_SKIP = 1;
