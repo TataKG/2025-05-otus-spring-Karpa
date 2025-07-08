@@ -1,6 +1,9 @@
 spring:
   datasource:
     url: jdbc:h2:mem:maindb
+  shell:
+    interactive:
+      enabled: true
   sql:
     init:
       mode: always
