@@ -12,7 +12,7 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "test")
 public class AppProperties implements TestConfig, TestFileNameProvider, LocaleConfig {
 
-    private int rightAnswersCountToPass;
+    private final int rightAnswersCountToPass;
 
     private Locale locale;
 
