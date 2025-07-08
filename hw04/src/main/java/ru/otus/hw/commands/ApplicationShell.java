@@ -9,7 +9,7 @@ import ru.otus.hw.service.LocalizedIOService;
 import ru.otus.hw.service.StudentService;
 import ru.otus.hw.service.TestRunnerService;
 
-@ShellComponent(value = "Application Shell")
+@ShellComponent(value = "Application command")
 @RequiredArgsConstructor
 public class ApplicationShell {
 
@@ -17,13 +17,13 @@ public class ApplicationShell {
     private final StudentService studentService;
     private final LocalizedIOService localizedIOService;
 
-    @ShellMethod(value = "Welcome", key = {"welcome", "w"})
-    public void welcome() {
-        localizedIOService.getMessage("ApplicationShell.hello");
+    @ShellMethod(value = "Introduce", key = {"introduce","intro"})
+    public String introduce() {
+        return localizedIOService.getMessage("ApplicationShell.introduce");
     }
 
-    @ShellMethod(value = "Run test", key = {"run", "rt", "r"})
-    @ShellMethodAvailability("isStartCommandAvailable")
+    @ShellMethod(value = "Run testing", key = {"run", "rt", "r"})
+    @ShellMethodAvailability("isRunCommandAvailable")
     public void runTest() {
         testRunnerService.run();
     }
@@ -48,7 +48,7 @@ public class ApplicationShell {
                 : Availability.unavailable(localizedIOService.getMessage("ApplicationShell.not.authorized"));
     }
 
-    public Availability isStartCommandAvailable() {
+    public Availability isRunCommandAvailable() {
         return studentService.getCurrentStudent() != null
                 ? Availability.available()
                 : Availability.unavailable(localizedIOService.getMessage("ApplicationShell.check.log.in"));

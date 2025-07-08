@@ -8,11 +8,13 @@ spring:
     output:
       ansi:
         enabled: ALWAYS
-    shell:
-      interactive:
-        enabled: true
+  shell:
+    interactive:
+      enabled: true
+  main:
+    allow-circular-references: true
 application:
-  title: "First Shell App"
+  title: "Funny Quiz"
   version: 1.0
   rightAnswersCountToPass: 3
   locale: ru-RU

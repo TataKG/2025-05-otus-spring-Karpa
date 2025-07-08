@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
 import java.util.Locale;
 import java.util.Map;
@@ -31,7 +30,6 @@ public class AppProperties implements TestConfig, TestFileNameProvider, LocaleCo
 
     @Override
     public String getTestFileName() {
-
         return fileNameByLocaleTag.get(locale.toLanguageTag());
     }
 }

@@ -18,10 +18,10 @@ public class StudentServiceImpl implements StudentService {
     public void logIn() {
         var firstName = ioService.readStringWithPromptLocalized("StudentService.input.first.name");
         var lastName = ioService.readStringWithPromptLocalized("StudentService.input.last.name");
-        currentStudent =  new Student(firstName, lastName);
+        currentStudent = new Student(firstName, lastName);
     }
 
-    public void logOut(){
+    public void logOut() {
         currentStudent = null;
     }
 }
