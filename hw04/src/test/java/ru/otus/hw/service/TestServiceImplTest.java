@@ -2,10 +2,9 @@ package ru.otus.hw.service;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import ru.otus.hw.dao.QuestionDao;
 import ru.otus.hw.domain.Answer;
 import ru.otus.hw.domain.Question;
@@ -21,7 +20,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest(classes = {TestServiceImpl.class})
 @DisplayName("Сервис выполнения тестирования")
 class TestServiceImplTest {
 
@@ -29,13 +28,13 @@ class TestServiceImplTest {
 
     private static final String EXPECTED_ANSWER_FORMAT = "    %2d.%d) %s";
 
-    @Mock
+    @MockitoBean
     private LocalizedIOService ioService;
 
-    @Mock
+    @MockitoBean
     private QuestionDao questionDao;
 
-    @InjectMocks
+    @Autowired
     private TestServiceImpl testService;
 
     @Test
