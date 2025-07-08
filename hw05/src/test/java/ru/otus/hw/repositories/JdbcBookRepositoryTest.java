@@ -97,8 +97,8 @@ class JdbcBookRepositoryTest {
     @DisplayName("должен удалять книгу по id ")
     @Test
     void shouldDeleteBook() {
-        assertThat(repositoryJdbc.findById(1L)).isPresent();
-        repositoryJdbc.deleteById(1L);
+        assertThat(repositoryJdbc.findById(1)).isPresent();
+        repositoryJdbc.deleteById(1);
         assertThat(repositoryJdbc.findById(1L)).isEmpty();
     }
 
