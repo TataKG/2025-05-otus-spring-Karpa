@@ -25,3 +25,5 @@ dependency-reduced-pom.xml
 /.nb-gradle/
 
 spring-shell.log
+
+*.log
