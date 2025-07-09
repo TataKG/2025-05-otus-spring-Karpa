@@ -99,7 +99,7 @@ class JdbcBookRepositoryTest {
     void shouldDeleteBook() {
         assertThat(repositoryJdbc.findById(1)).isPresent();
         repositoryJdbc.deleteById(1);
-        assertThat(repositoryJdbc.findById(1L)).isEmpty();
+        assertThat(repositoryJdbc.findById(1)).isEmpty();
     }
 
     private static List<Author> getDbAuthors() {

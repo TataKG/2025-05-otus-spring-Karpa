@@ -1,10 +1,10 @@
 package ru.otus.hw.repositories;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
-import ru.otus.hw.models.Author;
 import ru.otus.hw.models.Genre;
 
 import java.sql.ResultSet;
@@ -19,23 +19,30 @@ public class JdbcGenreRepository implements GenreRepository {
     @Override
     public List<Genre> findAll() {
         String sql = """
-                select id, name
+                SELECT
+                 id, name
                 FROM genres
                 """;
-        List<Genre> genres = Optional.ofNullable(namedParameterJdbcOperations.query(
-                sql, new JdbcGenreRepository.GenreRowMapper())).orElse(Collections.emptyList());
-        return genres;
+        return Optional.ofNullable(namedParameterJdbcOperations.query(
+                sql, new GenreRowMapper())).orElse(Collections.emptyList());
     }
 
     @Override
     public Optional<Genre> findById(long id) {
         String sql = """
-                select id, name
+                SELECT
+                  id, name
                 FROM genres
                 WHERE id = :id
                 """;
-        return Optional.ofNullable(namedParameterJdbcOperations.queryForObject(
-                sql, Map.of("id", id), new JdbcGenreRepository.GenreRowMapper()));
+        try {
+            Genre genre = namedParameterJdbcOperations.queryForObject(
+                    sql, Map.of("id", id), new JdbcGenreRepository.GenreRowMapper());
+            return Optional.ofNullable(genre);
+        } catch (
+                EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
     }
 
     private static class GenreRowMapper implements RowMapper<Genre> {

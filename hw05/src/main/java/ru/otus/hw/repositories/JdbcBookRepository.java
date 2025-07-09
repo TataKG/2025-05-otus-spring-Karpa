@@ -1,6 +1,7 @@
 package ru.otus.hw.repositories;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -24,26 +25,34 @@ public class JdbcBookRepository implements BookRepository {
     @Override
     public Optional<Book> findById(long id) {
         String sql = """
-                select b.id, b.title, b.author_id, b.genre_id, auth.full_name, gen.name from books b
+                SELECT
+                  b.id, b.title, b.author_id, b.genre_id, auth.full_name, gen.name
+                FROM books b
                 JOIN authors auth ON b.author_id = auth.id
                 JOIN genres gen ON b.genre_id = gen.id
                 WHERE b.id = :id
                 """;
-        Book book = namedParameterJdbcOperations.queryForObject(sql, Map.of("id", id), new BookRowMapper());
-        return Optional.ofNullable(book);
+        try {
+            Book book = namedParameterJdbcOperations.queryForObject(sql, Map.of("id", id), new BookRowMapper());
+            return Optional.ofNullable(book);
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
     }
 
     @Override
     public List<Book> findAll() {
         String sql = """
-                select b.id, b.title, b.author_id, b.genre_id, auth.full_name, gen.name from books b
+                SELECT
+                  b.id, b.title, b.author_id, b.genre_id, auth.full_name, gen.name
+                FROM books b
                 JOIN authors auth ON b.author_id = auth.id
                 JOIN genres gen ON b.genre_id = gen.id
                 """;
 
         return Optional.ofNullable(
-                 namedParameterJdbcOperations.query(sql, new BookRowMapper()))
-                 .orElse(Collections.emptyList());
+                        namedParameterJdbcOperations.query(sql, new BookRowMapper()))
+                .orElse(Collections.emptyList());
     }
 
     @Override
@@ -57,8 +66,10 @@ public class JdbcBookRepository implements BookRepository {
     @Override
     public void deleteById(long id) {
         String sql = """
-                     delete from books where id = :bookId
-                     """;
+                DELETE
+                FROM books
+                WHERE id = :bookId
+                """;
         namedParameterJdbcOperations.update(sql, new MapSqlParameterSource("bookId", id));
     }
 
@@ -72,13 +83,12 @@ public class JdbcBookRepository implements BookRepository {
         params.addValue("genreId", book.getGenre().getId());
 
         String sql = """
-                     insert into books (title, author_id, genre_id)
-                     values (:title, :authorId, :genreId)
-                     """;
+                INSERT INTO books (title, author_id, genre_id)
+                VALUES (:title, :authorId, :genreId)
+                """;
 
         namedParameterJdbcOperations.update(sql, params, keyHolder, new String[]{"id"});
 
-        //noinspection DataFlowIssue
         book.setId(keyHolder.getKeyAs(Long.class));
         return book;
     }
@@ -91,10 +101,11 @@ public class JdbcBookRepository implements BookRepository {
         params.addValue("genreId", book.getGenre().getId());
 
         String sql = """
-                     UPDATE books SET title = :title,
-                     author_id = :authorId, genre_id = :genreId
-                     WHERE id = :id
-                     """;
+                UPDATE books
+                SET title = :title,
+                author_id = :authorId, genre_id = :genreId
+                WHERE id = :id
+                """;
 
         int updatedBooks = namedParameterJdbcOperations.update(sql, params);
         if (updatedBooks == 0) {
