@@ -4,6 +4,8 @@ spring:
   shell:
     interactive:
       enabled: true
+    history:
+      enabled: false
   output:
     ansi:
       enabled: always
