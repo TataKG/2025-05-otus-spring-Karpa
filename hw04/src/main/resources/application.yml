@@ -1,0 +1,21 @@
+spring:
+  messages:
+    baseName: messages
+    encoding: UTF-8
+    fallbackToSystemLocale: false
+  output:
+    ansi:
+      enabled: always
+  shell:
+    interactive:
+      enabled: true
+  main:
+    allow-circular-references: true
+application:
+  title: "Funny Quiz"
+  version: 1.0
+  rightAnswersCountToPass: 3
+  locale: ru-RU
+  fileNameByLocaleTag:
+    ru-RU: questions_ru.csv
+    en-US: questions.csv
