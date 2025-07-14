@@ -10,7 +10,7 @@
     </parent>
 
     <groupId>ru.otus.hw</groupId>
-    <artifactId>hw06-karpa-jba</artifactId>
+    <artifactId>hw06-karpa-orm-jpa</artifactId>
     <version>0.0.1</version>
 
     <properties>
