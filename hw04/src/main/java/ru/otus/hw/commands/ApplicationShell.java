@@ -31,7 +31,8 @@ public class ApplicationShell {
     @ShellMethod(value = "Log in User", key = {"login", "li"})
     @ShellMethodAvailability("isLogInCommandAvailable")
     public String logIn() {
-        studentService.logIn();
+        studentService.logIn(localizedIOService.readStringWithPromptLocalized("StudentService.input.first.name"),
+                             localizedIOService.readStringWithPromptLocalized("StudentService.input.last.name"));
         return localizedIOService.getMessage("ApplicationShell.log.in.success");
     }
 

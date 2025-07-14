@@ -10,7 +10,7 @@ import ru.otus.hw.config.TestFileNameProvider;
 import ru.otus.hw.exceptions.QuestionReadException;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
