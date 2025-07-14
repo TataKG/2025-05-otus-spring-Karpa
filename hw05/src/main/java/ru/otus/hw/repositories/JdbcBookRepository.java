@@ -14,7 +14,11 @@ import ru.otus.hw.models.Genre;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 
 @Repository
 @RequiredArgsConstructor
@@ -28,8 +32,8 @@ public class JdbcBookRepository implements BookRepository {
                 SELECT
                   b.id, b.title, b.author_id, b.genre_id, auth.full_name, gen.name
                 FROM books b
-                JOIN authors auth ON b.author_id = auth.id
-                JOIN genres gen ON b.genre_id = gen.id
+                INNER JOIN authors auth ON b.author_id = auth.id
+                INNER JOIN genres gen ON b.genre_id = gen.id
                 WHERE b.id = :id
                 """;
         try {
@@ -46,8 +50,8 @@ public class JdbcBookRepository implements BookRepository {
                 SELECT
                   b.id, b.title, b.author_id, b.genre_id, auth.full_name, gen.name
                 FROM books b
-                JOIN authors auth ON b.author_id = auth.id
-                JOIN genres gen ON b.genre_id = gen.id
+                INNER JOIN authors auth ON b.author_id = auth.id
+                INNER JOIN genres gen ON b.genre_id = gen.id
                 """;
 
         return Optional.ofNullable(

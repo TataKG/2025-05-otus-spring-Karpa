@@ -9,7 +9,11 @@ import ru.otus.hw.models.Author;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 
 @Repository
 @RequiredArgsConstructor
@@ -35,7 +39,8 @@ public class JdbcAuthorRepository implements AuthorRepository {
                 WHERE id = :id
                 """;
         try {
-            Author author = namedParameterJdbcOperations.queryForObject(sql, Map.of("id", id), new AuthorRowMapper());
+            Author author = namedParameterJdbcOperations
+                    .queryForObject(sql, Map.of("id", id), new AuthorRowMapper());
             return Optional.ofNullable(author);
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
