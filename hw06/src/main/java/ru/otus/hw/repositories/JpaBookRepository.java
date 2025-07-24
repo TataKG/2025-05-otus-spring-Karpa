@@ -3,11 +3,11 @@ package ru.otus.hw.repositories;
 import jakarta.persistence.EntityGraph;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import lombok.RequiredArgsConstructor;
+import jakarta.persistence.TypedQuery;
 import org.springframework.stereotype.Repository;
 import ru.otus.hw.models.Book;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -15,22 +15,32 @@ import java.util.Optional;
 import static org.springframework.data.jpa.repository.EntityGraph.EntityGraphType.FETCH;
 
 @Repository
-@RequiredArgsConstructor
 public class JpaBookRepository implements BookRepository {
     @PersistenceContext
-    private final EntityManager entityManager;
+    private EntityManager entityManager;
+
+    private final Class<Book> entityClass;
+    public JpaBookRepository(EntityManager entityManager) {
+        entityClass = Book.class;
+    }
 
     @Override
     public Optional<Book> findById(long id) {
-        Map<String, Object> hints = Collections.singletonMap(FETCH.getKey(), getEntityGraph());
-        return Optional.ofNullable(entityManager.find(Book.class, id, hints));
+        EntityGraph<?> entityGraph = entityManager.getEntityGraph("book-author-genre-entity-graph");
+        Map<String, Object> properties = new HashMap<>();
+        properties.put(FETCH.getKey(), entityGraph);
+
+        return Optional.ofNullable(entityManager.find(entityClass, id, properties));
     }
 
     @Override
     public List<Book> findAll() {
-        return entityManager.createQuery("select b from Book b", Book.class)
-                .setHint(FETCH.getKey(), getEntityGraph())
-                .getResultList();
+        EntityGraph<?> entityGraph = entityManager.getEntityGraph("book-author-entity-graph");
+        TypedQuery<Book> query = entityManager.createQuery(
+                "SELECT b FROM Book b",
+                entityClass);
+        query.setHint(FETCH.getKey(), entityGraph);
+        return query.getResultList();
     }
 
     @Override
@@ -49,6 +59,6 @@ public class JpaBookRepository implements BookRepository {
     }
 
     private EntityGraph<?> getEntityGraph() {
-        return entityManager.getEntityGraph("otus-books-author-graph");
+        return entityManager.getEntityGraph("book-author-graph");
     }
 }

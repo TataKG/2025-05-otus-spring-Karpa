@@ -11,20 +11,22 @@ import java.util.*;
 public class JpaGenreRepository implements GenreRepository {
 
     @PersistenceContext
-    private final EntityManager entityManager;
+    private EntityManager entityManager;
+
+    private final Class<Genre> entityClass;
 
     public JpaGenreRepository(EntityManager entityManager) {
-        this.entityManager = entityManager;
+        entityClass = Genre.class;
     }
 
     @Override
     public List<Genre> findAll() {
         return entityManager.createQuery("select g from Genre g",
-                Genre.class).getResultList();
+                entityClass).getResultList();
     }
 
     @Override
     public Optional<Genre> findById(long id) {
-        return Optional.ofNullable(entityManager.find(Genre.class, id));
+        return Optional.ofNullable(entityManager.find(entityClass, id));
     }
 }

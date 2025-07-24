@@ -7,13 +7,17 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
-@Data
-@AllArgsConstructor
+@Getter
+@Setter
+@Entity
+@ToString
 @NoArgsConstructor
-@Entity(name = "author")
+@AllArgsConstructor
 @Table(name = "authors")
 public class Author {
     @Id

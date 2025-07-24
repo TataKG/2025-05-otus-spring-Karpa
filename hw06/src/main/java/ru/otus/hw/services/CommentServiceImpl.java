@@ -21,32 +21,32 @@ public class CommentServiceImpl implements CommentService {
 
     private final BookRepository bookRepository;
 
-    private final CommentDtoConverter commentConverter;
+    private final CommentDtoConverter commentDtoConverter;
 
     @Override
     @Transactional(readOnly = true)
     public Optional<CommentDto> findById(long id) {
-        return commentRepository.findById(id).map(commentConverter::toDto);
+        return commentRepository.findById(id).map(commentDtoConverter::toDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<CommentDto> findByBookId(long bookId) {
         return commentRepository.findByBookId(bookId).stream()
-                .map(commentConverter::toDto)
+                .map(commentDtoConverter::toDto)
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
     public CommentDto insert(String text, long bookId) {
-        return commentConverter.toDto(save(0, text, bookId));
+        return commentDtoConverter.toDto(save(0, text, bookId));
     }
 
     @Override
     @Transactional
     public CommentDto update(long id, String text, long bookId) {
-        return commentConverter.toDto(save(id, text, bookId));
+        return commentDtoConverter.toDto(save(id, text, bookId));
     }
 
     @Override

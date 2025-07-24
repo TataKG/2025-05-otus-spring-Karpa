@@ -25,6 +25,7 @@
             https://raw.githubusercontent.com/OtusTeam/Spring/master/checkstyle.xml
         </checkstyle.config.url>
         <reflections.version>0.10.2</reflections.version>
+<!--        <liquibase.core>4.33.0</liquibase.core>-->
     </properties>
 
     <dependencies>
@@ -59,6 +60,7 @@
 <!--        <dependency>-->
 <!--            <groupId>org.liquibase</groupId>-->
 <!--            <artifactId>liquibase-core</artifactId>-->
+<!--            <version>${liquibase.core}</version>-->
 <!--        </dependency>-->
 
         <dependency>

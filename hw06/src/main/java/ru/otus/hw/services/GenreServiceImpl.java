@@ -15,13 +15,13 @@ import java.util.stream.Collectors;
 public class GenreServiceImpl implements GenreService {
     private final GenreRepository genreRepository;
 
-    private final GenreDtoConverter genreConverter;
+    private final GenreDtoConverter genreDtoConverter;
 
     @Override
     @Transactional(readOnly = true)
     public List<GenreDto> findAll() {
         return genreRepository.findAll().stream()
-                .map(genreConverter::toDto)
+                .map(genreDtoConverter::toDto)
                 .collect(Collectors.toList());
     }
 }
