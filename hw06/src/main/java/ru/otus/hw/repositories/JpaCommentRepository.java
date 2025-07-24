@@ -10,14 +10,14 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class JpaCommentRepository implements CommentRepository{
+public class JpaCommentRepository implements CommentRepository {
 
     @PersistenceContext
     private EntityManager entityManager;
 
     private final Class<Comment> entityClass;
 
-    public JpaCommentRepository (EntityManager entityManager) {
+    public JpaCommentRepository(EntityManager entityManager) {
         entityClass = Comment.class;
     }
 

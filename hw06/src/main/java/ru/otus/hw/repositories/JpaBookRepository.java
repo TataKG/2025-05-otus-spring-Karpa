@@ -20,6 +20,7 @@ public class JpaBookRepository implements BookRepository {
     private EntityManager entityManager;
 
     private final Class<Book> entityClass;
+
     public JpaBookRepository(EntityManager entityManager) {
         entityClass = Book.class;
     }
