@@ -1,0 +1,5 @@
+databaseChangeLog:
+  - includeAll: #Схема
+      path: db/changelog/schema
+  - includeAll: #Данные
+      path: db/changelog/data
