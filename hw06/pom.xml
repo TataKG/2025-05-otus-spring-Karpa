@@ -57,11 +57,11 @@
             <artifactId>spring-boot-starter-test</artifactId>
         </dependency>
 
-<!--        <dependency>-->
-<!--            <groupId>org.liquibase</groupId>-->
-<!--            <artifactId>liquibase-core</artifactId>-->
+        <dependency>
+            <groupId>org.liquibase</groupId>
+            <artifactId>liquibase-core</artifactId>
 <!--            <version>${liquibase.core}</version>-->
-<!--        </dependency>-->
+        </dependency>
 
         <dependency>
             <groupId>org.reflections</groupId>

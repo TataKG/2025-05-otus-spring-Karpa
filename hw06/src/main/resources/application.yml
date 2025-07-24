@@ -1,8 +1,9 @@
 spring:
   datasource:
     url: jdbc:h2:mem:maindb
-#  liquibase:
-#    enabled: true
+  liquibase:
+    enabled: true
+    contexts: dev
   shell:
     interactive:
       enabled: true
@@ -17,12 +18,6 @@ spring:
       path: /h2-console
       settings:
         web-allow-others: true
-  sql:
-    init:
-      mode: always
-      data-locations: data.sql
-      schema-locations: schema.sql
-
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     generate-ddl: false
