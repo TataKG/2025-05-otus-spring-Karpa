@@ -36,7 +36,7 @@ public class JpaBookRepository implements BookRepository {
 
     @Override
     public List<Book> findAll() {
-        EntityGraph<?> entityGraph = entityManager.getEntityGraph("book-author-entity-graph");
+        EntityGraph<?> entityGraph = entityManager.getEntityGraph("book-author-genre-entity-graph");
         TypedQuery<Book> query = entityManager.createQuery(
                 "SELECT b FROM Book b",
                 entityClass);
@@ -57,9 +57,5 @@ public class JpaBookRepository implements BookRepository {
     public void deleteById(long id) {
         Optional.ofNullable(entityManager.find(Book.class, id))
                 .ifPresent(entityManager::remove);
-    }
-
-    private EntityGraph<?> getEntityGraph() {
-        return entityManager.getEntityGraph("book-author-graph");
     }
 }
