@@ -5,7 +5,6 @@ import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
 import ru.otus.hw.models.Comment;
 
-
 import java.util.List;
 import java.util.Optional;
 
@@ -47,5 +46,4 @@ public class JpaCommentRepository implements CommentRepository {
         Optional.ofNullable(entityManager.find(entityClass, id))
                 .ifPresent(entityManager::remove);
     }
-
 }
