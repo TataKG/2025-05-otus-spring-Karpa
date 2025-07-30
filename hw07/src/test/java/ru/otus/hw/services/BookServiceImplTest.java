@@ -13,11 +13,6 @@ import ru.otus.hw.converters.BookDtoConverter;
 import ru.otus.hw.converters.CommentDtoConverter;
 import ru.otus.hw.converters.GenreDtoConverter;
 import ru.otus.hw.dto.BookDto;
-import ru.otus.hw.repositories.JpaAuthorRepository;
-import ru.otus.hw.repositories.JpaBookRepository;
-import ru.otus.hw.repositories.JpaCommentRepository;
-import ru.otus.hw.repositories.JpaGenreRepository;
-
 
 import java.util.List;
 import java.util.Optional;
@@ -31,11 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         BookDtoConverter.class,
         AuthorDtoConverter.class,
         GenreDtoConverter.class,
-        CommentDtoConverter.class,
-        JpaAuthorRepository.class,
-        JpaGenreRepository.class,
-        JpaBookRepository.class,
-        JpaCommentRepository.class,
+        CommentDtoConverter.class
 })
 @Transactional(propagation = Propagation.NEVER)
 class BookServiceImplTest {

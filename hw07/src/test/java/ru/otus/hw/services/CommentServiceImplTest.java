@@ -12,8 +12,6 @@ import ru.otus.hw.converters.AuthorDtoConverter;
 import ru.otus.hw.converters.CommentDtoConverter;
 import ru.otus.hw.dto.CommentDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
-import ru.otus.hw.repositories.JpaBookRepository;
-import ru.otus.hw.repositories.JpaCommentRepository;
 
 import java.util.Optional;
 
@@ -24,9 +22,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 @DataJpaTest
 @Import({CommentServiceImpl.class,
         CommentDtoConverter.class,
-        AuthorDtoConverter.class,
-        JpaBookRepository.class,
-        JpaCommentRepository.class})
+        AuthorDtoConverter.class
+})
 @Transactional(propagation = Propagation.NEVER)
 class CommentServiceImplTest {
 
@@ -102,7 +99,7 @@ class CommentServiceImplTest {
         long commentId = 1L;
         String updatedText = "Updated Text";
 
-        CommentDto result = commentService.update(commentId, updatedText,bookId);
+        CommentDto result = commentService.update(commentId, updatedText, bookId);
 
         assertThat(result.id()).isEqualTo(commentId);
         assertThat(result.text()).isEqualTo(updatedText);

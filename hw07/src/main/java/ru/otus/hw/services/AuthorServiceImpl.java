@@ -8,6 +8,7 @@ import ru.otus.hw.dto.AuthorDto;
 import ru.otus.hw.repositories.AuthorRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -23,6 +24,12 @@ public class AuthorServiceImpl implements AuthorService {
         return authorRepository.findAll().stream()
                 .map(authorDtoConverter::toDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<AuthorDto> findById(long id) {
+        return authorRepository.findById(id).map(authorDtoConverter::toDto);
     }
 
 }

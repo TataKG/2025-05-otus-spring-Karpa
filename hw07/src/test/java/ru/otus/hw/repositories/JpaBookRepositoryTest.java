@@ -17,7 +17,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("Репозиторий на основе Jpa для работы с книгами ")
 @DataJpaTest
-@Import(JpaBookRepository.class)
 class JpaBookRepositoryTest {
 
     private static final long FIRST_BOOK_ID = 1L;
@@ -27,7 +26,7 @@ class JpaBookRepositoryTest {
     private static final long NON_EXIST_BOOK_ID = 999L;
 
     @Autowired
-    JpaBookRepository repositoryJpa;
+    BookRepository repositoryJpa;
 
     @Autowired
     TestEntityManager em;

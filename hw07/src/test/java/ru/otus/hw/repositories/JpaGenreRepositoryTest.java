@@ -14,13 +14,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("Репозиторий на основе Jpa для работы с жанрами ")
 @DataJpaTest
-@Import(JpaGenreRepository.class)
 class JpaGenreRepositoryTest {
 
     private static final long EXPECTED_GENRE_ID = 1;
 
     @Autowired
-    JpaGenreRepository repositoryJpa;
+    GenreRepository repositoryJpa;
 
     @Autowired
     TestEntityManager em;

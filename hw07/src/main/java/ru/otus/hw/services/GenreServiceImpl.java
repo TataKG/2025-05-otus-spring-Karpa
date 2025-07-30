@@ -8,6 +8,7 @@ import ru.otus.hw.dto.GenreDto;
 import ru.otus.hw.repositories.GenreRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -23,5 +24,11 @@ public class GenreServiceImpl implements GenreService {
         return genreRepository.findAll().stream()
                 .map(genreDtoConverter::toDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<GenreDto> findById(long id) {
+        return genreRepository.findById(id).map(genreDtoConverter::toDto);
     }
 }
