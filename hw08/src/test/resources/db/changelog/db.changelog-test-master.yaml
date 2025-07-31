@@ -1,9 +1,0 @@
-databaseChangeLog:
-  # Включаем ОСНОВНОЙ мастер-файл (из main)
-  - include:
-      file: classpath:/db/changelog/db.changelog-master.yaml
-
-  # Добавляем тестовые данные (только для тестов)
-  - includeAll:
-      path: db/changelog/data/test/
-      context: test

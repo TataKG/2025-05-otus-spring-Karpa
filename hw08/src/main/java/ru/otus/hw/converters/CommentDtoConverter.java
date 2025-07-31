@@ -9,12 +9,12 @@ import ru.otus.hw.models.Comment;
 @RequiredArgsConstructor
 public class CommentDtoConverter {
     public String commentDtoToString(CommentDto comment) {
-        return "Id: %d, text: %s, book id: %d".formatted(comment.id(), comment.text(), comment.bookId());
+        return "Id: %s, text: %s, book id: %s".formatted(comment.id(), comment.text(), comment.bookId());
     }
 
     public CommentDto toDto(Comment comment) {
         if (comment != null) {
-            return new CommentDto(comment.getId(), comment.getText(), comment.getBook().getId());
+            return new CommentDto(comment.getId(), comment.getText(), comment.getBookId() );
         } else {
             return null;
         }

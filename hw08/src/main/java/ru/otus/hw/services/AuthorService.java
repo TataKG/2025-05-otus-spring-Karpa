@@ -8,5 +8,5 @@ import java.util.Optional;
 public interface AuthorService {
     List<AuthorDto> findAll();
 
-    Optional<AuthorDto> findById(long id);
+//    Optional<AuthorDto> findById(String id);
 }

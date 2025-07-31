@@ -13,7 +13,7 @@ public class BookDtoConverter {
     private final GenreDtoConverter genreDtoConverter;
 
     public String bookDtoToString(BookDto book) {
-        return "Id: %d, title: %s, author: {%s}, genre: {%s}".formatted(
+        return "Id: %s, title: %s, author: {%s}, genre: {%s}".formatted(
                 book.id(),
                 book.title(),
                 authorDtoConverter.authorDtoToString(book.author()),
