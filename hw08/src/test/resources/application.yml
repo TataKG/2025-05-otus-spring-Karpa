@@ -1,0 +1,15 @@
+spring:
+  data:
+    mongodb:
+      port: 0
+      database: library_test
+      host: localhost
+
+de:
+  flapdoodle:
+    mongodb:
+      embedded:
+        version: 4.0.2
+
+mongock:
+  enabled: false
