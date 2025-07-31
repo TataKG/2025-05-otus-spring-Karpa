@@ -38,8 +38,8 @@ public class BookCommands {
     }
 
     @ShellMethod(value = "Update book", key = "bupd")
-    public String updateBook(String id, String title, String authorId, String genresId) {
-        var savedBook = bookService.update(id, title, authorId, genresId);
+    public String updateBook(String id, String title, String authorId, String genreId) {
+        var savedBook = bookService.update(id, title, authorId, genreId);
         return bookConverter.bookDtoToString(savedBook);
     }
 
