@@ -48,3 +48,4 @@ public class BookCommands {
         bookService.deleteById(id);
     }
 }
+
