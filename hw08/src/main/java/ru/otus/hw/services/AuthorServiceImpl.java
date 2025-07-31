@@ -24,12 +24,12 @@ public class AuthorServiceImpl implements AuthorService {
                 .collect(Collectors.toList());
     }
 
-//    @Override
-//    public Optional<AuthorDto> findById(String id) {
-//        if (id==null){
-//            return Optional.empty();
-//        }
-//        return authorRepository.findById(id).map(authorDtoConverter::toDto);
-//    }
+    @Override
+    public Optional<AuthorDto> findById(String id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        return authorRepository.findById(id).map(authorDtoConverter::toDto);
+    }
 
 }

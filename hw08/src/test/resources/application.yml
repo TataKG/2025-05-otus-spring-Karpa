@@ -12,11 +12,12 @@ de:
         version: 4.0.2
 
 mongock:
-  runner-type: "ApplicationRunner"
-  change-logs-scan-package:
-    - ru.otus.hw.mongock.changelog
-  mongo-db:
-    write-concern:
-      journal: false
-    read-concern: local
+  enabled: false
+#  runner-type: "ApplicationRunner"
+#  change-logs-scan-package:
+#    - ru.otus.hw.mongock.changelog
+#  mongo-db:
+#    write-concern:
+#      journal: false
+#    read-concern: local
 

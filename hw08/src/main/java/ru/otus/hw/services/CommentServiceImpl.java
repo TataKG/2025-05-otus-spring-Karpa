@@ -42,6 +42,7 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public CommentDto insert(String text, String bookId) {
         var comment = new Comment();
+        comment.setText(text);
         var book = getBookById(bookId);
         comment.setBook(book);
         comment.setBookId(bookId);
@@ -52,6 +53,7 @@ public class CommentServiceImpl implements CommentService {
     public CommentDto update(String id, String text) {
         Comment comment = commentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Comment with id %s not found".formatted(id)));
+        comment.setText(text);
         return commentDtoConverter.toDto(commentRepository.save(comment));
     }
 
