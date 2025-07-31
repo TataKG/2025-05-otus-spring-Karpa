@@ -10,7 +10,7 @@
     </parent>
 
     <groupId>ru.otus.hw</groupId>
-    <artifactId>hw08-karpa-mong-db</artifactId>
+    <artifactId>hw08-karpa-mongo-db</artifactId>
     <version>0.0.1</version>
 
     <properties>
