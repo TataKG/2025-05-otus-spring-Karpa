@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @ChangeLog
-public class DatabaseChangelog {
+public class DatabaseChangelogTest {
     private final List<Author> authors = new ArrayList<>();
 
     private final List<Book> books = new ArrayList<>();
@@ -33,7 +33,7 @@ public class DatabaseChangelog {
     @ChangeSet(order = "001", id = "initAuthors", author = "owner_va", runAlways = true)
     public void initAuthors(AuthorRepository repository) {
         for (int i = 1; i <= 3; i++) {
-            authors.add(new Author("Author_" + i));
+            authors.add(new Author( String.valueOf(i),"Author_" + i));
         }
         repository.saveAll(authors);
     }
@@ -41,7 +41,7 @@ public class DatabaseChangelog {
     @ChangeSet(order = "002", id = "initGenres", author = "owner_va", runAlways = true)
     public void initGenres(GenreRepository repository) {
         for (int i = 1; i <= 6; i++) {
-            genres.add(new Genre("Genre_" + i));
+            genres.add(new Genre(String.valueOf(i),"Genre_" + i));
         }
         repository.saveAll(genres);
     }
@@ -50,9 +50,8 @@ public class DatabaseChangelog {
     public void initBooks(BookRepository repository) {
 
         books.add(new Book("Books_1", authors.get(0), genres.get(0)));
-        books.add(new Book("Books_2", authors.get(0), genres.get(0)));
-        books.add(new Book("Books_3", authors.get(1), genres.get(0)));
-        books.add(new Book("Books_4", authors.get(2), genres.get(3)));
+        books.add(new Book("Books_2", authors.get(1), genres.get(2)));
+        books.add(new Book("Books_3", authors.get(1), genres.get(5)));
 
         repository.saveAll(books);
     }
