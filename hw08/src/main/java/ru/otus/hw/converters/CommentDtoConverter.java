@@ -14,7 +14,7 @@ public class CommentDtoConverter {
 
     public CommentDto toDto(Comment comment) {
         if (comment != null) {
-            return new CommentDto(comment.getId(), comment.getText(), comment.getBookId() );
+            return new CommentDto(comment.getId(), comment.getText(), comment.getBookId());
         } else {
             return null;
         }

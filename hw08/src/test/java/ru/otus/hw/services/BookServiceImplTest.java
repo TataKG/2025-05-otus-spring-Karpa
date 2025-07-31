@@ -57,7 +57,7 @@ class BookServiceImplTest extends BaseMongoTest {
                         .extracting(BookDto::title,
                                 dto -> dto.author().fullName(),
                                 dto -> dto.genre().name())
-                        .containsExactly("Test Book", "Test Author", "Genre 1") );
+                        .containsExactly("Test Book", "Test Author", "Genre 1"));
     }
 
     @Test
