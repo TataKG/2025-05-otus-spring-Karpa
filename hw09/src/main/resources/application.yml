@@ -1,0 +1,27 @@
+spring:
+  shell:
+    interactive:
+      enabled: true
+    history:
+      enabled: false
+
+  output:
+    ansi:
+      enabled: always
+
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: hw08
+      auto-index-creation: true
+
+mongock:
+  #runner-type: "ApplicationRunner" # default
+  runner-type: "InitializingBean"
+  change-logs-scan-package:
+    - ru.otus.hw.mongock.changelog
+  mongo-db:
+    write-concern:
+      journal: false
+    read-concern: local
