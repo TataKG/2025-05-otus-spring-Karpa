@@ -12,7 +12,6 @@
     <groupId>ru.otus.hw</groupId>
     <artifactId>hw09-karpa-mvc</artifactId>
     <version>0.0.1</version>
-    <name>mvc</name>
 
     <properties>
         <java.version>17</java.version>

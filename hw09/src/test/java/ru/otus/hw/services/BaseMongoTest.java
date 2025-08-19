@@ -35,8 +35,8 @@ public abstract class BaseMongoTest {
         return mongoTemplate.save(book);
     }
 
-    protected Comment createComment(String text, Book book) {
-        Comment comment = new Comment(text, book.getId(), book);
+    protected Comment createComment(String text, String bookId) {
+        Comment comment = new Comment(text, bookId);
         return mongoTemplate.save(comment);
     }
 }

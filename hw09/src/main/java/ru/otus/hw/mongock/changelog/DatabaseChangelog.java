@@ -60,7 +60,7 @@ public class DatabaseChangelog {
     @ChangeSet(order = "004", id = "initComments", author = "owner_va", runAlways = true)
     public void initComments(CommentRepository repository) {
         for (int i = 1; i <= 4; i++) {
-            comments.add(new Comment("Great book, really enjoyed it!_" + i, books.get(0).getId(), books.get(0)));
+            comments.add(new Comment("Great book, really enjoyed it!_" + i, books.get(0).getId()));
         }
         repository.saveAll(comments);
     }

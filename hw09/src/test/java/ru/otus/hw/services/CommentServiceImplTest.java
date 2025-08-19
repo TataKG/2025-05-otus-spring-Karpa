@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 @Import({CommentServiceImpl.class,
         CommentDtoConverter.class,
@@ -39,7 +39,7 @@ class CommentServiceImplTest extends BaseMongoTest {
         Author author = createAuthor("Test Author");
         Genre genre = createGenre("Test Genre");
         Book book = createBook("Test Book", author, genre);
-        Comment comment = createComment("Test comment", book);
+        Comment comment = createComment("Test comment", book.getId());
 
         // when
         Optional<CommentDto> result = commentService.findById(comment.getId());
@@ -62,9 +62,9 @@ class CommentServiceImplTest extends BaseMongoTest {
         Book book1 = createBook("Book 1", author, genre);
         Book book2 = createBook("Book 2", author, genre);
 
-        createComment("Comment 1", book1);
-        createComment("Comment 2", book1);
-        createComment("Comment 3", book2);
+        createComment("Comment 1", book1.getId());
+        createComment("Comment 2", book1.getId());
+        createComment("Comment 3", book2.getId());
 
         // when
         List<CommentDto> result = commentService.findByBookId(book1.getId());
@@ -106,7 +106,7 @@ class CommentServiceImplTest extends BaseMongoTest {
         Author author = createAuthor("Test Author");
         Genre genre = createGenre("Test Genre");
         Book book = createBook("Test Book", author, genre);
-        Comment comment = createComment("Old text", book);
+        Comment comment = createComment("Old text", book.getId());
 
         // when
         CommentDto result = commentService.update(comment.getId(), "Updated text");
@@ -128,9 +128,9 @@ class CommentServiceImplTest extends BaseMongoTest {
         Book book1 = createBook("Book 1", author, genre);
         Book book2 = createBook("Book 2", author, genre);
 
-        Comment comment1 = createComment("Comment 1", book1);
-        createComment("Comment 2", book1);
-        createComment("Comment 3", book2);
+        Comment comment1 = createComment("Comment 1", book1.getId());
+        createComment("Comment 2", book1.getId());
+        createComment("Comment 3", book2.getId());
 
         // when
         commentService.deleteById(comment1.getId());
