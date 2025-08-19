@@ -168,8 +168,8 @@ class BookServiceImplTest extends BaseMongoTest {
         Author author = createAuthor("Test Author");
         Genre genre = createGenre("Test Genre");
         Book book = createBook("To Delete", author, genre);
-        Comment comment1 = createComment("Comment 1", book);
-        Comment comment2 = createComment("Comment 2", book);
+        Comment comment1 = createComment("Comment 1", book.getId());
+        Comment comment2 = createComment("Comment 2", book.getId());
 
         // when
         bookService.deleteById(book.getId());

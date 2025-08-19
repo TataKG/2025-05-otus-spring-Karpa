@@ -26,13 +26,8 @@ public class Comment {
     @Indexed
     private String bookId;
 
-    @DocumentReference(lazy = true)
-    @Transient
-    private Book book;
-
-    public Comment(String text, String bookId, Book book) {
+    public Comment(String text, String bookId) {
         this.text = text;
         this.bookId = bookId;
-        this.book = book;
     }
 }

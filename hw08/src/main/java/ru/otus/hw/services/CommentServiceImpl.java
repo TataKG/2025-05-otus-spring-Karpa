@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import ru.otus.hw.converters.CommentDtoConverter;
 import ru.otus.hw.dto.CommentDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
-import ru.otus.hw.models.Book;
 import ru.otus.hw.models.Comment;
 import ru.otus.hw.repositories.BookRepository;
 import ru.otus.hw.repositories.CommentRepository;
@@ -43,8 +42,6 @@ public class CommentServiceImpl implements CommentService {
     public CommentDto insert(String text, String bookId) {
         var comment = new Comment();
         comment.setText(text);
-        var book = getBookById(bookId);
-        comment.setBook(book);
         comment.setBookId(bookId);
         return commentDtoConverter.toDto(commentRepository.save(comment));
     }
@@ -63,11 +60,6 @@ public class CommentServiceImpl implements CommentService {
             throw new EntityNotFoundException("Comment with id %s not found".formatted(id));
         }
         commentRepository.deleteById(id);
-    }
-
-    private Book getBookById(String bookId) throws EntityNotFoundException {
-        return bookRepository.findById(bookId)
-                .orElseThrow(() -> new EntityNotFoundException("Book with id %s not found".formatted(bookId)));
     }
 
     private void validateBookExists(String bookId) throws EntityNotFoundException {
