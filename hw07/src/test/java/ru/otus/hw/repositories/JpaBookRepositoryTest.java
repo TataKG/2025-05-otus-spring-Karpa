@@ -59,10 +59,6 @@ class JpaBookRepositoryTest {
                                     expectedBook.getAuthor().getId(),
                                     expectedBook.getGenre().getId()
                             );
-                    assertThat(book.getComments())
-                            .isNotNull()
-                            .isInstanceOf(List.class)
-                            .hasSizeGreaterThanOrEqualTo(0);
                 });
 
     }
@@ -96,10 +92,6 @@ class JpaBookRepositoryTest {
                             .isNotNull()
                             .extracting(Genre::getId, Genre::getName)
                             .doesNotContainNull();
-                    assertThat(book.getComments())
-                            .isNotNull()
-                            .isInstanceOf(List.class)
-                            .hasSizeGreaterThanOrEqualTo(0);
                 });
     }
 
@@ -137,7 +129,7 @@ class JpaBookRepositoryTest {
         // given
         Author author = em.find(Author.class, SECOND_AUTHOR_ID);
         Genre genre = em.find(Genre.class, THIRD_GENRE_ID);
-        var newBook = new Book(0, "New Book", author, genre, List.of());
+        var newBook = new Book(0, "New Book", author, genre);
 
         // when
         Book savedBook = repositoryJpa.save(newBook);
