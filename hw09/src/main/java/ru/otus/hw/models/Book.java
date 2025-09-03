@@ -26,11 +26,14 @@ public class Book {
 
     @DBRef(lazy = true)
     private Genre genre;
-
+//
     public Book(String title, Author author, Genre genre) {
         this.title = title;
         this.author = author;
         this.genre = genre;
     }
 
+    public Book(String title){
+        this.title = title;
+    }
 }

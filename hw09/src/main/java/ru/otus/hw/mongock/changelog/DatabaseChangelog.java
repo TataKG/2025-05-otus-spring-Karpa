@@ -32,27 +32,32 @@ public class DatabaseChangelog {
 
     @ChangeSet(order = "001", id = "initAuthors", author = "owner_va", runAlways = true)
     public void initAuthors(AuthorRepository repository) {
-        for (int i = 1; i <= 3; i++) {
-            authors.add(new Author("Author_" + i));
-        }
+
+        authors.add(new Author("Charlotte Bronte"));
+        authors.add(new Author("Agatha Christie"));
+        authors.add(new Author("Charles Dickens"));
+
         repository.saveAll(authors);
     }
 
     @ChangeSet(order = "002", id = "initGenres", author = "owner_va", runAlways = true)
     public void initGenres(GenreRepository repository) {
-        for (int i = 1; i <= 6; i++) {
-            genres.add(new Genre("Genre_" + i));
-        }
+        genres.add(new Genre("Romance"));
+        genres.add(new Genre("Mystery"));
+        genres.add(new Genre("Thriller"));
+
         repository.saveAll(genres);
     }
 
     @ChangeSet(order = "003", id = "initBooks", author = "owner_va", runAlways = true)
     public void initBooks(BookRepository repository) {
 
-        books.add(new Book("Books_1", authors.get(0), genres.get(0)));
-        books.add(new Book("Books_2", authors.get(0), genres.get(0)));
-        books.add(new Book("Books_3", authors.get(1), genres.get(0)));
-        books.add(new Book("Books_4", authors.get(2), genres.get(3)));
+        books.add(new Book("Jane Eyre", authors.get(0), genres.get(0)));
+        books.add(new Book("Shirley", authors.get(0), genres.get(0)));
+        books.add(new Book("Murder on the Orient Express", authors.get(1), genres.get(2)));
+        books.add(new Book("Death on the Nile", authors.get(1), genres.get(2)));
+        books.add(new Book("Oliver Twist", authors.get(2), genres.get(0)));
+        books.add(new Book("David Copperfield", authors.get(2), genres.get(1)));
 
         repository.saveAll(books);
     }

@@ -1,9 +1,8 @@
 spring:
-  shell:
-    interactive:
-      enabled: true
-    history:
-      enabled: false
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: true
 
   output:
     ansi:
@@ -13,8 +12,24 @@ spring:
     mongodb:
       host: localhost
       port: 27017
-      database: hw08
+      database: hw09
       auto-index-creation: true
+
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true
+
+  thymeleaf:
+    cache: false
+
+  logging:
+    level:
+      root: OFF
+      #Отключаем шумные пакеты
+      org.springframework.boot.autoconfigure: OFF
+      org.springframework.security: OFF
 
 mongock:
   #runner-type: "ApplicationRunner" # default

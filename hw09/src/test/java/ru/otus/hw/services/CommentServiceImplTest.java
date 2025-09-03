@@ -89,12 +89,12 @@ class CommentServiceImplTest extends BaseMongoTest {
         Book book = createBook("Test Book", author, genre);
 
         // when
-        CommentDto result = commentService.insert("New comment", book.getId());
+        var insertedComment = commentService.insert(new CommentDto(null, "New comment", book.getId()));
 
         // then
-        Comment savedComment = mongoTemplate.findById(result.id(), Comment.class);
-        assertThat(result.text()).isEqualTo("New comment");
-        assertThat(result.bookId()).isEqualTo(book.getId());
+        Comment savedComment = mongoTemplate.findById(insertedComment.id(), Comment.class);
+        assertThat(insertedComment.text()).isEqualTo("New comment");
+        assertThat(insertedComment.bookId()).isEqualTo(book.getId());
         assertThat(savedComment).isNotNull();
         assertThat(savedComment.getBookId()).isEqualTo(book.getId());
     }
@@ -109,14 +109,13 @@ class CommentServiceImplTest extends BaseMongoTest {
         Comment comment = createComment("Old text", book.getId());
 
         // when
-        CommentDto result = commentService.update(comment.getId(), "Updated text");
-
+        var updatedComment = commentService.update(new CommentDto(comment.getId(), "Updated text", book.getId()));
         // then
-        Comment updatedComment = mongoTemplate.findById(comment.getId(), Comment.class);
-        assertThat(result.text()).isEqualTo("Updated text");
-        assertThat(updatedComment).isNotNull();
-        assertThat(updatedComment.getText()).isEqualTo("Updated text");
-        assertThat(updatedComment.getBookId()).isEqualTo(book.getId());
+        Comment savedComment = mongoTemplate.findById(comment.getId(), Comment.class);
+        assertThat(updatedComment.text()).isEqualTo("Updated text");
+        assertThat(savedComment).isNotNull();
+        assertThat(savedComment.getText()).isEqualTo("Updated text");
+        assertThat(savedComment.getBookId()).isEqualTo(book.getId());
     }
 
     @Test

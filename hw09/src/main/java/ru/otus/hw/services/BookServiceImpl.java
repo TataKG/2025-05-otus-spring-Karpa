@@ -2,8 +2,10 @@ package ru.otus.hw.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.converters.BookDtoConverter;
 import ru.otus.hw.dto.BookDto;
+import ru.otus.hw.dto.BookFormDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.models.Book;
 import ru.otus.hw.repositories.AuthorRepository;
@@ -38,19 +40,15 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    public BookDto insert(String title, String authorId, String genreId) {
-        var book = new Book();
-        prepareBook(title, authorId, genreId, book);
-        return bookDtoConverter.toDto(bookRepository.save(book));
+    @Transactional
+    public BookDto insert(BookFormDto bookDto) {
+        return save(bookDto);
     }
 
     @Override
-    public BookDto update(String id, String title, String authorId, String genreId) {
-        Book book = bookRepository.findById(id).orElseThrow(
-                () -> new EntityNotFoundException("Book with id %s not found".formatted(id))
-        );
-        prepareBook(title, authorId, genreId, book);
-        return bookDtoConverter.toDto(bookRepository.save(book));
+    @Transactional
+    public BookDto update(BookFormDto bookDto) {
+        return save(bookDto);
     }
 
     @Override
@@ -58,14 +56,38 @@ public class BookServiceImpl implements BookService {
         bookRepository.deleteById(id);
     }
 
-    private void prepareBook(String title, String authorId, String genreId, Book book) {
-        book.setTitle(title);
-        var author = authorRepository.findById(authorId)
-                .orElseThrow(() -> new EntityNotFoundException("Author with id %s not found".formatted(authorId)));
-        var genre = genreRepository.findById(genreId)
-                .orElseThrow(() -> new EntityNotFoundException("Genre with id %s not found".formatted(genreId)));
+    private Book prepareBook(BookFormDto bookDto) {
+        Book book;
+        if (bookDto.id() == null || bookDto.id().isEmpty()) {
+            book = new Book();
+        } else {
+            book = bookRepository.findById(bookDto.id()).orElseThrow(
+                    ()
+                            -> new EntityNotFoundException(
+                            "Book with id %s not found".formatted(bookDto.id()))
+            );
+        }
+
+        book.setTitle(bookDto.title());
+
+        var author = authorRepository.findById(bookDto.authorId())
+                .orElseThrow(()
+                        -> new EntityNotFoundException(
+                        "Author with id %s not found"
+                                .formatted(bookDto.authorId())));
+        var genre = genreRepository.findById(bookDto.genreId())
+                .orElseThrow(()
+                        -> new EntityNotFoundException(
+                        "Genre with id %s not found"
+                                .formatted(bookDto.genreId())));
         book.setAuthor(author);
         book.setGenre(genre);
+        return book;
     }
 
+    private BookDto save(BookFormDto bookFormDto) {
+        Book book;
+        book = prepareBook(bookFormDto);
+        return bookDtoConverter.toDto(bookRepository.save(book));
+    }
 }

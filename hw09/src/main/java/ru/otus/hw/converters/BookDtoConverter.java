@@ -3,6 +3,7 @@ package ru.otus.hw.converters;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import ru.otus.hw.dto.BookDto;
+import ru.otus.hw.dto.BookFormDto;
 import ru.otus.hw.models.Book;
 
 @RequiredArgsConstructor
@@ -30,5 +31,18 @@ public class BookDtoConverter {
             );
         }
         return null;
+    }
+
+    public BookFormDto bookDtoToBookFormDto(BookDto book) {
+        if (book == null) {
+            return null;
+        }
+
+        return new BookFormDto(
+                book.id(),
+                book.title(),
+                (book.author() != null) ? book.author().id() : null,
+                (book.genre() != null) ? book.genre().id() : null
+        );
     }
 }

@@ -9,6 +9,7 @@ import ru.otus.hw.converters.AuthorDtoConverter;
 import ru.otus.hw.converters.BookDtoConverter;
 import ru.otus.hw.converters.CommentDtoConverter;
 import ru.otus.hw.converters.GenreDtoConverter;
+import ru.otus.hw.dto.BookFormDto;
 import ru.otus.hw.models.Author;
 import ru.otus.hw.models.Book;
 import ru.otus.hw.models.Comment;
@@ -19,7 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 @Import({
         BookServiceImpl.class,
@@ -94,20 +95,28 @@ class BookServiceImplTest extends BaseMongoTest {
     void shouldCreateBookWithAuthorAndGenre() {
         // given
         Author author = createAuthor("New Author");
-        Genre genre1 = createGenre("Genre A");
+        Genre genre = createGenre("Genre A");
 
         // when
-        BookDto result = bookService.insert(
-                "New Book Title",
-                author.getId(),
-                genre1.getId());
+        Book book = new Book("New Book Title");
+        book.setAuthor(author);
+        book.setGenre(genre);
+
+        BookFormDto bookDto = new BookFormDto(
+                null,
+                book.getTitle(),
+                book.getAuthor().getId(),
+                book.getGenre().getId());
+
+        var insertedBook = bookService.insert(bookDto);
 
         // then
-        Book savedBook = mongoTemplate.findById(result.id(), Book.class);
+        var savedBook = mongoTemplate.findById(insertedBook.id(), Book.class);
+
         assertAll(
-                () -> assertThat(result.title()).isEqualTo("New Book Title"),
-                () -> assertThat(result.author().id()).isEqualTo(author.getId()),
-                () -> assertThat(result.genre().id()).isEqualTo(genre1.getId()),
+                () -> assertThat(insertedBook.title()).isEqualTo("New Book Title"),
+                () -> assertThat(insertedBook.author().id()).isEqualTo(author.getId()),
+                () -> assertThat(insertedBook.genre().id()).isEqualTo(genre.getId()),
                 () -> assertThat(savedBook).isNotNull(),
                 () -> {
                     assert savedBook != null;
@@ -115,7 +124,7 @@ class BookServiceImplTest extends BaseMongoTest {
                 },
                 () -> {
                     assert savedBook != null;
-                    assertThat(savedBook.getGenre().getId()).isEqualTo(genre1.getId());
+                    assertThat(savedBook.getGenre().getId()).isEqualTo(genre.getId());
                 }
         );
     }
@@ -130,31 +139,32 @@ class BookServiceImplTest extends BaseMongoTest {
         Genre newGenre = createGenre("New Genre");
         Book book = createBook("Old Title", oldAuthor, oldGenre);
 
-        // when
-        BookDto result = bookService.update(
+        BookFormDto bookDto = new BookFormDto(
                 book.getId(),
                 "New Title",
                 newAuthor.getId(),
-                newGenre.getId()
-        );
+                newGenre.getId());
+
+        // when
+        var updatedBook = bookService.update(bookDto);
 
         // then
-        Book updatedBook = mongoTemplate.findById(book.getId(), Book.class);
+        Book savedBook = mongoTemplate.findById(book.getId(), Book.class);
         assertAll(
-                () -> assertThat(result.title()).isEqualTo("New Title"),
-                () -> assertThat(result.author().id()).isEqualTo(newAuthor.getId()),
-                () -> assertThat(result.genre().id()).isEqualTo(newGenre.getId()),
+                () -> assertThat(updatedBook.title()).isEqualTo("New Title"),
+                () -> assertThat(updatedBook.author().id()).isEqualTo(newAuthor.getId()),
+                () -> assertThat(updatedBook.genre().id()).isEqualTo(newGenre.getId()),
                 () -> {
                     assert updatedBook != null;
-                    assertThat(updatedBook.getTitle()).isEqualTo("New Title");
+                    assertThat(savedBook.getTitle()).isEqualTo("New Title");
                 },
                 () -> {
                     assert updatedBook != null;
-                    assertThat(updatedBook.getAuthor().getId()).isEqualTo(newAuthor.getId());
+                    assertThat(savedBook.getAuthor().getId()).isEqualTo(newAuthor.getId());
                 },
                 () -> {
                     assert updatedBook != null;
-                    assertThat(updatedBook.getGenre())
+                    assertThat(savedBook.getGenre())
                             .extracting(Genre::getId)
                             .isEqualTo(newGenre.getId());
                 }

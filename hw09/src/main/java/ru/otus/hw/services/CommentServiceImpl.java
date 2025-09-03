@@ -2,6 +2,7 @@ package ru.otus.hw.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.converters.CommentDtoConverter;
 import ru.otus.hw.dto.CommentDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
@@ -39,22 +40,25 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public CommentDto insert(String text, String bookId) {
+    @Transactional
+    public CommentDto insert(CommentDto commentDto) {
         var comment = new Comment();
-        comment.setText(text);
-        comment.setBookId(bookId);
+        comment.setText(commentDto.text());
+        comment.setBookId(commentDto.bookId());
         return commentDtoConverter.toDto(commentRepository.save(comment));
     }
 
     @Override
-    public CommentDto update(String id, String text) {
-        Comment comment = commentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Comment with id %s not found".formatted(id)));
-        comment.setText(text);
+    @Transactional
+    public CommentDto update(CommentDto commentDto) {
+        Comment comment = commentRepository.findById(commentDto.id())
+                .orElseThrow(() -> new EntityNotFoundException("Comment with id %s not found".formatted(commentDto.id())));
+        comment.setText(commentDto.text());
         return commentDtoConverter.toDto(commentRepository.save(comment));
     }
 
     @Override
+    @Transactional
     public void deleteById(String id) {
         if (!commentRepository.existsById(id)) {
             throw new EntityNotFoundException("Comment with id %s not found".formatted(id));
@@ -67,5 +71,4 @@ public class CommentServiceImpl implements CommentService {
             throw new EntityNotFoundException("Book with id %s not found".formatted(bookId));
         }
     }
-
 }
