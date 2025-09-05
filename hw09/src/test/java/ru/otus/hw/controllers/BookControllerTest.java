@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Import;
 
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -33,7 +34,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(BookController.class)
 @Import({BookDtoConverter.class, AuthorDtoConverter.class, GenreDtoConverter.class, CommentDtoConverter.class})
-class BookControllerTest {
+public class BookControllerTest {
+
+    private static final String VIEW_CUSTOM_ERROR = "customError";
 
     @Autowired
     private MockMvc mvc;
@@ -65,6 +68,10 @@ class BookControllerTest {
     @MockBean
     private GenreRepository genreRepository;
 
+    @MockBean
+    @Autowired
+    private MessageSource messageSource;
+
     @Test
     @DisplayName("GET /books - должен отобразить список книг")
     void shouldReturnListPage() throws Exception {
@@ -84,7 +91,7 @@ class BookControllerTest {
     }
 
     @Test
-    @DisplayName("GET /book/view/{id} - должен показать книгу с комментариями")
+    @DisplayName("GET /books/view/{id} - должен показать книгу с комментариями")
     void getBook_ShouldReturnBookView() throws Exception {
         // given
 
@@ -105,10 +112,21 @@ class BookControllerTest {
         when(commentService.findByBookId(bookId)).thenReturn(comments);
 
         // when & then
-        mvc.perform(get("/book/view/{id}", bookId))
+        mvc.perform(get("/books/view/{id}", bookId))
                 .andExpect(status().isOk())
                 .andExpect(view().name("book-view"))
                 .andExpect(model().attributeExists("book"))
                 .andExpect(model().attribute("book", bookDto));
+    }
+
+    @Test
+    void viewPage_WhenBookNotFound_ShouldReturn404() throws Exception {
+        // given
+        String nonExistentId = "99";
+        when(bookService.findById(nonExistentId)).thenReturn(Optional.empty());
+
+        // when & then
+        mvc.perform(get("/books/view/{id}", nonExistentId))
+                .andExpect(view().name(VIEW_CUSTOM_ERROR));
     }
 }

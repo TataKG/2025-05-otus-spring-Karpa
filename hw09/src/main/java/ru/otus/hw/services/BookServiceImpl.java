@@ -29,7 +29,8 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public Optional<BookDto> findById(String id) {
-        return bookRepository.findById(id).map(bookDtoConverter::toDto);
+        return bookRepository.findById(id)
+                .map(bookDtoConverter::toDto);
     }
 
     @Override

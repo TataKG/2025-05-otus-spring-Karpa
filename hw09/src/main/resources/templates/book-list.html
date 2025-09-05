@@ -35,7 +35,7 @@
 
     <p class="h3">List of books</p>
 
-    <a class="btn btn-success" href="book-edit.html" th:href="@{'/book/new'}">
+    <a class="btn btn-success" href="book-edit.html" th:href="@{'/books/new'}">
         Add book
     </a>
 
@@ -51,20 +51,20 @@
         <tbody th:each="book : ${books}">
         <tr>
             <td>
-                <a th:href="@{/book/view/{id}(id=${book.id()})}" href="book-view.html"
+                <a th:href="@{/books/view/{id}(id=${book.id()})}" href="book-view.html"
                    th:text="${book.title()}">Title</a>
             </td>
             <td th:text="${book.author.fullName}">Author</td>
             <td th:text="${book.genre.name}">Genre</td>
             <td>
                 <div class="btn-group" role="group">
-                    <form th:action="@{/book/edit/{id}(id=${book.id()})}" method="get">
+                    <form th:action="@{/books/edit/{id}(id=${book.id()})}" method="get">
                         <input type="hidden" name="id" th:value="${book.id}">
                         <button class="btn btn-success btn-sm" type="submit">Edit</button>
                     </form>
 
 
-                    <form th:action="@{bookDelete(bookId=${book.id()})}" method="post"
+                    <form th:action="@{books/delete(bookId=${book.id()})}" method="post"
                           onsubmit="return confirm('Confirm to delete book?');"
                           style="display: inline;">
                         <button class="btn btn-danger btn-sm" type="submit">Delete</button>
