@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Book details</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+</head>
+<body>
+<div class="container view-book" th:object="${book}">
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid px-0">
+            <a class="navbar-brand pt-0" href="#">Library</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" aria-current="page" href="book-list.html" th:href="@{/}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="author-list.html" th:href="@{/authors}">Authors</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="genre-list.html" th:href="@{/genres}">Genres</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <p class="h3">Book details</p>
+    <div class="d-flex flex-row mb-3 gap-2">
+        <a class="btn btn-primary" href="book-edit.html" th:href="@{/books/edit/{id}(id=${book.id()})}">Edit</a>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label me-2"><strong>Title:</strong></label>
+        <label class="form-label" th:text="*{title}">Title</label>
+    </div>
+    <div class="mb-3">
+        <label class="form-label me-2"><strong>Author:</strong></label>
+        <label class="form-label" th:text="*{author.fullName}">Author</label>
+    </div>
+    <div class="mb-3">
+        <label class="form-label me-2"><strong>Genres:</strong></label>
+        <label class="form-label" th:text="*{genre.name}">Genre</label>
+    </div>
+
+    <div class="comments-section" th:if="${book.id() != null}" th:object="${comments}">
+        <p class="h3">Comments</p>
+
+        <table class="table mt-2 align-middle">
+            <thead>
+            <tr>
+                <th>Text</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody th:each="comment : ${comments}">
+            <tr>
+                <td th:text="${comment.text}">Comment text</td>
+                <td>
+                    <form th:action="@{/books/{bookId}/comments/{commentId}/delete(bookId=${book.id()}, commentId=${comment.id()})}"
+                          method="post">
+
+                        <button class="btn btn-warning btn-sm" type="submit">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div class="add-comment-form">
+            <form th:action="@{/books/{bookId}/comments/add(bookId=${book.id()})}" method="post">
+                <textarea class="form-control" name="text" placeholder="Add your comment..." required
+                          rows="3"></textarea>
+                <button type="submit" class="btn btn-success">Add Comment</button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

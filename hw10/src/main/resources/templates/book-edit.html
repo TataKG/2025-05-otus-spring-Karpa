@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit book</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+</head>
+<body>
+<div class="container edit-book" th:object="${book}">
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid px-0">
+            <a class="navbar-brand pt-0" href="#">Library</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" aria-current="page" href="book-list.html" th:href="@{/}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="author-list.html" th:href="@{/authors}">Authors</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="genre-list.html" th:href="@{/genres}">Genres</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <p class="h3">Edit or New</p>
+
+    <form id="edit-form" action="book-edit.html" th:action="@{/books}" th:method="post"
+          th:object="${book}" th:field="*{id}">
+
+        <input type="hidden" th:value="*{id}" name="id">
+        <div class="row mb-3">
+            <label class="col-sm-2 col-form-label">Title</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" id="title" th:field="*{title}" required/>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-2 col-form-label">Author</label>
+            <div class="col-sm-10">
+                <select class="form-select" name="bookAuthor" th:field="*{authorId}">
+                    <option th:each="author : ${allAuthors}"
+                            th:value="${author.id}"
+                            th:text="${author.fullName}"
+                            th:selected="${author.id() == book?.authorId()} ?: false">Author
+                    </option>
+                </select>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <label class="col-sm-2 col-form-label">Genre</label>
+            <div class="col-sm-10">
+                <select class="form-select" name="bookGenre" th:field="*{genreId}">
+                    <option th:each="genre : ${allGenres}"
+                            th:value="${genre.id}"
+                            th:text="${genre.name}"
+                            th:selected="${genre.id() == book?.genreId()} ?: false">Genre
+                    </option>
+                </select>
+            </div>
+        </div>
+
+        <div class="d-flex flex-row mb-3 gap-2">
+            <button type="submit" class="btn btn-success">Save</button>
+            <a href="book-list.html" th:href="@{/books}">
+                <button type="button" class="btn btn-secondary">Cancel</button>
+            </a>
+        </div>
+    </form>
+
+</div>
+</body>
+</html>
