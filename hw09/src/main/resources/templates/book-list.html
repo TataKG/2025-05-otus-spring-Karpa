@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8"/>
+    <title>List of books</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+</head>
+
+<body>
+<div class="container">
+
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid px-0">
+            <a class="navbar-brand pt-0" href="#">Library</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="author-list.html" th:href="@{/authors}">Authors</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="genre-list.html" th:href="@{/genres}">Genres</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <p class="h3">List of books</p>
+
+    <a class="btn btn-success" href="book-edit.html" th:href="@{'/books/new'}">
+        Add book
+    </a>
+
+    <table class="table mt-2 align-middle">
+        <thead>
+        <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Genre</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody th:each="book : ${books}">
+        <tr>
+            <td>
+                <a th:href="@{/books/view/{id}(id=${book.id()})}" href="book-view.html"
+                   th:text="${book.title()}">Title</a>
+            </td>
+            <td th:text="${book.author.fullName}">Author</td>
+            <td th:text="${book.genre.name}">Genre</td>
+            <td>
+                <div class="btn-group" role="group">
+                    <form th:action="@{/books/edit/{id}(id=${book.id()})}" method="get">
+                        <input type="hidden" name="id" th:value="${book.id}">
+                        <button class="btn btn-success btn-sm" type="submit">Edit</button>
+                    </form>
+
+
+                    <form th:action="@{books/delete(bookId=${book.id()})}" method="post"
+                          onsubmit="return confirm('Confirm to delete book?');"
+                          style="display: inline;">
+                        <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+
+</html>
