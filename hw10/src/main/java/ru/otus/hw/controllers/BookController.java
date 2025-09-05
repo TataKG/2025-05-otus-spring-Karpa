@@ -4,7 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 import ru.otus.hw.converters.BookDtoConverter;
 import ru.otus.hw.dto.*;
@@ -35,7 +40,7 @@ public class BookController {
         return "book-list";
     }
 
-    @GetMapping("/book/view/{id}")
+    @GetMapping("/books/view/{id}")
     public String viewPage(@PathVariable String id, Model model) {
         BookDto bookDto = bookService.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
@@ -47,7 +52,7 @@ public class BookController {
         return "book-view";
     }
 
-    @GetMapping({"/book/edit/{id}", "/book/new"})
+    @GetMapping({"/books/edit/{id}", "/books/new"})
     public String editPage(@PathVariable(required = false) String id, Model model) {
         BookDto book = (id != null)
                 ? bookService.findById(id)
@@ -64,13 +69,13 @@ public class BookController {
         return "book-edit";
     }
 
-    @PostMapping("/book")
+    @PostMapping("/books")
     public String saveBook(@ModelAttribute("book") BookFormDto bookDto) {
         BookDto savedBook = (bookDto.id() != null)
                 ? bookService.update(bookDto)
                 : bookService.insert(bookDto);
 
-        return "redirect:/book/view/" + savedBook.id();
+        return "redirect:/books/view/" + savedBook.id();
     }
 
     @PostMapping("/bookDelete")

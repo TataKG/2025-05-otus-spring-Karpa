@@ -13,16 +13,16 @@ import ru.otus.hw.services.CommentService;
 public class CommentController {
     private final CommentService commentService;
 
-    @PostMapping("/books/{bookId}/comments/{commentId}/deleteComment")
+    @PostMapping("/books/{bookId}/comments/{commentId}/delete")
     public String deleteComment(@PathVariable("bookId") String bookId,
                                 @PathVariable("commentId") String commentId) {
         commentService.deleteById(commentId);
-        return "redirect:/book/view/" + bookId;
+        return "redirect:/books/view/" + bookId;
     }
 
-    @PostMapping("/books/{bookId}/comments/addComment")
+    @PostMapping("/books/{bookId}/comments/add")
     public String saveComment(@PathVariable("bookId") String bookId, @ModelAttribute("comment") CommentDto commentDto) {
         commentService.insert(commentDto);
-        return "redirect:/book/view/" + bookId;
+        return "redirect:/books/view/" + bookId;
     }
 }

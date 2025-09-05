@@ -32,7 +32,7 @@
 
     <p class="h3">Edit or New</p>
 
-    <form id="edit-form" action="book-edit.html" th:action="@{/book}" th:method="post"
+    <form id="edit-form" action="book-edit.html" th:action="@{/books}" th:method="post"
           th:object="${book}" th:field="*{id}">
 
         <input type="hidden" th:value="*{id}" name="id">

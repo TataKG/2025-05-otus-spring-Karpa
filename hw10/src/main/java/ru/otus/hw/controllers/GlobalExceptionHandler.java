@@ -19,6 +19,8 @@ import ru.otus.hw.exceptions.EntityNotFoundException;
 @Slf4j
 public class GlobalExceptionHandler {
 
+    private static final String VIEW_CUSTOM_ERROR = "customError";
+
     private final MessageSource messageSource;
 
     @ExceptionHandler(EntityNotFoundException.class)
@@ -30,9 +32,7 @@ public class GlobalExceptionHandler {
         String errorText = messageSource.getMessage("entity-not-found-error", null,
                 LocaleContextHolder.getLocale());
 
-        ModelAndView model = new ModelAndView("customError");
-        model.addObject("errorText", errorText);
-        return model;
+        return new ModelAndView(VIEW_CUSTOM_ERROR, "errorText", errorText);
     }
 
     @ExceptionHandler(Exception.class)
@@ -56,7 +56,7 @@ public class GlobalExceptionHandler {
         String errorText = messageSource.getMessage("error.internal.server", null,
                 LocaleContextHolder.getLocale());
 
-        ModelAndView model = new ModelAndView("customError");
+        ModelAndView model = new ModelAndView(VIEW_CUSTOM_ERROR);
         model.addObject("errorText", errorText);
         model.addObject("requestId", request.getAttribute("requestId", RequestAttributes.SCOPE_REQUEST));
         return model;
