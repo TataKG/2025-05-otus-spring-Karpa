@@ -11,8 +11,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
+
 import ru.otus.hw.converters.BookDtoConverter;
-import ru.otus.hw.dto.*;
+import ru.otus.hw.dto.BookDto;
+import ru.otus.hw.dto.BookFormDto;
+import ru.otus.hw.dto.CommentDto;
 import ru.otus.hw.services.AuthorService;
 import ru.otus.hw.services.BookService;
 import ru.otus.hw.services.CommentService;
@@ -33,8 +36,8 @@ public class BookController {
 
     private final BookDtoConverter bookConverter;
 
-    @GetMapping({"/","/books"})
-    public String getList(Model model){
+    @GetMapping({"/", "/books"})
+    public String getList(Model model) {
         var books = bookService.findAll();
         model.addAttribute("books", books);
         return "book-list";
