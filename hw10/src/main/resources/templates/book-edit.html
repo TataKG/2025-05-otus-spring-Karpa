@@ -1,248 +1,524 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>Edit book</title>
-    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <title th:text="${id} ? 'Edit Book' : 'Add Book'">Book Form</title>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875em;
+            margin-top: 0.25rem;
+        }
+        .selected-info {
+            color: #198754;
+            font-weight: 500;
+            margin-top: 0.25rem;
+            padding: 0.5rem;
+            background-color: #f8f9fa;
+            border-radius: 0.375rem;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
 </head>
 <body>
-<div class="container edit-book" th:object="${book}">
-    <nav class="navbar navbar-expand-lg">
-        <div class="container-fluid px-0">
-            <a class="navbar-brand pt-0" href="#">Library</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="book-list.html" th:href="@{/}">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="author-list.html" th:href="@{/authors}">Authors</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="genre-list.html" th:href="@{/genres}">Genres</a>
-                    </li>
-                </ul>
+<nav class="navbar navbar-expand-lg">
+    <div class="container-fluid px-0">
+        <a class="navbar-brand pt-0" href="#">Library</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" aria-current="page" href="book-list.html" th:href="@{/}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="author-list.html" th:href="@{/authors}">Authors</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="genre-list.html" th:href="@{/genres}">Genres</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header text-white">
+                    <h2 class="card-title mb-0" id="formTitle">
+                        <i class="bi bi-book"></i>
+                        <span th:text="${id} ? 'Edit Book' : 'Add New Book'">Book Form</span>
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <form id="bookForm" novalidate>
+                        <input type="hidden" id="id" th:value="${id}">
+
+                        <!-- Title Field -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label fw-bold">Book Title *</label>
+                            <input type="text" class="form-control form-control-lg" id="title"
+                                   placeholder="Enter book title" required maxlength="255">
+                            <div class="error-message" id="titleError"></div>
+                        </div>
+
+                        <!-- Author Field -->
+                        <div class="mb-3">
+                            <label for="authorId" class="form-label fw-bold">Author *</label>
+                            <select class="form-control" id="authorId" required>
+                                <option value="">-- Select Author --</option>
+                            </select>
+                            <div class="error-message" id="authorError"></div>
+                            <div class="selected-info" id="authorInfo">
+                                <small><i class="bi bi-info-circle"></i> Selected author will appear here</small>
+                            </div>
+                        </div>
+
+                        <!-- Genre Field -->
+                        <div class="mb-3">
+                            <label for="genreId" class="form-label fw-bold">Genre *</label>
+                            <select class="form-control" id="genreId" required>
+                                <option value="">-- Select Genre --</option>
+                            </select>
+                            <div class="error-message" id="genreError"></div>
+                            <div class="selected-info" id="genreInfo">
+                                <small><i class="bi bi-info-circle"></i> Selected genre will appear here</small>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-2 mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-success btn-lg px-4" id="submitBtn">
+                                    <span id="submitText">
+                                        <i class="bi bi-check-circle"></i>
+                                        <span th:text="${id} ? 'Update Book' : 'Create Book'">Save Book</span>
+                                    </span>
+                                <div id="submitSpinner" class="spinner-border spinner-border-sm d-none ms-2"
+                                     role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </button>
+
+                            <a th:href="@{/books}" class="btn btn-secondary btn-lg px-4">
+                                <i class="bi bi-arrow-left"></i> Back to List
+                            </a>
+
+                            <div class="ms-auto d-flex gap-2">
+                                <button type="button" class="btn btn-outline-info btn-sm" onclick="app.showFormData()">
+                                    <i class="bi bi-bug"></i> Debug
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Debug Info -->
+            <div class="mt-3">
+                <div class="alert alert-info small">
+                    <strong>API Endpoint:</strong> <code>/api/v1/books</code> |
+                    <strong>Mode:</strong> <span id="modeInfo" th:text="${id} ? 'EDIT' : 'CREATE'">UNKNOWN</span> |
+                    <strong>Book ID:</strong> <span id="idInfo" th:text="${id} ?: 'NEW'">NEW</span> |
+                    <strong>Using DTO:</strong> BookFormDto → BookDto
+                </div>
             </div>
         </div>
-    </nav>
-
-    <p class="h3">Edit or New</p>
-
-<!--    <form id="edit-form" action="book-edit.html" th:action="@{/books}" th:method="post"-->
-<!--          th:object="${book}" th:field="*{id}">-->
-
-<!--        <input type="hidden" th:value="*{id}" name="id">-->
-<!--        <div class="row mb-3">-->
-<!--            <label class="col-sm-2 col-form-label">Title</label>-->
-<!--            <div class="col-sm-10">-->
-<!--                <input type="text" class="form-control" id="title" th:field="*{title}" required/>-->
-<!--            </div>-->
-<!--        </div>-->
-<!--        <div class="row mb-3">-->
-<!--            <label class="col-sm-2 col-form-label">Author</label>-->
-<!--            <div class="col-sm-10">-->
-<!--                <select class="form-select" name="bookAuthor" th:field="*{authorId}">-->
-<!--                    <option th:each="author : ${allAuthors}"-->
-<!--                            th:value="${author.id}"-->
-<!--                            th:text="${author.fullName}"-->
-<!--                            th:selected="${author.id() == book?.authorId()} ?: false">Author-->
-<!--                    </option>-->
-<!--                </select>-->
-<!--            </div>-->
-<!--        </div>-->
-<!--        <div class="row mb-3">-->
-<!--            <label class="col-sm-2 col-form-label">Genre</label>-->
-<!--            <div class="col-sm-10">-->
-<!--                <select class="form-select" name="bookGenre" th:field="*{genreId}">-->
-<!--                    <option th:each="genre : ${allGenres}"-->
-<!--                            th:value="${genre.id}"-->
-<!--                            th:text="${genre.name}"-->
-<!--                            th:selected="${genre.id() == book?.genreId()} ?: false">Genre-->
-<!--                    </option>-->
-<!--                </select>-->
-<!--            </div>-->
-<!--        </div>-->
-
-<!--        <div class="d-flex flex-row mb-3 gap-2">-->
-<!--            <button type="submit" class="btn btn-success">Save</button>-->
-<!--            <a href="book-list.html" th:href="@{/books}">-->
-<!--                <button type="button" class="btn btn-secondary">Cancel</button>-->
-<!--            </a>-->
-<!--        </div>-->
-<!--    </form>-->
-
-    <div class="container mt-4">
-        <h1 th:text="${book?.id} ? 'Edit Book' : 'Add New Book'">Book Form</h1>
-
-        <form id="bookForm">
-            <input type="hidden" id="bookId" th:value="${book?.id}">
-
-            <div class="mb-3">
-                <label for="title" class="form-label">Title</label>
-                <input type="text" class="form-control" id="title"
-                       th:value="${book?.title}" required>
-            </div>
-
-            <div class="mb-3">
-                <label for="authorId" class="form-label">Author</label>
-                <select class="form-control" id="authorId" required>
-                    <option value="">Select Author</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label for="genreId" class="form-label">Genre</label>
-                <select class="form-control" id="genreId" required>
-                    <option value="">Select Genre</option>
-                </select>
-            </div>
-
-            <button type="submit" class="btn btn-success">Save</button>
-            <a th:href="@{/books}" class="btn btn-secondary">Cancel</a>
-        </form>
     </div>
+</div>
 
-    <script>
-        class BookEditApp {
-            constructor() {
-                this.bookId = document.getElementById('bookId').value;
-                this.init();
+<script>
+    class BookEditApp {
+        constructor() {
+            this.API_BASE = '/api/v1';
+            this.id = document.getElementById('id').value;
+            this.authors = [];
+            this.genres = [];
+            this.currentBook = null;
+            this.init();
+        }
+
+        async init() {
+            await this.loadFormData();
+            if (this.id) {
+                await this.loadBookData();
             }
+            this.setupEventListeners();
+            this.updateUI();
+        }
 
-            async init() {
-                await this.loadFormData();
-                if (this.bookId) {
-                    await this.loadBook();
-                }
-                this.setupEventListeners();
-            }
+        async loadFormData() {
+            try {
+                this.setLoading(true);
+                console.log('Loading form data from:', `${this.API_BASE}/books/form-data`);
 
-            async loadFormData() {
-                try {
-                    const response = await fetch('/api/v1/books/form-data');
-                    const data = await response.json();
+                const response = await fetch(`${this.API_BASE}/books/form-data`);
 
-                    this.renderSelect(data.authors, 'authorId');
-                    this.renderSelect(data.genres, 'genreId');
-                } catch (error) {
-                    console.error('Error loading form data:', error);
-                    this.showError('Error loading form data');
-                }
-            }
-
-            async loadBook() {
-                try {
-                    const response = await fetch(`/api/v1/books/${this.bookId}`);
-                    if (!response.ok) throw new Error('Book not found');
-
-                    const book = await response.json();
-                    this.fillForm(book);
-                } catch (error) {
-                    console.error('Error loading book:', error);
-                    this.showError('Error loading book');
-                }
-            }
-
-            fillForm(book) {
-                document.getElementById('title').value = book.title || '';
-                document.getElementById('authorId').value = book.author?.id || '';
-                document.getElementById('genreId').value = book.genre?.id || '';
-            }
-
-            renderSelect(items, selectId) {
-                const select = document.getElementById(selectId);
-                items.forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item.id;
-                    option.textContent = item.name;
-                    select.appendChild(option);
-                });
-            }
-
-            setupEventListeners() {
-                document.getElementById('bookForm').addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.saveBook();
-                });
-            }
-
-            async saveBook() {
-                const bookData = this.getFormData();
-
-                if (!this.validateForm(bookData)) {
-                    this.showError('Please fill all fields');
-                    return;
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                try {
-                    const url = this.bookId ? `/api/v1/books/${this.bookId}` : '/api/v1/books';
-                    const method = this.bookId ? 'PUT' : 'POST';
+                const data = await response.json();
+                console.log('Form data loaded:', data);
 
-                    const response = await fetch(url, {
-                        method: method,
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(bookData)
-                    });
+                this.authors = data.authors || [];
+                this.genres = data.genres || [];
 
-                    if (!response.ok) throw new Error('Save failed');
+                this.populateSelect('authorId', this.authors, 'fullName');
+                this.populateSelect('genreId', this.genres, 'name');
 
-                    const savedBook = await response.json();
-                    this.showSuccess(this.bookId ? 'Book updated successfully' : 'Book created successfully');
-
-                    // Redirect after delay
-                    setTimeout(() => {
-                        window.location.href = '/book/list';
-                    }, 1500);
-
-                } catch (error) {
-                    console.error('Error saving book:', error);
-                    this.showError('Error saving book');
-                }
-            }
-
-            getFormData() {
-                return {
-                    title: document.getElementById('title').value,
-                    author: { id: document.getElementById('authorId').value },
-                    genre: { id: document.getElementById('genreId').value }
-                };
-            }
-
-            validateForm(data) {
-                return data.title && data.author.id && data.genre.id;
-            }
-
-            showSuccess(message) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success!',
-                    text: message,
-                    timer: 1500,
-                    showConfirmButton: false
-                });
-            }
-
-            showError(message) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: message
-                });
+            } catch (error) {
+                console.error('Error loading form data:', error);
+                this.showError('Failed to load authors and genres. Please refresh the page.');
+            } finally {
+                this.setLoading(false);
             }
         }
 
-        // Initialize app when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            new BookEditApp();
-        });
-    </script>
+        async loadBookData() {
+            if (!this.id) return;
 
-</div>
+            try {
+                this.setLoading(true);
+                console.log('Loading book data from:', `${this.API_BASE}/books/${this.id}`);
+
+                const response = await fetch(`${this.API_BASE}/books/${this.id}`);
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        this.showError('Book not found. Redirecting to list...');
+                        setTimeout(() => window.location.href = '/book/list', 2000);
+                        return;
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const bookDto = await response.json();
+                console.log('Book DTO loaded:', bookDto);
+
+                this.currentBook = bookDto;
+                this.fillForm(bookDto);
+
+            } catch (error) {
+                console.error('Error loading book:', error);
+                this.showError('Failed to load book data.');
+            } finally {
+                this.setLoading(false);
+            }
+        }
+
+        populateSelect(selectId, items, displayField) {
+            const select = document.getElementById(selectId);
+            // Clear existing options except the first one
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item[displayField] || 'Unknown';
+                option.setAttribute('data-full-data', JSON.stringify(item));
+                select.appendChild(option);
+            });
+        }
+
+        fillForm(bookDto) {
+            // Fill title from BookDto
+            document.getElementById('title').value = bookDto.title || '';
+
+            // Fill author from BookDto.author and show info
+            if (bookDto.author && bookDto.author.id) {
+                document.getElementById('authorId').value = bookDto.author.id;
+                this.displayAuthorInfo(bookDto.author);
+            }
+
+            // Fill genre from BookDto.genre and show info
+            if (bookDto.genre && bookDto.genre.id) {
+                document.getElementById('genreId').value = bookDto.genre.id;
+                this.displayGenreInfo(bookDto.genre);
+            }
+
+            this.updateUI();
+        }
+
+        displayAuthorInfo(authorDto) {
+            const authorInfoElement = document.getElementById('authorInfo');
+            if (authorInfoElement && authorDto) {
+                const fullName = authorDto.fullName || 'Unknown Author';
+                authorInfoElement.innerHTML = `
+                    <div>
+                        <i class="bi bi-person-check"></i>
+                        <strong>Selected Author:</strong> ${fullName}
+                        ${authorDto.id ? `<br><small class="text-muted">ID: ${authorDto.id}</small>` : ''}
+                    </div>
+                `;
+            }
+        }
+
+        displayGenreInfo(genreDto) {
+            const genreInfoElement = document.getElementById('genreInfo');
+            if (genreInfoElement && genreDto) {
+                const genreName = genreDto.name || 'Unknown Genre';
+                genreInfoElement.innerHTML = `
+                    <div>
+                        <i class="bi bi-tag"></i>
+                        <strong>Selected Genre:</strong> ${genreName}
+                        ${genreDto.id ? `<br><small class="text-muted">ID: ${genreDto.id}</small>` : ''}
+                    </div>
+                `;
+            }
+        }
+
+        setupEventListeners() {
+            const form = document.getElementById('bookForm');
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleSubmit();
+            });
+
+            // Author select change
+            document.getElementById('authorId').addEventListener('change', (e) => {
+                this.clearError('authorId');
+                const selectedOption = e.target.options[e.target.selectedIndex];
+                if (selectedOption.value && selectedOption.getAttribute('data-full-data')) {
+                    const author = JSON.parse(selectedOption.getAttribute('data-full-data'));
+                    const authorDto = new AuthorDto(author.id, author.fullName);
+                    this.displayAuthorInfo(authorDto);
+                } else {
+                    document.getElementById('authorInfo').innerHTML =
+                        '<small><i class="bi bi-info-circle"></i> Selected author will appear here</small>';
+                }
+            });
+
+            // Genre select change
+            document.getElementById('genreId').addEventListener('change', (e) => {
+                this.clearError('genreId');
+                const selectedOption = e.target.options[e.target.selectedIndex];
+                if (selectedOption.value && selectedOption.getAttribute('data-full-data')) {
+                    const genre = JSON.parse(selectedOption.getAttribute('data-full-data'));
+                    const genreDto = new GenreDto(genre.id, genre.name);
+                    this.displayGenreInfo(genreDto);
+                } else {
+                    document.getElementById('genreInfo').innerHTML =
+                        '<small><i class="bi bi-info-circle"></i> Selected genre will appear here</small>';
+                }
+            });
+
+            // Title input validation
+            document.getElementById('title').addEventListener('input', () => {
+                this.clearError('title');
+            });
+        }
+
+        async handleSubmit() {
+            if (!this.validateForm()) {
+                return;
+            }
+
+            try {
+                this.setSubmitState(true);
+
+                // Create BookFormDto for API
+                const bookFormDto = this.getFormData();
+                console.log('Submitting BookFormDto:', bookFormDto);
+
+                const url = this.id ? `${this.API_BASE}/books/${this.id}` : `${this.API_BASE}/books`;
+                const method = this.id ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(bookFormDto)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || `HTTP error! status: ${response.status}`);
+                }
+
+                const savedBookDto = await response.json();
+                console.log('BookDto saved successfully:', savedBookDto);
+
+                const successMessage = this.id ?
+                    'Book updated successfully!' : 'Book created successfully!';
+
+                this.showSuccess(successMessage, () => {
+                    window.location.href = '/books';
+                });
+
+            } catch (error) {
+                console.error('Error saving book:', error);
+                this.showError('Failed to save book. Please check the data and try again.');
+            } finally {
+                this.setSubmitState(false);
+            }
+        }
+
+        getFormData() {
+            return {
+                id: this.id || "",
+                title: document.getElementById('title').value.trim(),
+                authorId: document.getElementById('authorId').value,
+                genreId: document.getElementById('genreId').value
+            };
+        }
+
+        validateForm() {
+            let isValid = true;
+            const formData = this.getFormData();
+
+            // Validate title
+            if (!formData.title) {
+                this.showFieldError('title', 'Book title is required');
+                isValid = false;
+            } else if (formData.title.length < 2) {
+                this.showFieldError('title', 'Title must be at least 2 characters long');
+                isValid = false;
+            }
+
+            // Validate author
+            if (!formData.authorId) {
+                this.showFieldError('authorId', 'Please select an author');
+                isValid = false;
+            }
+
+            // Validate genre
+            if (!formData.genreId) {
+                this.showFieldError('genreId', 'Please select a genre');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        showFieldError(fieldId, message) {
+            const errorElement = document.getElementById(fieldId + 'Error');
+            if (errorElement) {
+                errorElement.textContent = message;
+            }
+            document.getElementById(fieldId).classList.add('is-invalid');
+        }
+
+        clearError(fieldId) {
+            const errorElement = document.getElementById(fieldId + 'Error');
+            if (errorElement) {
+                errorElement.textContent = '';
+            }
+            document.getElementById(fieldId).classList.remove('is-invalid');
+        }
+
+        updateUI() {
+            // Update form title
+            const titleElement = document.getElementById('formTitle');
+            const mode = this.id ? 'Edit' : 'Add New';
+            titleElement.innerHTML = `<i class="bi bi-book"></i> ${mode} Book`;
+
+            // Update submit button text
+            const submitText = document.getElementById('submitText');
+            submitText.innerHTML = `<i class="bi bi-check-circle"></i> ${this.id ? 'Update' : 'Create'} Book`;
+
+            // Update debug info
+            document.getElementById('modeInfo').textContent = this.id ? 'EDIT' : 'CREATE';
+            document.getElementById('idInfo').textContent = this.id || 'NEW';
+        }
+
+        setLoading(loading) {
+            const form = document.getElementById('bookForm');
+            if (loading) {
+                form.classList.add('loading');
+            } else {
+                form.classList.remove('loading');
+            }
+        }
+
+        setSubmitState(submitting) {
+            const submitBtn = document.getElementById('submitBtn');
+            const submitSpinner = document.getElementById('submitSpinner');
+
+            if (submitting) {
+                submitBtn.disabled = true;
+                submitSpinner.classList.remove('d-none');
+            } else {
+                submitBtn.disabled = false;
+                submitSpinner.classList.add('d-none');
+            }
+        }
+
+        showSuccess(message, callback) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: message,
+                timer: 2000,
+                showConfirmButton: false
+            }).then(callback);
+        }
+
+        showError(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: message
+            });
+        }
+
+        showFormData() {
+            const formData = this.getFormData();
+            Swal.fire({
+                title: 'DTO Debug Information',
+                html: `
+                    <div style="text-align: left; font-family: monospace;">
+                        <p><strong>API Base:</strong> ${this.API_BASE}</p>
+                        <p><strong>Mode:</strong> ${this.id ? 'EDIT' : 'CREATE'}</p>
+                        <p><strong>BookFormDto:</strong></p>
+                        <pre style="background: #f8f9fa; padding: 10px; border-radius: 5px;">
+{
+"id": "${formData.id || 'null'}",
+"title": "${formData.title || 'null'}",
+"authorId": "${formData.authorId || 'null'}",
+"genreId": "${formData.genreId || 'null'}"
+}</pre>
+                    </div>
+                `,
+                icon: 'info',
+                width: 600
+            });
+        }
+    }
+
+    // Simple DTO classes for JavaScript
+    class AuthorDto {
+        constructor(id, fullName) {
+            this.id = id || '';
+            this.fullName = fullName || '';
+        }
+    }
+
+    class GenreDto {
+        constructor(id, name) {
+            this.id = id || '';
+            this.name = name || '';
+        }
+    }
+
+    // Initialize the application when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        window.app = new BookEditApp();
+    });
+</script>
 </body>
 </html>
