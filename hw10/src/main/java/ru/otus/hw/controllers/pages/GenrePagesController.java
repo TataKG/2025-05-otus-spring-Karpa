@@ -1,4 +1,4 @@
-package ru.otus.hw.controllers;
+package ru.otus.hw.controllers.pages;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -8,7 +8,7 @@ import ru.otus.hw.services.GenreService;
 
 @Controller
 @RequiredArgsConstructor
-public class GenreController {
+public class GenrePagesController {
     private final GenreService genreService;
 
     @GetMapping("/genres")

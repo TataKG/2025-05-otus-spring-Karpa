@@ -5,6 +5,26 @@
     <meta charset="UTF-8"/>
     <title>List of books</title>
     <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <script src="/webjars/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+        function deleteBook(bookId) {
+            // Подтверждение удаления
+            if (!confirm('Delete this book?')) {
+                return;
+            }
+
+            // Отправляем DELETE запрос на сервер
+            fetch('/api/v1/books/${id}', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+                .then(data => {
+                    window.location.href = '/';
+                });
+        }
+    </script>
 </head>
 
 <body>
@@ -48,33 +68,132 @@
             <th>Action</th>
         </tr>
         </thead>
-        <tbody th:each="book : ${books}">
-        <tr>
-            <td>
-                <a th:href="@{/books/view/{id}(id=${book.id()})}" href="book-view.html"
-                   th:text="${book.title()}">Title</a>
-            </td>
-            <td th:text="${book.author.fullName}">Author</td>
-            <td th:text="${book.genre.name}">Genre</td>
-            <td>
-                <div class="btn-group" role="group">
-                    <form th:action="@{/books/edit/{id}(id=${book.id()})}" method="get">
-                        <input type="hidden" name="id" th:value="${book.id}">
-                        <button class="btn btn-success btn-sm" type="submit">Edit</button>
-                    </form>
-
-
-                    <form th:action="@{books/delete(bookId=${book.id()})}" method="post"
-                          onsubmit="return confirm('Confirm to delete book?');"
-                          style="display: inline;">
-                        <button class="btn btn-danger btn-sm" type="submit">Delete</button>
-                    </form>
-                </div>
-            </td>
-        </tr>
+        <tbody id="book-table">
         </tbody>
+<!--        <tbody th:each="book : ${books}">-->
+<!--        <tr>-->
+<!--            <td>-->
+<!--                <a th:href="@{/books/view/{id}(id=${book.id()})}" href="book-view.html"-->
+<!--                   th:text="${book.title()}">Title</a>-->
+<!--            </td>-->
+<!--            <td th:text="${book.author.fullName}">Author</td>-->
+<!--            <td th:text="${book.genre.name}">Genre</td>-->
+<!--            <td>-->
+<!--                <div class="btn-group" role="group">-->
+<!--                    <form th:action="@{/books/edit/{id}(id=${book.id()})}" method="get">-->
+<!--                        <input type="hidden" name="id" th:value="${book.id}">-->
+<!--                        <button class="btn btn-success btn-sm" type="submit">Edit</button>-->
+<!--                    </form>-->
+
+
+<!--                    <form th:action="@{books/delete(bookId=${book.id()})}" method="post"-->
+<!--                          onsubmit="return confirm('Confirm to delete book?');"-->
+<!--                          style="display: inline;">-->
+<!--                        <button class="btn btn-danger btn-sm" type="submit">Delete</button>-->
+<!--                    </form>-->
+<!--                </div>-->
+<!--            </td>-->
+<!--        </tr>-->
+<!--        </tbody>-->
     </table>
+
+    <div class="warning" id="no-books-warning">
+        No books available
+    </div>
+
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/api/v1/books')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(books => {
+                const tbody = document.getElementById("book-table");
+
+                const warning = document.getElementById("no-books-warning");
+
+                if (books.length === 0) {
+                    warning.style.display = 'block';
+                    return;
+                } else {
+                    warning.style.display = 'none';
+                }
+
+                books.forEach(function (book) {
+                    const row = document.createElement('tr');
+
+                    // Название книги
+                    const title = document.createElement('td');
+                    title.textContent = book.title;
+                    row.appendChild(title);
+
+                    // Автор
+                    const authorName = document.createElement('td');
+                    authorName.textContent = book.author.fullName;
+                    row.appendChild(authorName);
+
+                    // Жанры
+                    const genreName = document.createElement('td');
+                    genreName.textContent = book.genre.name;
+                    row.appendChild(genreName);
+
+                    // Действия
+                    const actionsCell = document.createElement('td');
+                    actionsCell.className = 'comment-actions';
+
+                    // Кнопка Browse
+                    const browseLink = document.createElement('a');
+                    browseLink.className = 'btn btn-info btn-sm';
+                    browseLink.href = `/books/view/${book.id}`;
+                    browseLink.textContent = 'Browse';
+                    actionsCell.appendChild(browseLink);
+
+                    // Кнопка Edit
+                    const editLink = document.createElement('a');
+                    editLink.className = 'btn btn-success btn-sm';
+                    editLink.href = `/books/edit/${book.id}`;
+                    editLink.textContent = 'Edit';
+                    actionsCell.appendChild(editLink);
+
+                    // Форма Delete
+                    const deleteForm = document.createElement('form');
+                    deleteForm.method = 'delete';
+                    deleteForm.action = 'book-delete';
+
+                    const bookIdInput = document.createElement('input');
+                    bookIdInput.id = "book-id";
+                    bookIdInput.name = 'bookId';
+                    bookIdInput.type = 'hidden';
+                    bookIdInput.value = book.id;
+                    deleteForm.appendChild(bookIdInput);
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className = 'btn btn-danger btn-sm';
+                    deleteButton.style.display = 'inline';
+                    deleteButton.type = 'button';
+                    deleteButton.textContent = 'Delete';
+                    deleteButton.onclick = () => deleteBook(book.id);
+                    deleteForm.appendChild(deleteButton);
+
+                    actionsCell.appendChild(deleteForm);
+                    row.appendChild(actionsCell);
+
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching books:', error);
+                document.getElementById('no-books-warning').textContent =
+                    'Error loading books';
+                document.getElementById('no-books-warning').style.display = 'block';
+            });
+    });
+</script>
 
 </body>
 

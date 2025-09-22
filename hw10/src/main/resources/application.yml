@@ -6,9 +6,11 @@ spring:
     fallbackToSystemLocale: false
 
   mvc:
-    hiddenmethod:
+    hidden-method:
       filter:
         enabled: true
+    favicon:
+      enabled: false
 
   output:
     ansi:
@@ -18,7 +20,7 @@ spring:
     mongodb:
       host: localhost
       port: 27017
-      database: hw09
+      database: hw10
       auto-index-creation: true
 
   devtools:
@@ -41,7 +43,7 @@ mongock:
   #runner-type: "ApplicationRunner" # default
   runner-type: "InitializingBean"
   change-logs-scan-package:
-    - ru.otus.hw.mongock.changelog
+    - ru.otus.hw.mongo.changelog.mongock
   mongo-db:
     write-concern:
       journal: false

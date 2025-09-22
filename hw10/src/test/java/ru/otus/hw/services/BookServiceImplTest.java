@@ -14,7 +14,7 @@ import ru.otus.hw.models.Author;
 import ru.otus.hw.models.Book;
 import ru.otus.hw.models.Comment;
 import ru.otus.hw.models.Genre;
-import ru.otus.hw.services.mongo.listeners.BookCascadeDeleteListener;
+import ru.otus.hw.mongo.listeners.BookCascadeDeleteListener;
 
 import java.util.List;
 import java.util.Optional;

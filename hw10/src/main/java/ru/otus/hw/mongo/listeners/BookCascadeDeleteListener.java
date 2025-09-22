@@ -1,4 +1,4 @@
-package ru.otus.hw.services.mongo.listeners;
+package ru.otus.hw.mongo.listeners;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;

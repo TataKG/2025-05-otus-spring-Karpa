@@ -1,4 +1,4 @@
-package ru.otus.hw.controllers;
+package ru.otus.hw.controllers.pages;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -10,7 +10,7 @@ import ru.otus.hw.services.CommentService;
 
 @RequiredArgsConstructor
 @Controller
-public class CommentController {
+public class CommentPagesController {
     private final CommentService commentService;
 
     @PostMapping("/books/{bookId}/comments/{commentId}/delete")
