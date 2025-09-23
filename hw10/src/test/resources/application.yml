@@ -4,6 +4,8 @@ spring:
       port: 0
       database: library_test
       host: localhost
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
 
 de:
   flapdoodle:
