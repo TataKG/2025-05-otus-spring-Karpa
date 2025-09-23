@@ -81,9 +81,9 @@
                                 <option value="">-- Select Author --</option>
                             </select>
                             <div class="error-message" id="authorError"></div>
-                            <div class="selected-info" id="authorInfo">
-                                <small><i class="bi bi-info-circle"></i> Selected author will appear here</small>
-                            </div>
+<!--                            <div class="selected-info" id="authorInfo">-->
+<!--                                <small><i class="bi bi-info-circle"></i> Selected author will appear here</small>-->
+<!--                            </div>-->
                         </div>
 
                         <!-- Genre Field -->
@@ -93,9 +93,9 @@
                                 <option value="">-- Select Genre --</option>
                             </select>
                             <div class="error-message" id="genreError"></div>
-                            <div class="selected-info" id="genreInfo">
-                                <small><i class="bi bi-info-circle"></i> Selected genre will appear here</small>
-                            </div>
+<!--                            <div class="selected-info" id="genreInfo">-->
+<!--                                <small><i class="bi bi-info-circle"></i> Selected genre will appear here</small>-->
+<!--                            </div>-->
                         </div>
 
                         <!-- Action Buttons -->
@@ -114,26 +114,11 @@
                             <a th:href="@{/books}" class="btn btn-secondary btn-lg px-4">
                                 <i class="bi bi-arrow-left"></i> Back to List
                             </a>
-
-                            <div class="ms-auto d-flex gap-2">
-                                <button type="button" class="btn btn-outline-info btn-sm" onclick="app.showFormData()">
-                                    <i class="bi bi-bug"></i> Debug
-                                </button>
-                            </div>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <!-- Debug Info -->
-            <div class="mt-3">
-                <div class="alert alert-info small">
-                    <strong>API Endpoint:</strong> <code>/api/v1/books</code> |
-                    <strong>Mode:</strong> <span id="modeInfo" th:text="${id} ? 'EDIT' : 'CREATE'">UNKNOWN</span> |
-                    <strong>Book ID:</strong> <span id="idInfo" th:text="${id} ?: 'NEW'">NEW</span> |
-                    <strong>Using DTO:</strong> BookFormDto → BookDto
-                </div>
-            </div>
         </div>
     </div>
 </div>
@@ -241,44 +226,14 @@
             // Fill author from BookDto.author and show info
             if (bookDto.author && bookDto.author.id) {
                 document.getElementById('authorId').value = bookDto.author.id;
-                this.displayAuthorInfo(bookDto.author);
             }
 
             // Fill genre from BookDto.genre and show info
             if (bookDto.genre && bookDto.genre.id) {
                 document.getElementById('genreId').value = bookDto.genre.id;
-                this.displayGenreInfo(bookDto.genre);
             }
 
             this.updateUI();
-        }
-
-        displayAuthorInfo(authorDto) {
-            const authorInfoElement = document.getElementById('authorInfo');
-            if (authorInfoElement && authorDto) {
-                const fullName = authorDto.fullName || 'Unknown Author';
-                authorInfoElement.innerHTML = `
-                    <div>
-                        <i class="bi bi-person-check"></i>
-                        <strong>Selected Author:</strong> ${fullName}
-                        ${authorDto.id ? `<br><small class="text-muted">ID: ${authorDto.id}</small>` : ''}
-                    </div>
-                `;
-            }
-        }
-
-        displayGenreInfo(genreDto) {
-            const genreInfoElement = document.getElementById('genreInfo');
-            if (genreInfoElement && genreDto) {
-                const genreName = genreDto.name || 'Unknown Genre';
-                genreInfoElement.innerHTML = `
-                    <div>
-                        <i class="bi bi-tag"></i>
-                        <strong>Selected Genre:</strong> ${genreName}
-                        ${genreDto.id ? `<br><small class="text-muted">ID: ${genreDto.id}</small>` : ''}
-                    </div>
-                `;
-            }
         }
 
         setupEventListeners() {
@@ -292,28 +247,12 @@
             document.getElementById('authorId').addEventListener('change', (e) => {
                 this.clearError('authorId');
                 const selectedOption = e.target.options[e.target.selectedIndex];
-                if (selectedOption.value && selectedOption.getAttribute('data-full-data')) {
-                    const author = JSON.parse(selectedOption.getAttribute('data-full-data'));
-                    const authorDto = new AuthorDto(author.id, author.fullName);
-                    this.displayAuthorInfo(authorDto);
-                } else {
-                    document.getElementById('authorInfo').innerHTML =
-                        '<small><i class="bi bi-info-circle"></i> Selected author will appear here</small>';
-                }
             });
 
             // Genre select change
             document.getElementById('genreId').addEventListener('change', (e) => {
                 this.clearError('genreId');
                 const selectedOption = e.target.options[e.target.selectedIndex];
-                if (selectedOption.value && selectedOption.getAttribute('data-full-data')) {
-                    const genre = JSON.parse(selectedOption.getAttribute('data-full-data'));
-                    const genreDto = new GenreDto(genre.id, genre.name);
-                    this.displayGenreInfo(genreDto);
-                } else {
-                    document.getElementById('genreInfo').innerHTML =
-                        '<small><i class="bi bi-info-circle"></i> Selected genre will appear here</small>';
-                }
             });
 
             // Title input validation
@@ -431,9 +370,6 @@
             const submitText = document.getElementById('submitText');
             submitText.innerHTML = `<i class="bi bi-check-circle"></i> ${this.id ? 'Update' : 'Create'} Book`;
 
-            // Update debug info
-            document.getElementById('modeInfo').textContent = this.id ? 'EDIT' : 'CREATE';
-            document.getElementById('idInfo').textContent = this.id || 'NEW';
         }
 
         setLoading(loading) {
@@ -476,28 +412,6 @@
             });
         }
 
-        showFormData() {
-            const formData = this.getFormData();
-            Swal.fire({
-                title: 'DTO Debug Information',
-                html: `
-                    <div style="text-align: left; font-family: monospace;">
-                        <p><strong>API Base:</strong> ${this.API_BASE}</p>
-                        <p><strong>Mode:</strong> ${this.id ? 'EDIT' : 'CREATE'}</p>
-                        <p><strong>BookFormDto:</strong></p>
-                        <pre style="background: #f8f9fa; padding: 10px; border-radius: 5px;">
-                            {
-                            "id": "${formData.id || 'null'}",
-                            "title": "${formData.title || 'null'}",
-                            "authorId": "${formData.authorId || 'null'}",
-                            "genreId": "${formData.genreId || 'null'}"
-                            }</pre>
-                    </div>
-                `,
-                icon: 'info',
-                width: 600
-            });
-        }
     }
 
     // Simple DTO classes for JavaScript
