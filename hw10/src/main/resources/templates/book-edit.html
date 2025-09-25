@@ -81,9 +81,6 @@
                                 <option value="">-- Select Author --</option>
                             </select>
                             <div class="error-message" id="authorError"></div>
-<!--                            <div class="selected-info" id="authorInfo">-->
-<!--                                <small><i class="bi bi-info-circle"></i> Selected author will appear here</small>-->
-<!--                            </div>-->
                         </div>
 
                         <!-- Genre Field -->
@@ -93,9 +90,6 @@
                                 <option value="">-- Select Genre --</option>
                             </select>
                             <div class="error-message" id="genreError"></div>
-<!--                            <div class="selected-info" id="genreInfo">-->
-<!--                                <small><i class="bi bi-info-circle"></i> Selected genre will appear here</small>-->
-<!--                            </div>-->
                         </div>
 
                         <!-- Action Buttons -->
@@ -135,7 +129,8 @@
         }
 
         async init() {
-            await this.loadFormData();
+            await this.loadAuthors();
+            await this.loadGenres();
             if (this.id) {
                 await this.loadBookData();
             }
@@ -143,29 +138,54 @@
             this.updateUI();
         }
 
-        async loadFormData() {
+        async loadAuthors() {
             try {
                 this.setLoading(true);
-                console.log('Loading form data from:', `${this.API_BASE}/books/form-data`);
+                console.log('Loading form data from:', `${this.API_BASE}/authors`);
 
-                const response = await fetch(`${this.API_BASE}/books/form-data`);
+                const response = await fetch(`${this.API_BASE}/authors`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                const data = await response.json();
-                console.log('Form data loaded:', data);
+                const authors = await response.json();
+                console.log('Form data loaded:', authors);
 
-                this.authors = data.authors || [];
-                this.genres = data.genres || [];
+                this.authors = authors || [];
 
                 this.populateSelect('authorId', this.authors, 'fullName');
                 this.populateSelect('genreId', this.genres, 'name');
 
             } catch (error) {
                 console.error('Error loading form data:', error);
-                this.showError('Failed to load authors and genres. Please refresh the page.');
+                this.showError('Failed to load authors. Please refresh the page.');
+            } finally {
+                this.setLoading(false);
+            }
+        }
+
+        async loadGenres() {
+            try {
+                this.setLoading(true);
+                console.log('Loading form data from:', `${this.API_BASE}/genres`);
+
+                const response = await fetch(`${this.API_BASE}/genres`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const genres = await response.json();
+                console.log('Form data loaded:', genres);
+
+                this.genres = genres || [];
+
+                this.populateSelect('genreId', this.genres, 'name');
+
+            } catch (error) {
+                console.error('Error loading form data:', error);
+                this.showError('Failed to load genres. Please refresh the page.');
             } finally {
                 this.setLoading(false);
             }

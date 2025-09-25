@@ -1,5 +1,6 @@
 package ru.otus.hw.controllers.rest;
 
+import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +27,7 @@ public class CommentController {
         if (bookId == null || commentDto == null) {
             throw new BadRequestException("Id is null or empty");
         }
-        if (commentDto.text() == null || commentDto.text().isEmpty()) {
+        if (StringUtils.isEmpty(commentDto.text())) {
             throw new BadRequestException("Text is null or empty");
         }
         var savedComment = commentService.insert(commentDto);

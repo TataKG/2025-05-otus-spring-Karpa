@@ -38,13 +38,6 @@ public class BookController {
         return bookService.findAll();
     }
 
-    @GetMapping("/form-data")
-    public Map<String, Object> getFormData() {
-        Map<String, Object> data = new HashMap<>();
-        data.put("authors", authorService.findAll());
-        data.put("genres", genreService.findAll());
-        return data;
-    }
 
     @GetMapping("/{id}")
     public ResponseEntity<BookDto> getBookById(@PathVariable String id) {
@@ -63,7 +56,7 @@ public class BookController {
     }
 
     @PutMapping("{id}")
-    public ResponseEntity<BookDto> updateBook(@PathVariable String id, @RequestBody BookFormDto bookFormDto) {
+    public ResponseEntity<BookDto> updateBook(@RequestBody BookFormDto bookFormDto) {
         try {
             BookDto updatedBook = bookService.update(bookFormDto);
             return ResponseEntity.ok(updatedBook);
