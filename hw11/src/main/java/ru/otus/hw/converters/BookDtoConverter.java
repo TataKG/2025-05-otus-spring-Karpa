@@ -22,15 +22,16 @@ public class BookDtoConverter {
     }
 
     public BookDto toDto(Book book) {
-        if (book != null) {
-            return new BookDto(
-                    book.getId(),
-                    book.getTitle(),
-                    authorDtoConverter.toDto(book.getAuthor()),
-                    genreDtoConverter.toDto(book.getGenre())
-            );
+        if (book == null) {
+            return null;
         }
-        return null;
+
+        return new BookDto(
+                book.getId(),
+                book.getTitle(),
+                authorDtoConverter.toDto(book.getAuthor()),
+                genreDtoConverter.toDto(book.getGenre())
+        );
     }
 
     public BookFormDto bookDtoToBookFormDto(BookDto book) {
