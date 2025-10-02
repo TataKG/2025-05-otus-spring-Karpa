@@ -1,8 +1,10 @@
 package ru.otus.hw.controllers.rest;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -11,66 +13,63 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.support.WebExchangeBindException;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import ru.otus.hw.converters.BookDtoConverter;
 import ru.otus.hw.dto.BookDto;
 import ru.otus.hw.dto.BookFormDto;
-import ru.otus.hw.services.AuthorService;
+import ru.otus.hw.exceptions.BadRequestException;
+import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.services.BookService;
-import ru.otus.hw.services.GenreService;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/books")
 @RequiredArgsConstructor
 public class BookController {
     private final BookService bookService;
-    private final AuthorService authorService;
-    private final GenreService genreService;
 
     private final BookDtoConverter bookConverter;
 
     @GetMapping
-    public List<BookDto> getAllBooks() {
+    public Flux<BookDto> getAllBooks() {
         return bookService.findAll();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BookDto> getBookById(@PathVariable String id) {
-        Optional<BookDto> book = bookService.findById(id);
-        return book.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    public Mono<ResponseEntity<BookFormDto>> getBookById(@PathVariable String id) {
+        return bookService.findById(id).flatMap(book -> {
+            BookFormDto dto = bookConverter.bookDtoToBookFormDto(book);
+            return Mono.just(ResponseEntity.ok(dto));
+        }).switchIfEmpty(Mono.error(new EntityNotFoundException("Book with id %s not found".formatted(id))));
     }
 
     @PostMapping
-    public ResponseEntity<BookDto> createBook(@RequestBody BookFormDto bookFormDto) {
-        try {
-            BookDto savedBook = bookService.insert(bookFormDto);
-            return ResponseEntity.ok(savedBook);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+    public Mono<ResponseEntity<Object>> createBook(@Valid @RequestBody Mono<BookFormDto> bookDtoMono) {
+        return bookDtoMono.flatMap(bookDto -> bookService.insert(bookDto).map(savedBook -> ResponseEntity.ok().<Object>body(savedBook))).onErrorResume(WebExchangeBindException.class, ex -> {
+            var errors = ex.getFieldErrors().stream().collect(Collectors.toMap(FieldError::getField, fieldError -> Optional.ofNullable(fieldError.getDefaultMessage()).orElse("Invalid value")));
+            return Mono.just(ResponseEntity.badRequest().body(errors));
+        });
     }
 
     @PutMapping("{id}")
-    public ResponseEntity<BookDto> updateBook(@RequestBody BookFormDto bookFormDto) {
-        try {
-            BookDto updatedBook = bookService.update(bookFormDto);
-            return ResponseEntity.ok(updatedBook);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+    public Mono<ResponseEntity<Object>> updateBook(@PathVariable String id, @Valid @RequestBody Mono<BookFormDto> bookDtoMono) {
+        return bookDtoMono.flatMap(bookDto -> {
+            if (!id.equals(bookDto.id())) {
+                return Mono.error(new BadRequestException("ID in path and body must match"));
+            }
+            return bookService.update(bookDto).map(updatedBook -> ResponseEntity.ok().<Object>body(updatedBook));
+        }).onErrorResume(WebExchangeBindException.class, ex -> {
+            var errors = ex.getFieldErrors().stream().map(fieldError -> Optional.ofNullable(fieldError.getDefaultMessage()).orElse("Invalid value")).toList();
+            return Mono.just(ResponseEntity.badRequest().body(errors));
+        });
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBook(@PathVariable String id) {
-        try {
-            bookService.deleteById(id);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+    public Mono<ResponseEntity<Void>> deleteBook(@PathVariable String id) {
+        return bookService.deleteById(id).then(Mono.just(ResponseEntity.noContent().build()));
     }
 }

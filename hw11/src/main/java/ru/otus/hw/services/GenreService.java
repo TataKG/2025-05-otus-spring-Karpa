@@ -1,12 +1,11 @@
 package ru.otus.hw.services;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import ru.otus.hw.dto.GenreDto;
 
-import java.util.List;
-import java.util.Optional;
-
 public interface GenreService {
-    List<GenreDto> findAll();
+    Flux<GenreDto> findAll();
 
-    Optional<GenreDto> findById(String id);
+    Mono<GenreDto> findById(String id);
 }

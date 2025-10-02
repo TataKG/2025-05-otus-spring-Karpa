@@ -6,11 +6,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import ru.otus.hw.dto.GenreDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.services.GenreService;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/genres")
@@ -19,14 +19,14 @@ public class GenreController {
     private final GenreService genreService;
 
     @GetMapping
-    public List<GenreDto> getAllGenres() {
+    public Flux<GenreDto> getAllGenres() {
         return genreService.findAll();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<GenreDto> getAGenreById(@PathVariable String id) {
+    public Mono<ResponseEntity<GenreDto>> getAGenreById(@PathVariable String id) {
         return genreService.findById(id)
                 .map(ResponseEntity::ok)
-                .orElseThrow(() -> new EntityNotFoundException("Genre with id %s not found!".formatted(id)));
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("Genre with id %s not found!".formatted(id))));
     }
 }

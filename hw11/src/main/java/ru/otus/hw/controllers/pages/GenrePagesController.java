@@ -13,8 +13,6 @@ public class GenrePagesController {
 
     @GetMapping("/genres")
     public String getGenreList(Model model) {
-        var genres = genreService.findAll();
-        model.addAttribute("genres", genres);
         return "genre-list";
     }
 }

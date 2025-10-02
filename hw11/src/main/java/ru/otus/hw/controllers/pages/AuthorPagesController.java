@@ -13,8 +13,6 @@ public class AuthorPagesController {
 
     @GetMapping("/authors")
     public String getAuthorList(Model model) {
-        var authors = authorService.findAll();
-        model.addAttribute("authors", authors);
         return "author-list";
     }
 

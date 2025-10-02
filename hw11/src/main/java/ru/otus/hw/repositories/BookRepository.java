@@ -1,7 +1,13 @@
 package ru.otus.hw.repositories;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
+import reactor.core.publisher.Flux;
 import ru.otus.hw.models.Book;
 
-public interface BookRepository extends MongoRepository<Book, String> {
+import javax.annotation.Nonnull;
+
+public interface BookRepository extends ReactiveMongoRepository<Book, String> {
+    @Nonnull
+    @Override
+    Flux<Book> findAll();
 }
