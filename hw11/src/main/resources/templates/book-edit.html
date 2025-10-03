@@ -129,106 +129,105 @@
         }
 
         async init() {
-            await this.loadAuthors();
-            await this.loadGenres();
-            if (this.id) {
-                await this.loadBookData();
-            }
-            this.setupEventListeners();
-            this.updateUI();
-        }
-
-                async loadAuthors() {
             try {
                 this.setLoading(true);
-                console.log('Loading form data from:', `${this.API_BASE}/authors`);
 
+                // Загружаем авторов и жанры параллельно
+                await Promise.all([
+                    this.loadAuthors(),
+                    this.loadGenres()
+                ]);
+
+                // Только после загрузки авторов и жанров загружаем данные книги
+                if (this.id) {
+                    await this.loadBookData();
+                }
+
+                this.setupEventListeners();
+                this.updateUI();
+
+            } catch (error) {
+                console.error('Error during initialization:', error);
+                this.showError('Failed to initialize form. Please refresh the page.');
+            } finally {
+                this.setLoading(false);
+            }
+        }
+
+        async loadAuthors() {
+            try {
+                console.log('Loading authors from:', `${this.API_BASE}/authors`);
                 const response = await fetch(`${this.API_BASE}/authors`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                const authors = await response.json();
-                console.log('Form data loaded:', authors);
+                this.authors = await response.json();
+                console.log('Authors loaded:', this.authors);
 
-                this.authors = authors || [];
-
+                // Заполняем выпадающий список авторов
                 this.populateSelect('authorId', this.authors, 'fullName');
-                this.populateSelect('genreId', this.genres, 'name');
 
             } catch (error) {
-                console.error('Error loading form data:', error);
-                this.showError('Failed to load authors. Please refresh the page.');
-            } finally {
-                this.setLoading(false);
+                console.error('Error loading authors:', error);
+                throw error; // Пробрасываем ошибку дальше
             }
         }
 
         async loadGenres() {
             try {
-                this.setLoading(true);
-                console.log('Loading form data from:', `${this.API_BASE}/genres`);
-
+                console.log('Loading genres from:', `${this.API_BASE}/genres`);
                 const response = await fetch(`${this.API_BASE}/genres`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                const genres = await response.json();
-                console.log('Form data loaded:', genres);
+                this.genres = await response.json();
+                console.log('Genres loaded:', this.genres);
 
-                this.genres = genres || [];
-
+                // Заполняем выпадающий список жанров
                 this.populateSelect('genreId', this.genres, 'name');
 
             } catch (error) {
-                console.error('Error loading form data:', error);
-                this.showError('Failed to load genres. Please refresh the page.');
-            } finally {
-                this.setLoading(false);
+                console.error('Error loading genres:', error);
+                throw error; // Пробрасываем ошибку дальше
             }
         }
 
         async loadBookData() {
-            if (!this.id) return;
-
             try {
-                this.setLoading(true);
                 console.log('Loading book data from:', `${this.API_BASE}/books/${this.id}`);
-
                 const response = await fetch(`${this.API_BASE}/books/${this.id}`);
 
                 if (!response.ok) {
                     if (response.status === 404) {
                         this.showError('Book not found. Redirecting to list...');
-                        setTimeout(() => window.location.href = '/book/list', 2000);
+                        setTimeout(() => window.location.href = '/books', 2000);
                         return;
                     }
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                const bookDto = await response.json();
-                console.log('Book DTO loaded:', bookDto);
+                this.currentBook = await response.json();
+                console.log('Book DTO loaded:', this.currentBook);
 
-                this.currentBook = bookDto;
-                this.fillForm(bookDto);
+                // Заполняем форму данными книги
+                this.fillForm(this.currentBook);
 
             } catch (error) {
                 console.error('Error loading book:', error);
-                this.showError('Failed to load book data.');
-            } finally {
-                this.setLoading(false);
+                throw error;
             }
         }
 
         populateSelect(selectId, items, displayField) {
             const select = document.getElementById(selectId);
-            // Clear existing options except the first one
-            while (select.options.length > 1) {
-                select.remove(1);
-            }
+            // Сохраняем первый option ("-- Select --")
+            const firstOption = select.options[0];
+            select.innerHTML = '';
+            select.appendChild(firstOption);
 
             items.forEach(item => {
                 const option = document.createElement('option');
@@ -240,17 +239,23 @@
         }
 
         fillForm(bookDto) {
-            // Fill title from BookDto
+            console.log('Filling form with book data:', bookDto);
+
+            // Заполняем название
             document.getElementById('title').value = bookDto.title || '';
 
-            // Fill author from BookDto.author and show info
+            // Заполняем автора (только после того как список авторов заполнен)
             if (bookDto.author && bookDto.author.id) {
-                document.getElementById('authorId').value = bookDto.author.id;
+                const authorSelect = document.getElementById('authorId');
+                authorSelect.value = bookDto.author.id;
+                console.log('Set author to:', bookDto.author.id, bookDto.author.fullName);
             }
 
-            // Fill genre from BookDto.genre and show info
+            // Заполняем жанр (только после того как список жанров заполнен)
             if (bookDto.genre && bookDto.genre.id) {
-                document.getElementById('genreId').value = bookDto.genre.id;
+                const genreSelect = document.getElementById('genreId');
+                genreSelect.value = bookDto.genre.id;
+                console.log('Set genre to:', bookDto.genre.id, bookDto.genre.name);
             }
 
             this.updateUI();
@@ -263,19 +268,15 @@
                 this.handleSubmit();
             });
 
-            // Author select change
-            document.getElementById('authorId').addEventListener('change', (e) => {
+            // Валидация при изменении полей
+            document.getElementById('authorId').addEventListener('change', () => {
                 this.clearError('authorId');
-                const selectedOption = e.target.options[e.target.selectedIndex];
             });
 
-            // Genre select change
-            document.getElementById('genreId').addEventListener('change', (e) => {
+            document.getElementById('genreId').addEventListener('change', () => {
                 this.clearError('genreId');
-                const selectedOption = e.target.options[e.target.selectedIndex];
             });
 
-            // Title input validation
             document.getElementById('title').addEventListener('input', () => {
                 this.clearError('title');
             });
@@ -289,7 +290,6 @@
             try {
                 this.setSubmitState(true);
 
-                // Create BookFormDto for API
                 const bookFormDto = this.getFormData();
                 console.log('Submitting BookFormDto:', bookFormDto);
 
@@ -310,7 +310,7 @@
                 }
 
                 const savedBookDto = await response.json();
-                console.log('BookDto saved successfully:', savedBookDto);
+                console.log('Book saved successfully:', savedBookDto);
 
                 const successMessage = this.id ?
                     'Book updated successfully!' : 'Book created successfully!';
@@ -381,15 +381,12 @@
         }
 
         updateUI() {
-            // Update form title
             const titleElement = document.getElementById('formTitle');
             const mode = this.id ? 'Edit' : 'Add New';
             titleElement.innerHTML = `<i class="bi bi-book"></i> ${mode} Book`;
 
-            // Update submit button text
             const submitText = document.getElementById('submitText');
             submitText.innerHTML = `<i class="bi bi-check-circle"></i> ${this.id ? 'Update' : 'Create'} Book`;
-
         }
 
         setLoading(loading) {
@@ -430,22 +427,6 @@
                 title: 'Error',
                 text: message
             });
-        }
-
-    }
-
-    // Simple DTO classes for JavaScript
-    class AuthorDto {
-        constructor(id, fullName) {
-            this.id = id || '';
-            this.fullName = fullName || '';
-        }
-    }
-
-    class GenreDto {
-        constructor(id, name) {
-            this.id = id || '';
-            this.name = name || '';
         }
     }
 

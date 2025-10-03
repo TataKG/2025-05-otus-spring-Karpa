@@ -18,7 +18,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Genre {
     @Id
     private String id;
-    @Indexed(unique = true)
+
     private String name;
 
     public Genre(String name) {

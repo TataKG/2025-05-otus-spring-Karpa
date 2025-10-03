@@ -5,6 +5,18 @@
     <meta charset="UTF-8">
     <title>Book details</title>
     <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .comment-text {
+            word-wrap: break-word;
+        }
+    </style>
 </head>
 <body>
 <div class="container view-book" th:object="${book}">
@@ -31,58 +43,311 @@
         </div>
     </nav>
 
-    <p class="h3">Book details</p>
-    <div class="d-flex flex-row mb-3 gap-2">
-        <a class="btn btn-primary" href="book-edit.html" th:href="@{/books/edit/{id}(id=${book.id()})}">Edit</a>
+    <div id="loadingMessage" class="text-center py-4">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading book details...</p>
     </div>
 
-    <div class="mb-3">
-        <label class="form-label me-2"><strong>Title:</strong></label>
-        <label class="form-label" th:text="*{title}">Title</label>
-    </div>
-    <div class="mb-3">
-        <label class="form-label me-2"><strong>Author:</strong></label>
-        <label class="form-label" th:text="*{author.fullName}">Author</label>
-    </div>
-    <div class="mb-3">
-        <label class="form-label me-2"><strong>Genres:</strong></label>
-        <label class="form-label" th:text="*{genre.name}">Genre</label>
-    </div>
+    <div id="bookContent" class="d-none">
+        <p class="h3">Book details</p>
+        <div class="d-flex flex-row mb-3 gap-2">
+            <a class="btn btn-primary" id="editButton">Edit</a>
+            <a class="btn btn-secondary" href="/books">Back to List</a>
+        </div>
 
-    <div class="comments-section" th:if="${book.id() != null}" th:object="${comments}">
-        <p class="h3">Comments</p>
+        <div class="mb-3">
+            <label class="form-label me-2"><strong>Title:</strong></label>
+            <label class="form-label" id="bookTitle">Title</label>
+        </div>
+        <div class="mb-3">
+            <label class="form-label me-2"><strong>Author:</strong></label>
+            <label class="form-label" id="bookAuthor">Author</label>
+        </div>
+        <div class="mb-3">
+            <label class="form-label me-2"><strong>Genre:</strong></label>
+            <label class="form-label" id="bookGenre">Genre</label>
+        </div>
 
-        <table class="table mt-2 align-middle">
-            <thead>
-            <tr>
-                <th>Text</th>
-                <th>Action</th>
-            </tr>
-            </thead>
-            <tbody th:each="comment : ${comments}">
-            <tr>
-                <td th:text="${comment.text}">Comment text</td>
-                <td>
-                    <form th:action="@{/books/{bookId}/comments/{commentId}/delete(bookId=${book.id()}, commentId=${comment.id()})}"
-                          method="post">
+        <div class="comments-section" id="commentsSection">
+            <p class="h3">Comments</p>
 
-                        <button class="btn btn-warning btn-sm" type="submit">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+            <table class="table mt-2 align-middle">
+                <thead>
+                <tr>
+                    <th>Text</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody id="commentsTableBody">
+                <!-- Comments will be populated here -->
+                </tbody>
+            </table>
 
-        <div class="add-comment-form">
-            <form th:action="@{/books/{bookId}/comments/add(bookId=${book.id()})}" method="post">
-                <textarea class="form-control" name="text" placeholder="Add your comment..." required
-                          rows="3"></textarea>
-                <button type="submit" class="btn btn-success">Add Comment</button>
-            </form>
+            <div class="add-comment-form">
+                <form id="addCommentForm">
+                    <textarea class="form-control" id="commentText" name="text"
+                              placeholder="Add your comment..." required rows="3"></textarea>
+                    <button type="submit" class="btn btn-success mt-2">Add Comment</button>
+                </form>
+            </div>
         </div>
     </div>
 
+    <div id="errorMessage" class="alert alert-danger d-none" role="alert">
+        <h4 class="alert-heading">Error</h4>
+        <p id="errorText"></p>
+        <a href="/books" class="btn btn-secondary">Back to Book List</a>
+    </div>
 </div>
+
+<script>
+    class BookDetailsApp {
+        constructor() {
+            this.API_BASE = '/api/v1';
+            this.bookId = this.getBookIdFromUrl();
+            this.currentBook = null;
+            this.comments = [];
+            this.init();
+        }
+
+        getBookIdFromUrl() {
+            const path = window.location.pathname;
+            const segments = path.split('/');
+            return segments[segments.length - 1];
+        }
+
+        async init() {
+            if (!this.bookId) {
+                this.showError('Book ID not found in URL');
+                return;
+            }
+
+            try {
+                await this.loadBookData();
+                await this.loadComments();
+                this.setupEventListeners();
+                this.showContent();
+            } catch (error) {
+                console.error('Error during initialization:', error);
+                this.showError('Failed to load book details');
+            }
+        }
+
+        async loadBookData() {
+            try {
+                console.log('Loading book data from:', `${this.API_BASE}/books/${this.bookId}`);
+                const response = await fetch(`${this.API_BASE}/books/${this.bookId}`);
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Book not found');
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                this.currentBook = await response.json();
+                console.log('Book data loaded:', this.currentBook);
+                this.displayBookData();
+
+            } catch (error) {
+                console.error('Error loading book:', error);
+                throw error;
+            }
+        }
+
+        async loadComments() {
+            try {
+                console.log('Loading comments from:', `${this.API_BASE}/books/${this.bookId}/comments`);
+                const response = await fetch(`${this.API_BASE}/books/${this.bookId}/comments`);
+
+                if (!response.ok) {
+                    // Если endpoint не существует, используем пустой список
+                    if (response.status === 404) {
+                        console.log('Comments endpoint not found, using empty comments');
+                        this.comments = [];
+                        return;
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                this.comments = await response.json();
+                console.log('Comments loaded:', this.comments);
+                this.displayComments();
+
+            } catch (error) {
+                console.error('Error loading comments:', error);
+                // Не прерываем загрузку страницы из-за ошибки комментариев
+                this.comments = [];
+                this.displayComments();
+            }
+        }
+
+        displayBookData() {
+            document.getElementById('bookTitle').textContent = this.currentBook.title || 'No title';
+            document.getElementById('bookAuthor').textContent = this.currentBook.author?.fullName || 'Unknown author';
+            document.getElementById('bookGenre').textContent = this.currentBook.genre?.name || 'Unknown genre';
+
+            // Update edit button
+            document.getElementById('editButton').href = `/books/edit/${this.bookId}`;
+        }
+
+        displayComments() {
+            const tbody = document.getElementById('commentsTableBody');
+            tbody.innerHTML = '';
+
+            if (this.comments.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="2" class="text-muted text-center">No comments yet</td>
+                `;
+                tbody.appendChild(row);
+                return;
+            }
+
+            this.comments.forEach(comment => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="comment-text">${this.escapeHtml(comment.text || '')}</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm delete-comment-btn"
+                                data-comment-id="${comment.id}">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Add event listeners to delete buttons
+            document.querySelectorAll('.delete-comment-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const commentId = e.target.getAttribute('data-comment-id');
+                    this.deleteComment(commentId);
+                });
+            });
+        }
+
+        setupEventListeners() {
+            // Add comment form
+            document.getElementById('addCommentForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.addComment();
+            });
+        }
+
+        async addComment() {
+            const commentText = document.getElementById('commentText').value.trim();
+
+            if (!commentText) {
+                this.showAlert('Please enter comment text', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${this.API_BASE}/books/${this.bookId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: commentText,
+                        bookId: this.bookId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const newComment = await response.json();
+                console.log('Comment added:', newComment);
+
+                // Add new comment to the list and refresh display
+                this.comments.push(newComment);
+                this.displayComments();
+
+                // Clear the form
+                document.getElementById('commentText').value = '';
+
+                this.showAlert('Comment added successfully!', 'success');
+
+            } catch (error) {
+                console.error('Error adding comment:', error);
+                this.showAlert('Failed to add comment', 'error');
+            }
+        }
+
+        async deleteComment(commentId) {
+            if (!confirm('Are you sure you want to delete this comment?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${this.API_BASE}/books/${this.bookId}/comments/${commentId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Remove comment from the list and refresh display
+                this.comments = this.comments.filter(comment => comment.id !== commentId);
+                this.displayComments();
+
+                this.showAlert('Comment deleted successfully!', 'success');
+
+            } catch (error) {
+                console.error('Error deleting comment:', error);
+                this.showAlert('Failed to delete comment', 'error');
+            }
+        }
+
+        showContent() {
+            document.getElementById('loadingMessage').classList.add('d-none');
+            document.getElementById('bookContent').classList.remove('d-none');
+            document.getElementById('errorMessage').classList.add('d-none');
+        }
+
+        showError(message) {
+            document.getElementById('loadingMessage').classList.add('d-none');
+            document.getElementById('bookContent').classList.add('d-none');
+
+            const errorMessage = document.getElementById('errorMessage');
+            document.getElementById('errorText').textContent = message;
+            errorMessage.classList.remove('d-none');
+        }
+
+        showAlert(message, type = 'info') {
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+            });
+
+            Toast.fire({
+                icon: type,
+                title: message
+            });
+        }
+
+        escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    }
+
+    // Initialize the application when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        window.bookDetailsApp = new BookDetailsApp();
+    });
+</script>
 
 </body>
 </html>
