@@ -41,14 +41,55 @@
             <th>Name</th>
         </tr>
         </thead>
-        <tbody th:each="genre : ${genres}">
-        <tr>
-            <td th:text="${genre.name}">Name</td>
-        </tr>
-        </tbody>
+        </thead>
+        <tbody id="genres-table"></tbody>
     </table>
 
+    <div class="warning" id="no-genres-warning">
+        No genres available
+    </div>
+
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/api/v1/genres')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(genres => {
+                const tbody = document.getElementById("genres-table");
+
+                const warning = document.getElementById("no-genres-warning");
+
+                if (genres.length === 0) {
+                    warning.style.display = 'block';
+                    return;
+                } else {
+                    warning.style.display = 'none';
+                }
+
+               genres.forEach(function (genre) {
+                    const row = document.createElement('tr');
+
+                    const genreName = document.createElement('td');
+                    genreName.textContent = genre.name;
+                    row.appendChild(genreName);
+
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching genres:', error);
+                document.getElementById('no-genres-warning').textContent =
+                    'Error loading genres';
+                document.getElementById('no-genres-warning').style.display = 'block';
+            });
+    });
+</script>
 
 </body>
 

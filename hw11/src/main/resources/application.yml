@@ -20,7 +20,7 @@ spring:
     mongodb:
       host: localhost
       port: 27017
-      database: hw11_lib_react
+      database: hw11
       auto-index-creation: true
 
   devtools:
@@ -39,12 +39,12 @@ spring:
       org.springframework.boot.autoconfigure: OFF
       org.springframework.security: OFF
 
-mongock:
-  #runner-type: "ApplicationRunner" # default
-  runner-type: "InitializingBean"
-  change-logs-scan-package:
-    - ru.otus.hw.mongo.changelog.mongock
-  mongo-db:
-    write-concern:
-      journal: false
-    read-concern: local
+  mongock:
+    #runner-type: "ApplicationRunner" # default
+    runner-type: "InitializingBean"
+    change-logs-scan-package:
+      - ru.otus.hw.mongo.changelog.mongock
+    mongo-db:
+      write-concern:
+        journal: false
+      read-concern: local
