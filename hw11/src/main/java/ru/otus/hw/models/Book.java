@@ -20,7 +20,7 @@ import org.springframework.data.mongodb.core.mapping.*;
 @Document(collection = "books")
 public class Book {
     @Id
-    @MongoId(FieldType.STRING)
+    @MongoId(FieldType.OBJECT_ID)
     @EqualsAndHashCode.Include
     @ToString.Include
     private String id;

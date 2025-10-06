@@ -1,6 +1,7 @@
 package ru.otus.hw.services;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -15,6 +16,7 @@ import ru.otus.hw.repositories.AuthorRepository;
 import ru.otus.hw.repositories.BookRepository;
 import ru.otus.hw.repositories.GenreRepository;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class BookServiceImpl implements BookService {
@@ -40,6 +42,9 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public Mono<BookDto> insert(BookFormDto bookDto) {
+        log.info("Inserting book: title={}, authorId={}, genreId={}",
+                bookDto.title(), bookDto.authorId(), bookDto.genreId());
+
         if (bookDto.authorId() == null) {
             return Mono.error(new IllegalArgumentException("Author id must not be null"));
         }
@@ -61,7 +66,9 @@ public class BookServiceImpl implements BookService {
 
     private Mono<BookDto> save(BookFormDto bookFormDto) {
         return prepareBook(bookFormDto)
+                .doOnNext(book -> log.info("Saving book: {}", book))
                 .flatMap(bookRepository::save)
+                .doOnNext(savedBook -> log.info("Saved book with id: {}", savedBook.getId()))
                 .map(bookDtoConverter::toDto);
     }
 
@@ -75,7 +82,7 @@ public class BookServiceImpl implements BookService {
 
     private Mono<Book> getBook(BookFormDto bookDto) {
         if (bookDto.id() == null || bookDto.id().isEmpty()) {
-            return Mono.just(new Book());
+            return Mono.just(new Book()); // Создаем новый объект каждый раз
         }
         return bookRepository.findById(bookDto.id())
                 .switchIfEmpty(Mono.error(
@@ -93,13 +100,15 @@ public class BookServiceImpl implements BookService {
     private Mono<Genre> getGenre(BookFormDto bookDto) {
         return genreRepository.findById(bookDto.genreId())
                 .switchIfEmpty(Mono.error(
-                        new EntityNotFoundException("Genre with id %s not found".formatted(bookDto.authorId()))
+                        new EntityNotFoundException("Genre with id %s not found".formatted(bookDto.genreId()))
                 ));
     }
 
     private Mono<Book> assembleBook(Book book, Author author,
                                     Genre genre, BookFormDto bookDto) {
-        book.setId(bookDto.id());
+        if (bookDto.id() != null && !bookDto.id().isEmpty()) {
+            book.setId(bookDto.id());
+        }
         book.setTitle(bookDto.title());
         book.setAuthor(author);
         book.setGenre(genre);
