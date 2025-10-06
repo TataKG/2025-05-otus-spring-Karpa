@@ -45,10 +45,10 @@ public class BookController {
             BookFormDto dto = bookConverter.bookDtoToBookFormDto(book);
             return Mono.just(ResponseEntity.ok(dto));
         }).switchIfEmpty(
-                        Mono.error(
-                                new EntityNotFoundException("Book with id %s not found".formatted(id))
-                        )
-                );
+                Mono.error(
+                        new EntityNotFoundException("Book with id %s not found".formatted(id))
+                )
+        );
     }
 
     @PostMapping
@@ -57,13 +57,13 @@ public class BookController {
                 .flatMap(bookDto -> bookService.insert(bookDto)
                         .map(savedBook -> ResponseEntity.ok().<Object>body(savedBook)))
                 .onErrorResume(WebExchangeBindException.class, ex -> {
-                  var errors = ex.getFieldErrors().stream()
-                          .collect(Collectors
-                                  .toMap(FieldError::getField,
-                                          fieldError -> Optional.ofNullable(fieldError.getDefaultMessage())
-                                          .orElse("Invalid value")));
-            return Mono.just(ResponseEntity.badRequest().body(errors));
-        });
+                    var errors = ex.getFieldErrors().stream()
+                            .collect(Collectors
+                                    .toMap(FieldError::getField,
+                                            fieldError -> Optional.ofNullable(fieldError.getDefaultMessage())
+                                                    .orElse("Invalid value")));
+                    return Mono.just(ResponseEntity.badRequest().body(errors));
+                });
     }
 
     @PutMapping("{id}")
@@ -78,6 +78,7 @@ public class BookController {
             return Mono.just(ResponseEntity.badRequest().body(errors));
         });
     }
+
     @DeleteMapping("/{id}")
     public Mono<ResponseEntity<Void>> deleteBook(@PathVariable String id) {
         return bookService.deleteById(id).then(Mono.just(ResponseEntity.noContent().build()));

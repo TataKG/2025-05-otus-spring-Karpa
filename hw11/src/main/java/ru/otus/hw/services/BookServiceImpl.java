@@ -2,7 +2,6 @@ package ru.otus.hw.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.otus.hw.converters.BookDtoConverter;
@@ -15,10 +14,6 @@ import ru.otus.hw.models.Genre;
 import ru.otus.hw.repositories.AuthorRepository;
 import ru.otus.hw.repositories.BookRepository;
 import ru.otus.hw.repositories.GenreRepository;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -75,7 +70,7 @@ public class BookServiceImpl implements BookService {
                 .zipWith(getAuthor(bookDto))
                 .zipWith(getGenre(bookDto))
                 .flatMap(tuple
-                          -> assembleBook(tuple.getT1().getT1(), tuple.getT1().getT2(), tuple.getT2(), bookDto));
+                        -> assembleBook(tuple.getT1().getT1(), tuple.getT1().getT2(), tuple.getT2(), bookDto));
     }
 
     private Mono<Book> getBook(BookFormDto bookDto) {
@@ -103,7 +98,7 @@ public class BookServiceImpl implements BookService {
     }
 
     private Mono<Book> assembleBook(Book book, Author author,
-                                   Genre genre, BookFormDto bookDto) {
+                                    Genre genre, BookFormDto bookDto) {
         book.setId(bookDto.id());
         book.setTitle(bookDto.title());
         book.setAuthor(author);
