@@ -15,14 +15,6 @@
             font-size: 0.875em;
             margin-top: 0.25rem;
         }
-        .selected-info {
-            color: #198754;
-            font-weight: 500;
-            margin-top: 0.25rem;
-            padding: 0.5rem;
-            background-color: #f8f9fa;
-            border-radius: 0.375rem;
-        }
         .card-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
@@ -58,7 +50,6 @@
             <div class="card shadow">
                 <div class="card-header text-white">
                     <h2 class="card-title mb-0" id="formTitle">
-                        <i class="bi bi-book"></i>
                         <span th:text="${id} ? 'Edit Book' : 'Add New Book'">Book Form</span>
                     </h2>
                 </div>
@@ -95,10 +86,9 @@
                         <!-- Action Buttons -->
                         <div class="d-flex gap-2 mt-4 pt-3 border-top">
                             <button type="submit" class="btn btn-success btn-lg px-4" id="submitBtn">
-                                    <span id="submitText">
-                                        <i class="bi bi-check-circle"></i>
-                                        <span th:text="${id} ? 'Update Book' : 'Create Book'">Save Book</span>
-                                    </span>
+                                <span id="submitText">
+                                    <span th:text="${id} ? 'Update Book' : 'Create Book'">Save Book</span>
+                                </span>
                                 <div id="submitSpinner" class="spinner-border spinner-border-sm d-none ms-2"
                                      role="status">
                                     <span class="visually-hidden">Loading...</span>
@@ -106,13 +96,12 @@
                             </button>
 
                             <a th:href="@{/books}" class="btn btn-secondary btn-lg px-4">
-                                <i class="bi bi-arrow-left"></i> Back to List
+                                Back to List
                             </a>
                         </div>
                     </form>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
@@ -171,7 +160,7 @@
 
             } catch (error) {
                 console.error('Error loading authors:', error);
-                throw error; // Пробрасываем ошибку дальше
+                throw error;
             }
         }
 
@@ -192,7 +181,7 @@
 
             } catch (error) {
                 console.error('Error loading genres:', error);
-                throw error; // Пробрасываем ошибку дальше
+                throw error;
             }
         }
 
@@ -211,7 +200,7 @@
                 }
 
                 this.currentBook = await response.json();
-                console.log('Book DTO loaded:', this.currentBook);
+                console.log('Book data loaded:', this.currentBook);
 
                 // Заполняем форму данными книги
                 this.fillForm(this.currentBook);
@@ -232,7 +221,7 @@
             items.forEach(item => {
                 const option = document.createElement('option');
                 option.value = item.id;
-                option.textContent = item[displayField] || 'Unknown';
+                option.textContent = item[displayField] || `Unknown (ID: ${item.id})`;
                 option.setAttribute('data-full-data', JSON.stringify(item));
                 select.appendChild(option);
             });
@@ -244,21 +233,53 @@
             // Заполняем название
             document.getElementById('title').value = bookDto.title || '';
 
-            // Заполняем автора (только после того как список авторов заполнен)
-            if (bookDto.author && bookDto.author.id) {
-                const authorSelect = document.getElementById('authorId');
-                authorSelect.value = bookDto.author.id;
-                console.log('Set author to:', bookDto.author.id, bookDto.author.fullName);
-            }
+            // Обрабатываем автора
+            this.handleAuthorSelection(bookDto);
 
-            // Заполняем жанр (только после того как список жанров заполнен)
-            if (bookDto.genre && bookDto.genre.id) {
-                const genreSelect = document.getElementById('genreId');
-                genreSelect.value = bookDto.genre.id;
-                console.log('Set genre to:', bookDto.genre.id, bookDto.genre.name);
-            }
+            // Обрабатываем жанр
+            this.handleGenreSelection(bookDto);
 
             this.updateUI();
+        }
+
+        handleAuthorSelection(bookDto) {
+            const authorSelect = document.getElementById('authorId');
+
+            let authorId = null;
+
+            // Определяем authorId из различных возможных структур
+            if (bookDto.authorId) {
+                authorId = bookDto.authorId;
+            } else if (bookDto.author && bookDto.author.id) {
+                authorId = bookDto.author.id;
+            }
+
+            if (authorId) {
+                // Устанавливаем значение в select
+                authorSelect.value = authorId;
+
+                console.log('Set author to:', authorId);
+            }
+        }
+
+        handleGenreSelection(bookDto) {
+            const genreSelect = document.getElementById('genreId');
+
+            let genreId = null;
+
+            // Определяем genreId из различных возможных структур
+            if (bookDto.genreId) {
+                genreId = bookDto.genreId;
+            } else if (bookDto.genre && bookDto.genre.id) {
+                genreId = bookDto.genre.id;
+            }
+
+            if (genreId) {
+                // Устанавливаем значение в select
+                genreSelect.value = genreId;
+
+                console.log('Set genre to:', genreId);
+            }
         }
 
         setupEventListeners() {
@@ -383,10 +404,10 @@
         updateUI() {
             const titleElement = document.getElementById('formTitle');
             const mode = this.id ? 'Edit' : 'Add New';
-            titleElement.innerHTML = `<i class="bi bi-book"></i> ${mode} Book`;
+            titleElement.innerHTML = `${mode} Book`;
 
             const submitText = document.getElementById('submitText');
-            submitText.innerHTML = `<i class="bi bi-check-circle"></i> ${this.id ? 'Update' : 'Create'} Book`;
+            submitText.innerHTML = `${this.id ? 'Update' : 'Create'} Book`;
         }
 
         setLoading(loading) {

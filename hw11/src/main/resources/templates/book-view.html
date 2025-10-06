@@ -109,6 +109,8 @@
             this.bookId = this.getBookIdFromUrl();
             this.currentBook = null;
             this.comments = [];
+            this.authors = [];
+            this.genres = [];
             this.init();
         }
 
@@ -125,19 +127,74 @@
             }
 
             try {
+                // Сначала загружаем книгу, потом авторов и жанры
                 await this.loadBookData();
-                await this.loadComments();
+
+                // Затем загружаем авторов и жанры для получения полных имен
+                await Promise.all([
+                    this.loadAuthors(),
+                    this.loadGenres(),
+                    this.loadComments()
+                ]);
+
                 this.setupEventListeners();
                 this.showContent();
             } catch (error) {
                 console.error('Error during initialization:', error);
-                this.showError('Failed to load book details');
+                this.showError('Failed to load book details: ' + error.message);
+            }
+        }
+
+        async loadAuthors() {
+            try {
+                const response = await fetch(`${this.API_BASE}/authors`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                this.authors = await response.json();
+
+                // После загрузки авторов обновляем отображение книги
+                if (this.currentBook) {
+                    this.updateBookDisplay();
+                }
+
+            } catch (error) {
+                console.error('Error loading authors:', error);
+                // Если не удалось загрузить авторов, все равно показываем книгу
+                if (this.currentBook) {
+                    this.updateBookDisplay();
+                }
+            }
+        }
+
+        async loadGenres() {
+            try {
+                const response = await fetch(`${this.API_BASE}/genres`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                this.genres = await response.json();
+
+                // После загрузки жанров обновляем отображение книги
+                if (this.currentBook) {
+                    this.updateBookDisplay();
+                }
+
+            } catch (error) {
+                console.error('Error loading genres:', error);
+                // Если не удалось загрузить жанры, все равно показываем книгу
+                if (this.currentBook) {
+                    this.updateBookDisplay();
+                }
             }
         }
 
         async loadBookData() {
             try {
-                console.log('Loading book data from:', `${this.API_BASE}/books/${this.bookId}`);
                 const response = await fetch(`${this.API_BASE}/books/${this.bookId}`);
 
                 if (!response.ok) {
@@ -148,7 +205,8 @@
                 }
 
                 this.currentBook = await response.json();
-                console.log('Book data loaded:', this.currentBook);
+
+                // Сразу показываем базовую информацию о книге
                 this.displayBookData();
 
             } catch (error) {
@@ -159,13 +217,11 @@
 
         async loadComments() {
             try {
-                console.log('Loading comments from:', `${this.API_BASE}/books/${this.bookId}/comments`);
                 const response = await fetch(`${this.API_BASE}/books/${this.bookId}/comments`);
 
                 if (!response.ok) {
                     // Если endpoint не существует, используем пустой список
                     if (response.status === 404) {
-                        console.log('Comments endpoint not found, using empty comments');
                         this.comments = [];
                         return;
                     }
@@ -173,7 +229,6 @@
                 }
 
                 this.comments = await response.json();
-                console.log('Comments loaded:', this.comments);
                 this.displayComments();
 
             } catch (error) {
@@ -185,12 +240,79 @@
         }
 
         displayBookData() {
+            // Базовая информация о книге
             document.getElementById('bookTitle').textContent = this.currentBook.title || 'No title';
-            document.getElementById('bookAuthor').textContent = this.currentBook.author?.fullName || 'Unknown author';
-            document.getElementById('bookGenre').textContent = this.currentBook.genre?.name || 'Unknown genre';
-
-            // Update edit button
             document.getElementById('editButton').href = `/books/edit/${this.bookId}`;
+
+            // Автор и жанр будут обновлены после загрузки списков
+            this.updateBookDisplay();
+        }
+
+        updateBookDisplay() {
+            // Обновляем автора и жанр с учетом загруженных списков
+            const authorName = this.determineAuthorName();
+            const genreName = this.determineGenreName();
+
+            document.getElementById('bookAuthor').textContent = authorName;
+            document.getElementById('bookGenre').textContent = genreName;
+        }
+
+        findAuthorById(authorId) {
+            if (!authorId || !this.authors.length) return null;
+            return this.authors.find(a => a.id === authorId);
+        }
+
+        findGenreById(genreId) {
+            if (!genreId || !this.genres.length) return null;
+            return this.genres.find(g => g.id === genreId);
+        }
+
+        determineAuthorName() {
+            if (!this.currentBook.authorId) {
+                return 'Unknown author';
+            }
+
+            // Пробуем разные варианты структуры данных
+            let authorId = this.currentBook.authorId;
+            let authorName = null;
+
+            // Вариант 1: Автор уже вложен в объект книги
+            if (this.currentBook.author && this.currentBook.author.fullName) {
+                authorName = this.currentBook.author.fullName;
+            }
+            // Вариант 2: Ищем автора в загруженном списке
+            else if (this.authors.length > 0) {
+                const author = this.findAuthorById(authorId);
+                if (author) {
+                    authorName = author.fullName || author.name;
+                }
+            }
+
+            return authorName || `Author ID: ${authorId}`;
+        }
+
+        determineGenreName() {
+            if (!this.currentBook.genreId) {
+                return 'Unknown genre';
+            }
+
+            // Пробуем разные варианты структуры данных
+            let genreId = this.currentBook.genreId;
+            let genreName = null;
+
+            // Вариант 1: Жанр уже вложен в объект книги
+            if (this.currentBook.genre && this.currentBook.genre.name) {
+                genreName = this.currentBook.genre.name;
+            }
+            // Вариант 2: Ищем жанр в загруженном списке
+            else if (this.genres.length > 0) {
+                const genre = this.findGenreById(genreId);
+                if (genre) {
+                    genreName = genre.name || genre.title;
+                }
+            }
+
+            return genreName || `Genre ID: ${genreId}`;
         }
 
         displayComments() {
@@ -260,7 +382,6 @@
                 }
 
                 const newComment = await response.json();
-                console.log('Comment added:', newComment);
 
                 // Add new comment to the list and refresh display
                 this.comments.push(newComment);
