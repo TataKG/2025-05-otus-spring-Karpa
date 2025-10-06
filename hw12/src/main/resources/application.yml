@@ -20,7 +20,7 @@ spring:
     mongodb:
       host: localhost
       port: 27017
-      database: hw10
+      database: hw12
       auto-index-creation: true
 
   devtools:

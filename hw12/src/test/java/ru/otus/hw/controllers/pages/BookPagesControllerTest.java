@@ -1,11 +1,15 @@
 package ru.otus.hw.controllers.pages;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.catalina.security.SecurityConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.otus.hw.converters.AuthorDtoConverter;
 import ru.otus.hw.converters.BookDtoConverter;
@@ -15,10 +19,7 @@ import ru.otus.hw.dto.AuthorDto;
 import ru.otus.hw.dto.BookDto;
 import ru.otus.hw.dto.BookFormDto;
 import ru.otus.hw.dto.GenreDto;
-import ru.otus.hw.services.AuthorService;
-import ru.otus.hw.services.BookService;
-import ru.otus.hw.services.CommentService;
-import ru.otus.hw.services.GenreService;
+import ru.otus.hw.services.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +30,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(BookPagesController.class)
-@Import({BookDtoConverter.class, AuthorDtoConverter.class, GenreDtoConverter.class, CommentDtoConverter.class})
+@Import({
+        BookDtoConverter.class,
+        AuthorDtoConverter.class,
+        GenreDtoConverter.class,
+        CommentDtoConverter.class,
+        SecurityConfig.class,
+        UserDetailService.class
+        })
 class BookPagesControllerTest {
 
     @Autowired
@@ -47,8 +55,15 @@ class BookPagesControllerTest {
     @MockBean
     private GenreService genreService;
 
+    @MockBean
+    private UserDetailService userDetailService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Test
     @DisplayName("Должен вывести список книг")
+    @WithMockUser(username = "user")
     void ShouldReturnViewWithBooks() throws Exception {
 
         AuthorDto author = new AuthorDto("1", "Author 1");
@@ -73,6 +88,7 @@ class BookPagesControllerTest {
 
     @Test
     @DisplayName("Должен вернуть форму для редактирования существующей книги")
+    @WithMockUser(username = "user")
     void shouldReturnEditPageForExistingBook() throws Exception {
         String bookId = "1";
         BookDto bookDto = new BookDto(bookId, "Existing Book", null, null);

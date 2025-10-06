@@ -3,14 +3,8 @@ package ru.otus.hw.mongo.changelog.mongock;
 import com.github.cloudyrock.mongock.ChangeLog;
 import com.github.cloudyrock.mongock.ChangeSet;
 import com.mongodb.client.MongoDatabase;
-import ru.otus.hw.models.Author;
-import ru.otus.hw.models.Book;
-import ru.otus.hw.models.Comment;
-import ru.otus.hw.models.Genre;
-import ru.otus.hw.repositories.AuthorRepository;
-import ru.otus.hw.repositories.BookRepository;
-import ru.otus.hw.repositories.CommentRepository;
-import ru.otus.hw.repositories.GenreRepository;
+import ru.otus.hw.models.*;
+import ru.otus.hw.repositories.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,5 +62,20 @@ public class DatabaseChangelog {
             comments.add(new Comment("Great book, really enjoyed it!_" + i, books.get(0).getId()));
         }
         repository.saveAll(comments);
+    }
+
+    @ChangeSet(order = "005", id = "initUsers", author = "owner_va", runAlways = true)
+    public void initUsers(UserRepository userRepository) {
+        User admin = new User();
+        admin.setName("admin");
+        admin.setPassword("$2a$12$2GEwA0dLBzLH0WfH3CvbuOnopW8ovvLV1QXAC2PYrY8Iqilm5zeey"); //admin
+        admin.setRoles(List.of("ADMIN", "USER"));
+
+        User user = new User();
+        user.setName("user");
+        user.setPassword("$2a$12$PFmuXFu0qUlQMcpDWGRmPOeQnZ1OiKiumfhXISwxcgBErP0kXzKoy"); //user
+        user.setRoles(List.of("USER"));
+
+        userRepository.saveAll(List.of(admin, user));
     }
 }
