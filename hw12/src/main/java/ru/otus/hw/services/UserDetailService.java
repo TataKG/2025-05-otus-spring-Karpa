@@ -24,16 +24,16 @@ public class UserDetailService implements UserDetailsService {
                         () -> new EntityNotFoundException("User with name %s not found".formatted(username))
                 );
 
-        var roles = getRoles(dbUser);
+        var authorities = getAuthorities(dbUser);
 
         return new User(
                 dbUser.getName(),
                 dbUser.getPassword(),
-                roles
+                authorities
         );
     }
 
-    private List<SimpleGrantedAuthority> getRoles(ru.otus.hw.models.User dbUser) {
+    private List<SimpleGrantedAuthority> getAuthorities(ru.otus.hw.models.User dbUser) {
         return dbUser.getRoles().stream()
                 .map(role -> "ROLE_" + role)
                 .map(SimpleGrantedAuthority::new)
