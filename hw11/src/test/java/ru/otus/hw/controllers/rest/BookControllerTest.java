@@ -47,9 +47,7 @@ class BookControllerTest {
     private final BookDto book2 = new BookDto("68e36f0b10ca0909273327b2", "Преступление и наказание", author2, genre1);
 
     private final BookFormDto bookForm1 = new BookFormDto("68e36f0b10ca0909273327b1", "Война и мир", "68e36f0b10ca0909273327b6", "68e36f0b10ca0909273327c1");
-    //private final BookFormDto bookForm2 = new BookFormDto("68e36f0b10ca0909273327b2", "Преступление и наказание", "68e36f0b10ca0909273327b7", "68e36f0b10ca0909273327c2");
 
-    // GET ALL
     @Test
     @DisplayName("Должен возвращать список всех книг")
     void shouldReturnAllBooks() {
@@ -90,7 +88,6 @@ class BookControllerTest {
         verify(bookService, times(1)).findAll();
     }
 
-    // GET BY ID
     @Test
     @DisplayName("Должен возвращать книгу по существующему id")
     void shouldReturnBookById() {
@@ -215,4 +212,5 @@ class BookControllerTest {
         verify(bookService, times(1)).findById(bookId);
         verify(bookConverter, times(1)).bookDtoToBookFormDto(book1);
     }
+
 }

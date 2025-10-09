@@ -7,8 +7,10 @@ import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
+import ru.otus.hw.converters.AuthorDtoConverter;
 import ru.otus.hw.dto.AuthorDto;
-import ru.otus.hw.services.AuthorService;
+import ru.otus.hw.models.Author;
+import ru.otus.hw.repositories.AuthorRepository;
 
 import java.util.List;
 
@@ -22,16 +24,24 @@ class AuthorPagesControllerTest {
     private WebTestClient webTestClient;
 
     @MockBean
-    private AuthorService authorService;
+    private AuthorRepository authorRepository;
 
-    private final AuthorDto author1 = new AuthorDto("68e36f0b10ca0909273327b6", "Лев Толстой");
-    private final AuthorDto author2 = new AuthorDto("68e36f0b10ca0909273327b7", "Фёдор Достоевский");
+    @MockBean
+    private AuthorDtoConverter authorDtoConverter;
+
+    private final Author author1 = new Author("68e36f0b10ca0909273327b6", "Лев Толстой");
+    private final Author author2 = new Author("68e36f0b10ca0909273327b7", "Фёдор Достоевский");
+
+    private final AuthorDto authorDto1 = new AuthorDto("68e36f0b10ca0909273327b6", "Лев Толстой");
+    private final AuthorDto authorDto2 = new AuthorDto("68e36f0b10ca0909273327b7", "Фёдор Достоевский");
 
     @Test
-    @DisplayName("Должен вызывать сервис для получения авторов")
-    void shouldCallAuthorService() {
+    @DisplayName("Должен вызывать репозиторий для получения авторов")
+    void shouldCallAuthorRepository() {
         // given
-        given(authorService.findAll()).willReturn(Flux.fromIterable(List.of(author1, author2)));
+        given(authorRepository.findAll()).willReturn(Flux.fromIterable(List.of(author1, author2)));
+        given(authorDtoConverter.toDto(author1)).willReturn(authorDto1);
+        given(authorDtoConverter.toDto(author2)).willReturn(authorDto2);
 
         // when & then
         webTestClient.get()

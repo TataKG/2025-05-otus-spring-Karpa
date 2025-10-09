@@ -7,8 +7,10 @@ import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
+import ru.otus.hw.converters.GenreDtoConverter;
 import ru.otus.hw.dto.GenreDto;
-import ru.otus.hw.services.GenreService;
+import ru.otus.hw.models.Genre;
+import ru.otus.hw.repositories.GenreRepository;
 
 import java.util.List;
 
@@ -22,17 +24,28 @@ class GenrePagesControllerTest {
     private WebTestClient webTestClient;
 
     @MockBean
-    private GenreService genreService;
+    private GenreRepository genreRepository;
 
-    private final GenreDto genre1 = new GenreDto("68e36f0b10ca0909273327c1", "Роман");
-    private final GenreDto genre2 = new GenreDto("68e36f0b10ca0909273327c2", "Фантастика");
-    private final GenreDto genre3 = new GenreDto("68e36f0b10ca0909273327c3", "Детектив");
+    @MockBean
+    private GenreDtoConverter genreDtoConverter;
+
+    private final Genre genre1 = new Genre("68e36f0b10ca0909273327c1", "Роман");
+    private final Genre genre2 = new Genre("68e36f0b10ca0909273327c2", "Фантастика");
+    private final Genre genre3 = new Genre("68e36f0b10ca0909273327c3", "Детектив");
+
+
+    private final GenreDto genreDto1 = new GenreDto("68e36f0b10ca0909273327c1", "Роман");
+    private final GenreDto genreDto2 = new GenreDto("68e36f0b10ca0909273327c2", "Фантастика");
+    private final GenreDto genreDto3 = new GenreDto("68e36f0b10ca0909273327c3", "Детектив");
 
     @Test
     @DisplayName("Должен возвращать страницу с таблицей жанров когда жанры есть")
     void shouldReturnPageWithGenresTableWhenGenresExist() {
         // given
-        given(genreService.findAll()).willReturn(Flux.fromIterable(List.of(genre1, genre2, genre3)));
+        given(genreRepository.findAll()).willReturn(Flux.fromIterable(List.of(genre1, genre2)));
+        given(genreDtoConverter.toDto(genre1)).willReturn(genreDto1);
+        given(genreDtoConverter.toDto(genre2)).willReturn(genreDto2);
+
 
         // when & then
         webTestClient.get()
@@ -55,7 +68,9 @@ class GenrePagesControllerTest {
     @DisplayName("Должен содержать JavaScript для загрузки жанров через API")
     void shouldContainJavaScriptForLoadingGenres() {
         // given
-        given(genreService.findAll()).willReturn(Flux.fromIterable(List.of(genre1)));
+        given(genreRepository.findAll()).willReturn(Flux.fromIterable(List.of(genre1, genre2)));
+        given(genreDtoConverter.toDto(genre1)).willReturn(genreDto1);
+        given(genreDtoConverter.toDto(genre2)).willReturn(genreDto2);
 
         // when & then
         webTestClient.get()
