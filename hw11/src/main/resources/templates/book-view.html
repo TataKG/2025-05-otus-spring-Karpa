@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Book details</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .comment-text {
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+<div class="container view-book" th:object="${book}">
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid px-0">
+            <a class="navbar-brand pt-0" href="#">Library</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" aria-current="page" href="book-list.html" th:href="@{/}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="author-list.html" th:href="@{/authors}">Authors</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="genre-list.html" th:href="@{/genres}">Genres</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div id="loadingMessage" class="text-center py-4">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading book details...</p>
+    </div>
+
+    <div id="bookContent" class="d-none">
+        <p class="h3">Book details</p>
+        <div class="d-flex flex-row mb-3 gap-2">
+            <a class="btn btn-primary" id="editButton">Edit</a>
+            <a class="btn btn-secondary" href="/books">Back to List</a>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label me-2"><strong>Title:</strong></label>
+            <label class="form-label" id="bookTitle">Title</label>
+        </div>
+        <div class="mb-3">
+            <label class="form-label me-2"><strong>Author:</strong></label>
+            <label class="form-label" id="bookAuthor">Author</label>
+        </div>
+        <div class="mb-3">
+            <label class="form-label me-2"><strong>Genre:</strong></label>
+            <label class="form-label" id="bookGenre">Genre</label>
+        </div>
+
+        <div class="comments-section" id="commentsSection">
+            <p class="h3">Comments</p>
+
+            <table class="table mt-2 align-middle">
+                <thead>
+                <tr>
+                    <th>Text</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody id="commentsTableBody">
+                <!-- Comments will be populated here -->
+                </tbody>
+            </table>
+
+            <div class="add-comment-form">
+                <form id="addCommentForm">
+                    <textarea class="form-control" id="commentText" name="text"
+                              placeholder="Add your comment..." required rows="3"></textarea>
+                    <button type="submit" class="btn btn-success mt-2">Add Comment</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="errorMessage" class="alert alert-danger d-none" role="alert">
+        <h4 class="alert-heading">Error</h4>
+        <p id="errorText"></p>
+        <a href="/books" class="btn btn-secondary">Back to Book List</a>
+    </div>
+</div>
+
+<script>
+    class BookDetailsApp {
+        constructor() {
+            this.API_BASE = '/api/v1';
+            this.bookId = this.getBookIdFromUrl();
+            this.currentBook = null;
+            this.comments = [];
+            this.authors = [];
+            this.genres = [];
+            this.init();
+        }
+
+        getBookIdFromUrl() {
+            const path = window.location.pathname;
+            const segments = path.split('/');
+            return segments[segments.length - 1];
+        }
+
+        async init() {
+            if (!this.bookId) {
+                this.showError('Book ID not found in URL');
+                return;
+            }
+
+            try {
+                // Сначала загружаем книгу, потом авторов и жанры
+                await this.loadBookData();
+
+                // Затем загружаем авторов и жанры для получения полных имен
+                await Promise.all([
+                    this.loadAuthors(),
+                    this.loadGenres(),
+                    this.loadComments()
+                ]);
+
+                this.setupEventListeners();
+                this.showContent();
+            } catch (error) {
+                console.error('Error during initialization:', error);
+                this.showError('Failed to load book details: ' + error.message);
+            }
+        }
+
+        async loadAuthors() {
+            try {
+                const response = await fetch(`${this.API_BASE}/authors`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                this.authors = await response.json();
+
+                // После загрузки авторов обновляем отображение книги
+                if (this.currentBook) {
+                    this.updateBookDisplay();
+                }
+
+            } catch (error) {
+                console.error('Error loading authors:', error);
+                // Если не удалось загрузить авторов, все равно показываем книгу
+                if (this.currentBook) {
+                    this.updateBookDisplay();
+                }
+            }
+        }
+
+        async loadGenres() {
+            try {
+                const response = await fetch(`${this.API_BASE}/genres`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                this.genres = await response.json();
+
+                // После загрузки жанров обновляем отображение книги
+                if (this.currentBook) {
+                    this.updateBookDisplay();
+                }
+
+            } catch (error) {
+                console.error('Error loading genres:', error);
+                // Если не удалось загрузить жанры, все равно показываем книгу
+                if (this.currentBook) {
+                    this.updateBookDisplay();
+                }
+            }
+        }
+
+        async loadBookData() {
+            try {
+                const response = await fetch(`${this.API_BASE}/books/${this.bookId}`);
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Book not found');
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                this.currentBook = await response.json();
+
+                // Сразу показываем базовую информацию о книге
+                this.displayBookData();
+
+            } catch (error) {
+                console.error('Error loading book:', error);
+                throw error;
+            }
+        }
+
+        async loadComments() {
+            try {
+                const response = await fetch(`${this.API_BASE}/books/${this.bookId}/comments`);
+
+                if (!response.ok) {
+                    // Если endpoint не существует, используем пустой список
+                    if (response.status === 404) {
+                        this.comments = [];
+                        return;
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                this.comments = await response.json();
+                this.displayComments();
+
+            } catch (error) {
+                console.error('Error loading comments:', error);
+                // Не прерываем загрузку страницы из-за ошибки комментариев
+                this.comments = [];
+                this.displayComments();
+            }
+        }
+
+        displayBookData() {
+            // Базовая информация о книге
+            document.getElementById('bookTitle').textContent = this.currentBook.title || 'No title';
+            document.getElementById('editButton').href = `/books/edit/${this.bookId}`;
+
+            // Автор и жанр будут обновлены после загрузки списков
+            this.updateBookDisplay();
+        }
+
+        updateBookDisplay() {
+            // Обновляем автора и жанр с учетом загруженных списков
+            const authorName = this.determineAuthorName();
+            const genreName = this.determineGenreName();
+
+            document.getElementById('bookAuthor').textContent = authorName;
+            document.getElementById('bookGenre').textContent = genreName;
+        }
+
+        findAuthorById(authorId) {
+            if (!authorId || !this.authors.length) return null;
+            return this.authors.find(a => a.id === authorId);
+        }
+
+        findGenreById(genreId) {
+            if (!genreId || !this.genres.length) return null;
+            return this.genres.find(g => g.id === genreId);
+        }
+
+        determineAuthorName() {
+            if (!this.currentBook.authorId) {
+                return 'Unknown author';
+            }
+
+            // Пробуем разные варианты структуры данных
+            let authorId = this.currentBook.authorId;
+            let authorName = null;
+
+            // Вариант 1: Автор уже вложен в объект книги
+            if (this.currentBook.author && this.currentBook.author.fullName) {
+                authorName = this.currentBook.author.fullName;
+            }
+            // Вариант 2: Ищем автора в загруженном списке
+            else if (this.authors.length > 0) {
+                const author = this.findAuthorById(authorId);
+                if (author) {
+                    authorName = author.fullName || author.name;
+                }
+            }
+
+            return authorName || `Author ID: ${authorId}`;
+        }
+
+        determineGenreName() {
+            if (!this.currentBook.genreId) {
+                return 'Unknown genre';
+            }
+
+            // Пробуем разные варианты структуры данных
+            let genreId = this.currentBook.genreId;
+            let genreName = null;
+
+            // Вариант 1: Жанр уже вложен в объект книги
+            if (this.currentBook.genre && this.currentBook.genre.name) {
+                genreName = this.currentBook.genre.name;
+            }
+            // Вариант 2: Ищем жанр в загруженном списке
+            else if (this.genres.length > 0) {
+                const genre = this.findGenreById(genreId);
+                if (genre) {
+                    genreName = genre.name || genre.title;
+                }
+            }
+
+            return genreName || `Genre ID: ${genreId}`;
+        }
+
+        displayComments() {
+            const tbody = document.getElementById('commentsTableBody');
+            tbody.innerHTML = '';
+
+            if (this.comments.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="2" class="text-muted text-center">No comments yet</td>
+                `;
+                tbody.appendChild(row);
+                return;
+            }
+
+            this.comments.forEach(comment => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="comment-text">${this.escapeHtml(comment.text || '')}</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm delete-comment-btn"
+                                data-comment-id="${comment.id}">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Add event listeners to delete buttons
+            document.querySelectorAll('.delete-comment-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const commentId = e.target.getAttribute('data-comment-id');
+                    this.deleteComment(commentId);
+                });
+            });
+        }
+
+        setupEventListeners() {
+            // Add comment form
+            document.getElementById('addCommentForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.addComment();
+            });
+        }
+
+        async addComment() {
+            const commentText = document.getElementById('commentText').value.trim();
+
+            if (!commentText) {
+                this.showAlert('Please enter comment text', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${this.API_BASE}/books/${this.bookId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: commentText,
+                        bookId: this.bookId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const newComment = await response.json();
+
+                // Add new comment to the list and refresh display
+                this.comments.push(newComment);
+                this.displayComments();
+
+                // Clear the form
+                document.getElementById('commentText').value = '';
+
+                this.showAlert('Comment added successfully!', 'success');
+
+            } catch (error) {
+                console.error('Error adding comment:', error);
+                this.showAlert('Failed to add comment', 'error');
+            }
+        }
+
+        async deleteComment(commentId) {
+            if (!confirm('Are you sure you want to delete this comment?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${this.API_BASE}/books/${this.bookId}/comments/${commentId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Remove comment from the list and refresh display
+                this.comments = this.comments.filter(comment => comment.id !== commentId);
+                this.displayComments();
+
+                this.showAlert('Comment deleted successfully!', 'success');
+
+            } catch (error) {
+                console.error('Error deleting comment:', error);
+                this.showAlert('Failed to delete comment', 'error');
+            }
+        }
+
+        showContent() {
+            document.getElementById('loadingMessage').classList.add('d-none');
+            document.getElementById('bookContent').classList.remove('d-none');
+            document.getElementById('errorMessage').classList.add('d-none');
+        }
+
+        showError(message) {
+            document.getElementById('loadingMessage').classList.add('d-none');
+            document.getElementById('bookContent').classList.add('d-none');
+
+            const errorMessage = document.getElementById('errorMessage');
+            document.getElementById('errorText').textContent = message;
+            errorMessage.classList.remove('d-none');
+        }
+
+        showAlert(message, type = 'info') {
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+            });
+
+            Toast.fire({
+                icon: type,
+                title: message
+            });
+        }
+
+        escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    }
+
+    // Initialize the application when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        window.bookDetailsApp = new BookDetailsApp();
+    });
+</script>
+
+</body>
+</html>
