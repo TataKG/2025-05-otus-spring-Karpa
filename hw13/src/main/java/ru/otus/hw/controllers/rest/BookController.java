@@ -31,13 +31,12 @@ public class BookController {
     private final AuthorService authorService;
     private final GenreService genreService;
 
-    private final BookDtoConverter bookConverter;
+    //private final BookDtoConverter bookConverter;
 
     @GetMapping
     public List<BookDto> getAllBooks() {
         return bookService.findAll();
     }
-
 
     @GetMapping("/{id}")
     public ResponseEntity<BookDto> getBookById(@PathVariable Long id) {

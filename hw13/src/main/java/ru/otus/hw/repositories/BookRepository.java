@@ -12,11 +12,11 @@ import java.util.Optional;
 
 public interface BookRepository extends CrudRepository<Book, Long> {
 
-    @EntityGraph(attributePaths = {"author", "genres"})
+    @EntityGraph(attributePaths = {"author", "genre"})
     Optional<Book> findById(long id);
 
     @Nonnull
-    @EntityGraph(attributePaths = {"author"})
+    @EntityGraph(attributePaths = {"author", "genre"})
     @Override
     List<Book> findAll();
 

@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-
 <head>
     <meta charset="UTF-8">
     <title>Book details</title>
     <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
 </head>
 <body>
-<div class="container view-book" th:object="${book}">
+<div class="container view-book">
     <nav class="navbar navbar-expand-lg">
         <div class="container-fluid px-0">
             <a class="navbar-brand pt-0" href="#">Library</a>
@@ -18,13 +17,13 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="book-list.html" th:href="@{/}">Home</a>
+                        <a class="nav-link" aria-current="page" th:href="@{/}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="author-list.html" th:href="@{/authors}">Authors</a>
+                        <a class="nav-link" th:href="@{/authors}">Authors</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="genre-list.html" th:href="@{/genres}">Genres</a>
+                        <a class="nav-link" th:href="@{/genres}">Genres</a>
                     </li>
                 </ul>
             </div>
@@ -33,56 +32,155 @@
 
     <p class="h3">Book details</p>
     <div class="d-flex flex-row mb-3 gap-2">
-        <a class="btn btn-primary" href="book-edit.html" th:href="@{/books/edit/{id}(id=${book.id()})}">Edit</a>
+        <a class="btn btn-primary" th:href="@{/books/edit/{id}(id=${book.id()})}">Edit</a>
+        <a class="btn btn-secondary" th:href="@{/}">Back to list</a>
     </div>
 
     <div class="mb-3">
         <label class="form-label me-2"><strong>Title:</strong></label>
-        <label class="form-label" th:text="*{title}">Title</label>
+        <span class="form-label" th:text="${book.title()}">Title</span>
     </div>
     <div class="mb-3">
         <label class="form-label me-2"><strong>Author:</strong></label>
-        <label class="form-label" th:text="*{author.fullName}">Author</label>
+        <span class="form-label" th:text="${book.author().fullName()}">Author</span>
     </div>
     <div class="mb-3">
-        <label class="form-label me-2"><strong>Genres:</strong></label>
-        <label class="form-label" th:text="*{genre.name}">Genre</label>
+        <label class="form-label me-2"><strong>Genre:</strong></label>
+        <span class="form-label" th:text="${book.genre().name()}">Genre</span>
     </div>
 
-    <div class="comments-section" th:if="${book.id() != null}" th:object="${comments}">
+    <!-- Комментарии -->
+    <div class="comments-section">
         <p class="h3">Comments</p>
 
-        <table class="table mt-2 align-middle">
+        <table class="table mt-2 align-middle" th:if="${not comments.empty}">
             <thead>
             <tr>
                 <th>Text</th>
                 <th>Action</th>
             </tr>
             </thead>
-            <tbody th:each="comment : ${comments}">
-            <tr>
-                <td th:text="${comment.text}">Comment text</td>
+            <tbody>
+            <tr th:each="comment : ${comments}">
+                <td th:text="${comment.text()}">Comment text</td>
                 <td>
-                    <form th:action="@{/books/{bookId}/comments/{commentId}/delete(bookId=${book.id()}, commentId=${comment.id()})}"
-                          method="post">
-
-                        <button class="btn btn-warning btn-sm" type="submit">Delete</button>
-                    </form>
+                    <button class="btn btn-warning btn-sm delete-comment-btn"
+                            th:data-book-id="${book.id()}"
+                            th:data-comment-id="${comment.id()}">
+                        Delete
+                    </button>
                 </td>
             </tr>
             </tbody>
         </table>
 
-        <div class="add-comment-form">
-            <form th:action="@{/books/{bookId}/comments/add(bookId=${book.id()})}" method="post">
-                <textarea class="form-control" name="text" placeholder="Add your comment..." required
-                          rows="3"></textarea>
-                <button type="submit" class="btn btn-success">Add Comment</button>
+        <div th:if="${comments.empty}" class="alert alert-info">
+            No comments yet.
+        </div>
+
+        <!-- Форма добавления комментария -->
+        <div class="add-comment-form mt-3">
+            <form id="addCommentForm">
+                <textarea class="form-control" id="commentText" name="text"
+                          placeholder="Add your comment..." required rows="3"></textarea>
+                <button type="submit" class="btn btn-success mt-2">Add Comment</button>
             </form>
         </div>
     </div>
 
+    <!-- Скрытые поля для хранения данных -->
+    <input type="hidden" id="currentBookId" th:value="${book.id()}">
+
 </div>
 
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+<script>
+    // Получаем bookId из скрытого поля
+    const currentBookId = document.getElementById('currentBookId').value;
+
+    // Функция удаления комментария
+    function deleteComment(bookId, commentId) {
+        if (confirm('Are you sure you want to delete this comment?')) {
+            fetch('/api/v1/books/' + bookId + '/comments/' + commentId, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Comment deleted successfully');
+                    location.reload();
+                } else {
+                    alert('Error deleting comment');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deleting comment');
+            });
+        }
+    }
+
+    // Функция добавления комментария
+    function addComment(event, bookId) {
+        event.preventDefault();
+
+        const commentText = document.getElementById('commentText').value.trim();
+
+        if (!commentText) {
+            alert('Please enter comment text');
+            return;
+        }
+
+        const commentDto = {
+            text: commentText,
+            bookId: parseInt(bookId)
+        };
+
+        fetch('/api/v1/books/' + bookId + '/comments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(commentDto)
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                return response.text().then(errorText => {
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                });
+            }
+        })
+        .then(data => {
+            alert('Comment added successfully');
+            document.getElementById('commentText').value = '';
+            location.reload();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error adding comment: ' + error.message);
+        });
+    }
+
+    // Инициализация после загрузки DOM
+    document.addEventListener('DOMContentLoaded', function() {
+        // Назначаем обработчик для формы добавления комментария
+        document.getElementById('addCommentForm').addEventListener('submit', function(event) {
+            addComment(event, currentBookId);
+        });
+
+        // Назначаем обработчики для кнопок удаления
+        document.querySelectorAll('.delete-comment-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const bookId = this.getAttribute('data-book-id');
+                const commentId = this.getAttribute('data-comment-id');
+                deleteComment(bookId, commentId);
+            });
+        });
+    });
+</script>
 </body>
 </html>

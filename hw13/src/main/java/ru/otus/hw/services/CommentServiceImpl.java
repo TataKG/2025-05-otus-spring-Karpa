@@ -39,10 +39,8 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public List<CommentDto> findByBookId(long bookId) {
-        if (!bookRepository.existsById(bookId)) {
-            throw new EntityNotFoundException(
-                    "Book with id %s not found".formatted(bookId)
-            );
+        if (!bookRepository.findById(bookId).isPresent()) {
+            throw new EntityNotFoundException("Book with id %s not found".formatted(bookId));
         }
 
         return commentRepository.findByBookId(bookId)
@@ -54,10 +52,9 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public CommentDto insert(CommentDto commentDto) {
-        if (commentDto.bookId() == 0) {
-            throw new IllegalArgumentException("Book id is empty");
+        if (commentDto.bookId() <= 0) {
+            throw new IllegalArgumentException("Book id is invalid: " + commentDto.bookId());
         }
-
         return save(commentDto);
     }
 
@@ -101,6 +98,7 @@ public class CommentServiceImpl implements CommentService {
         Comment comment;
         if (commentDto.id() == 0) {
             comment = new Comment();
+            System.out.println("Creating new comment for book: " + book.getId());
         } else {
             comment = commentRepository.findById(commentDto.id())
                     .orElseThrow(() ->
@@ -109,13 +107,15 @@ public class CommentServiceImpl implements CommentService {
                     );
         }
 
-        if (commentDto.text().isEmpty()) {
+        if (commentDto.text() == null || commentDto.text().trim().isEmpty()) {
             throw new IllegalArgumentException("Comment text is empty");
         }
 
-        comment.setText(commentDto.text());
+        comment.setText(commentDto.text().trim());
         if (book != null) {
             comment.setBook(book);
+        } else {
+            throw new IllegalArgumentException("Book cannot be null");
         }
         return comment;
     }
