@@ -48,6 +48,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public BookDto insert(BookFormDto bookDto) {
         return save(bookDto);
     }

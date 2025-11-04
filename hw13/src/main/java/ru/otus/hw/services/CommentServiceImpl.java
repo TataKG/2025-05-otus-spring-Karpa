@@ -16,7 +16,6 @@ import ru.otus.hw.repositories.CommentRepository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -98,7 +97,6 @@ public class CommentServiceImpl implements CommentService {
         Comment comment;
         if (commentDto.id() == 0) {
             comment = new Comment();
-            System.out.println("Creating new comment for book: " + book.getId());
         } else {
             comment = commentRepository.findById(commentDto.id())
                     .orElseThrow(() ->

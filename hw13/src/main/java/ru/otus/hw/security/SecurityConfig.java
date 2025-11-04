@@ -44,7 +44,7 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/books", true) // Перенаправлять на список книг после логина
+                        .defaultSuccessUrl("/books", true)
                         .failureUrl("/login?error=true")
                         .permitAll()
                 )

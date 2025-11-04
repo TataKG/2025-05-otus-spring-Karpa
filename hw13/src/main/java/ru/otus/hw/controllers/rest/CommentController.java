@@ -1,8 +1,6 @@
 package ru.otus.hw.controllers.rest;
 
-import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,27 +23,9 @@ public class CommentController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<CommentDto> createComment(@PathVariable("bookId") Long bookId,
-                                                    @RequestBody CommentDto commentDto) throws BadRequestException {
-        System.out.println("Received request to create comment:");
-        System.out.println("Book ID: " + bookId);
-        System.out.println("Comment DTO: " + commentDto);
-
-        if (bookId == null || commentDto == null) {
-            throw new BadRequestException("Id is null or empty");
-        }
-        if (StringUtils.isEmpty(commentDto.text())) {
-            throw new BadRequestException("Text is null or empty");
-        }
-
-        try {
-            var savedComment = commentService.insert(commentDto);
-            System.out.println("Comment saved successfully: " + savedComment);
-            return ResponseEntity.ok().body(savedComment);
-        } catch (Exception e) {
-            System.out.println("Error saving comment: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
-        }
+                                                    @RequestBody CommentDto commentDto) {
+        var savedComment = commentService.insert(commentDto);
+        return ResponseEntity.ok().body(savedComment);
     }
 
     @DeleteMapping("/{commentId}")
@@ -54,12 +34,4 @@ public class CommentController {
         commentService.deleteById(commentId);
         return ResponseEntity.noContent().build();
     }
-
-    // Добавьте этот метод для тестирования
-    @GetMapping("/test")
-    public String testEndpoint(@PathVariable("bookId") Long bookId) {
-        System.out.println("TEST ENDPOINT CALLED with bookId: " + bookId);
-        return "Test successful for book: " + bookId;
-    }
-
 }

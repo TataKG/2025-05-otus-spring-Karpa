@@ -36,10 +36,6 @@ public class BookPagesController {
         }
         var comments = commentService.findByBookId(id);
 
-        // Для отладки
-        //System.out.println("Book: " + book.get());
-        //System.out.println("Comments count: " + comments.size());
-
         model.addAttribute("book", book.get());
         model.addAttribute("comments", comments);
         return "book-view";
