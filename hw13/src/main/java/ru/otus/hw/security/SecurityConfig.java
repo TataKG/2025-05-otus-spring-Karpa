@@ -24,13 +24,17 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/h2-console/**") // Отключаем CSRF для H2 console
+                )
                 .headers(headers -> headers
-                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin) // Разрешаем iframe для H2
+                )
                 .authorizeHttpRequests(authorize -> authorize
                         // Статические ресурсы и публичные endpoints
                         .requestMatchers("/", "/login", "/logout", "/error").permitAll()
-                        .requestMatchers("/h2-console/**", "/css/**", "/js/**", "/webjars/**").permitAll()
+                        .requestMatchers("/h2-console/**").permitAll() // Разрешаем доступ к H2 console
+                        .requestMatchers("/css/**", "/js/**", "/webjars/**").permitAll()
 
                         // API endpoints
                         .requestMatchers("/api/**").hasAnyRole("ADMIN", "USER")
