@@ -40,7 +40,7 @@ public class BookController {
 
 
     @GetMapping("/{id}")
-    public ResponseEntity<BookDto> getBookById(@PathVariable String id) {
+    public ResponseEntity<BookDto> getBookById(@PathVariable Long id) {
         Optional<BookDto> book = bookService.findById(id);
         return book.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
@@ -66,7 +66,7 @@ public class BookController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteBook(@PathVariable String id) {
+    public ResponseEntity<Void> deleteBook(@PathVariable Long id) {
         try {
             bookService.deleteById(id);
             return ResponseEntity.ok().build();

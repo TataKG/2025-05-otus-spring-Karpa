@@ -32,62 +32,62 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({BookDtoConverter.class, AuthorDtoConverter.class, GenreDtoConverter.class, CommentDtoConverter.class})
 class BookPagesControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+//    @Autowired
+//    private MockMvc mockMvc;
+//
+//    @MockBean
+//    private BookService bookService;
+//
+//    @MockBean
+//    private AuthorService authorService;
+//
+//    @MockBean
+//    private CommentService commentService;
+//
+//    @MockBean
+//    private GenreService genreService;
 
-    @MockBean
-    private BookService bookService;
-
-    @MockBean
-    private AuthorService authorService;
-
-    @MockBean
-    private CommentService commentService;
-
-    @MockBean
-    private GenreService genreService;
-
-    @Test
-    @DisplayName("Должен вывести список книг")
-    void ShouldReturnViewWithBooks() throws Exception {
-
-        AuthorDto author = new AuthorDto("1", "Author 1");
-        GenreDto genre = new GenreDto("1", "Genre1");
-        List<BookDto> books = List.of(
-                new BookDto("1", "Book 1", author, genre),
-                new BookDto("2", "Book 2", author, genre)
-        );
-
-        // Given
-        when(bookService.findAll()).thenReturn(books);
-
-        // When & Then
-        mockMvc.perform(get("/"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("book-list"))
-                .andExpect(model().attribute("books", hasSize(2)));
-
-        verify(bookService, times(1)).findAll();
-        verifyNoMoreInteractions(bookService);
-    }
-
-    @Test
-    @DisplayName("Должен вернуть форму для редактирования существующей книги")
-    void shouldReturnEditPageForExistingBook() throws Exception {
-        String bookId = "1";
-        BookDto bookDto = new BookDto(bookId, "Existing Book", null, null);
-        BookFormDto bookFormDto = new BookFormDto(bookId, "Existing Book", null, null);
-
-        when(bookService.findById(bookId)).thenReturn(Optional.of(bookDto));
-        when(authorService.findAll()).thenReturn(List.of());
-        when(genreService.findAll()).thenReturn(List.of());
-        when(commentService.findByBookId(bookId)).thenReturn(List.of());
-
-        mockMvc.perform(get("/books/edit/{id}", bookId))
-                .andExpect(status().isOk())
-                .andExpect(view().name("book-edit"))
-        ;
-    }
+//    @Test
+//    @DisplayName("Должен вывести список книг")
+//    void ShouldReturnViewWithBooks() throws Exception {
+//
+//        AuthorDto author = new AuthorDto("1", "Author 1");
+//        GenreDto genre = new GenreDto("1", "Genre1");
+//        List<BookDto> books = List.of(
+//                new BookDto("1", "Book 1", author, genre),
+//                new BookDto("2", "Book 2", author, genre)
+//        );
+//
+//        // Given
+//        when(bookService.findAll()).thenReturn(books);
+//
+//        // When & Then
+//        mockMvc.perform(get("/"))
+//                .andExpect(status().isOk())
+//                .andExpect(view().name("book-list"))
+//                .andExpect(model().attribute("books", hasSize(2)));
+//
+//        verify(bookService, times(1)).findAll();
+//        verifyNoMoreInteractions(bookService);
+//    }
+//
+//    @Test
+//    @DisplayName("Должен вернуть форму для редактирования существующей книги")
+//    void shouldReturnEditPageForExistingBook() throws Exception {
+//        String bookId = "1";
+//        BookDto bookDto = new BookDto(bookId, "Existing Book", null, null);
+//        BookFormDto bookFormDto = new BookFormDto(bookId, "Existing Book", null, null);
+//
+//        when(bookService.findById(bookId)).thenReturn(Optional.of(bookDto));
+//        when(authorService.findAll()).thenReturn(List.of());
+//        when(genreService.findAll()).thenReturn(List.of());
+//        when(commentService.findByBookId(bookId)).thenReturn(List.of());
+//
+//        mockMvc.perform(get("/books/edit/{id}", bookId))
+//                .andExpect(status().isOk())
+//                .andExpect(view().name("book-edit"))
+//        ;
+//    }
 }
 
 

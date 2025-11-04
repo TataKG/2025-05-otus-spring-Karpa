@@ -3,6 +3,7 @@ package ru.otus.hw.controllers.rest;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.otus.hw.dto.CommentDto;
@@ -17,12 +18,13 @@ public class CommentController {
     private final CommentService commentService;
 
     @GetMapping
-    public List<CommentDto> getCommentsByBookId(@PathVariable("bookId") String bookId) {
+    public List<CommentDto> getCommentsByBookId(@PathVariable("bookId") Long bookId) {
         return commentService.findByBookId(bookId);
     }
 
     @PostMapping
-    public ResponseEntity<CommentDto> createComment(@PathVariable("bookId") String bookId,
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<CommentDto> createComment(@PathVariable("bookId") Long bookId,
                                                     @RequestBody CommentDto commentDto) throws BadRequestException {
         if (bookId == null || commentDto == null) {
             throw new BadRequestException("Id is null or empty");
@@ -35,8 +37,8 @@ public class CommentController {
     }
 
     @DeleteMapping("/{commentId}")
-    public ResponseEntity<Void> deleteComment(@PathVariable("bookId") String bookId,
-                                              @PathVariable("commentId") String commentId) {
+    public ResponseEntity<Void> deleteComment(@PathVariable("bookId") Long bookId,
+                                              @PathVariable("commentId") Long commentId) {
         commentService.deleteById(commentId);
         return ResponseEntity.noContent().build();
     }

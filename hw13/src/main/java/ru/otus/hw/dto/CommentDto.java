@@ -1,5 +1,5 @@
 package ru.otus.hw.dto;
 
-public record CommentDto(String id, String text, String bookId) {
+public record CommentDto(long id, String text, long bookId) {
 }
 

@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface BookService {
-    Optional<BookDto> findById(String id);
+    Optional<BookDto> findById(long id);
 
     List<BookDto> findAll();
 
@@ -15,6 +15,6 @@ public interface BookService {
 
     BookDto update(BookFormDto bookDto);
 
-    void deleteById(String id);
+    void deleteById(long id);
 
 }

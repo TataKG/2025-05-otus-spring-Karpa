@@ -24,7 +24,7 @@ public class GenreController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<GenreDto> getAGenreById(@PathVariable String id) {
+    public ResponseEntity<GenreDto> getAGenreById(@PathVariable Long id) {
         return genreService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new EntityNotFoundException("Genre with id %s not found!".formatted(id)));

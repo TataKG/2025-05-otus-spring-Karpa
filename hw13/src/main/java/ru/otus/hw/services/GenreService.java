@@ -8,5 +8,5 @@ import java.util.Optional;
 public interface GenreService {
     List<GenreDto> findAll();
 
-    Optional<GenreDto> findById(String id);
+    Optional<GenreDto> findById(long id);
 }

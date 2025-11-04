@@ -24,7 +24,7 @@ public class AuthorController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AuthorDto> getAuthorById(@PathVariable String id) {
+    public ResponseEntity<AuthorDto> getAuthorById(@PathVariable Long id) {
         return authorService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new EntityNotFoundException("Author with id %s not found!".formatted(id)));
