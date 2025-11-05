@@ -11,8 +11,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.otus.hw.dto.CommentDto;
-import ru.otus.hw.security.TestSecurityConfig;
+import ru.otus.hw.security.SecurityConfig;
 import ru.otus.hw.services.CommentService;
+import ru.otus.hw.services.UserDetailService;
 
 import java.util.List;
 
@@ -20,11 +21,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CommentController.class)
-@Import(TestSecurityConfig.class)
+@Import(SecurityConfig.class)
 class CommentControllerSecurityTest {
 
     @Autowired
@@ -32,6 +35,9 @@ class CommentControllerSecurityTest {
 
     @MockBean
     private CommentService commentService;
+
+    @MockBean
+    private UserDetailService userDetailService;
 
     private final Long bookId = 1L;
     private final Long commentId = 1L;
@@ -66,7 +72,8 @@ class CommentControllerSecurityTest {
 
         mockMvc.perform(post("/api/v1/books/{bookId}/comments", bookId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"text\": \"Test comment\", \"bookId\": 1}"))
+                        .content("{\"text\": \"Test comment\", \"bookId\": 1}")
+                        .with(csrf()))
                 .andExpect(status().isOk());
     }
 
@@ -79,7 +86,8 @@ class CommentControllerSecurityTest {
 
         mockMvc.perform(post("/api/v1/books/{bookId}/comments", bookId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"text\": \"Test comment\", \"bookId\": 1}"))
+                        .content("{\"text\": \"Test comment\", \"bookId\": 1}")
+                        .with(csrf()))
                 .andExpect(status().isOk());
     }
 
@@ -87,7 +95,8 @@ class CommentControllerSecurityTest {
     @DisplayName("Удаление комментария для ADMIN - разрешено")
     @WithMockUser(roles = "ADMIN")
     void deleteComment_WithAdminRole_ShouldReturnNoContent() throws Exception {
-        mockMvc.perform(delete("/api/v1/books/{bookId}/comments/{commentId}", bookId, commentId))
+        mockMvc.perform(delete("/api/v1/books/{bookId}/comments/{commentId}", bookId, commentId)
+                        .with(csrf()))
                 .andExpect(status().isNoContent());
 
         verify(commentService).deleteById(commentId);
@@ -109,16 +118,18 @@ class CommentControllerSecurityTest {
     @DisplayName("Удаление комментария для USER с правами - разрешено")
     @WithMockUser(roles = "USER")
     void deleteComment_WithUserRoleWithPermission_ShouldReturnNoContent() throws Exception {
-        mockMvc.perform(delete("/api/v1/books/{bookId}/comments/{commentId}", bookId, commentId))
+        mockMvc.perform(delete("/api/v1/books/{bookId}/comments/{commentId}", bookId, commentId)
+                        .with(csrf()))
                 .andExpect(status().isNoContent());
 
         verify(commentService).deleteById(commentId);
     }
 
     @Test
-    @DisplayName("Доступ к комментариям без аутентификации - запрещен (403)")
-    void getComments_WithoutAuthentication_ShouldReturnForbidden() throws Exception {
+    @DisplayName("Доступ к комментариям без аутентификации - перенаправление на логин")
+    void getComments_WithoutAuthentication_ShouldRedirectToLogin() throws Exception {
         mockMvc.perform(get("/api/v1/books/{bookId}/comments", bookId))
-                .andExpect(status().isForbidden());
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("http://localhost/login"));
     }
 }

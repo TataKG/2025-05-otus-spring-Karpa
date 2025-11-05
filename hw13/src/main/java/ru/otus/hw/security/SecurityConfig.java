@@ -33,7 +33,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         // Статические ресурсы и публичные endpoints
                         .requestMatchers("/", "/login", "/logout", "/error").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll() // Разрешаем доступ к H2 console
+                        .requestMatchers("/h2-console/**").hasRole("ADMIN")
                         .requestMatchers("/css/**", "/js/**", "/webjars/**").permitAll()
 
                         // API endpoints

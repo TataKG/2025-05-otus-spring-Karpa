@@ -8,14 +8,16 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.otus.hw.security.TestSecurityConfig;
+import ru.otus.hw.security.SecurityConfig;
 import ru.otus.hw.services.GenreService;
+import ru.otus.hw.services.UserDetailService;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(GenreController.class)
-@Import(TestSecurityConfig.class)
+@Import(SecurityConfig.class)
 class GenreControllerSecurityTest {
 
     @Autowired
@@ -23,6 +25,9 @@ class GenreControllerSecurityTest {
 
     @MockBean
     private GenreService genreService;
+
+    @MockBean
+    private UserDetailService userDetailService;
 
     @Test
     @DisplayName("Доступ к жанрам для ADMIN - разрешен")
@@ -33,10 +38,10 @@ class GenreControllerSecurityTest {
     }
 
     @Test
-    @DisplayName("Доступ к жанрам для USER - запрещен")
+    @DisplayName("Доступ к Web интерфейсу жанров для USER - запрещен")
     @WithMockUser(roles = "USER")
-    void getAllGenres_WithUserRole_ShouldReturnForbidden() throws Exception {
-        mockMvc.perform(get("/api/v1/genres"))
+    void getGenresPage_WithUserRole_ShouldReturnForbidden() throws Exception {
+        mockMvc.perform(get("/genres"))
                 .andExpect(status().isForbidden());
     }
 
@@ -44,6 +49,7 @@ class GenreControllerSecurityTest {
     @DisplayName("Доступ к жанрам без аутентификации - перенаправление на логин")
     void getAllGenres_WithoutAuthentication_ShouldRedirectToLogin() throws Exception {
         mockMvc.perform(get("/api/v1/genres"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("http://localhost/login"));
     }
 }
