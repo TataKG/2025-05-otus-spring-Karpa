@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,10 +24,10 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/h2-console/**") // Отключаем CSRF для H2 console
+                        .ignoringRequestMatchers("/h2-console/**", "/api/**")
                 )
                 .headers(headers -> headers
-                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin) // Разрешаем iframe для H2
+                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
                 )
                 .authorizeHttpRequests(authorize -> authorize
                         // Статические ресурсы и публичные endpoints
@@ -36,7 +35,7 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").hasRole("ADMIN")
                         .requestMatchers("/css/**", "/js/**", "/webjars/**").permitAll()
 
-                        // API endpoints
+                        // API endpoints - исправляем hasAnyRole
                         .requestMatchers("/api/**").hasAnyRole("ADMIN", "USER")
 
                         // Web интерфейс

@@ -95,8 +95,7 @@ public class BookServiceImpl implements BookService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Author with id %s not found".formatted(bookDto.authorId())));
         var genre = genreRepository.findById(bookDto.genreId())
-                .orElseThrow(() -> new EntityNotFoundException(
-                "Genre with id %s not found".formatted(bookDto.genreId())));
+                .orElseThrow(() -> new EntityNotFoundException("Genre with id %s not found".formatted(bookDto.genreId())));
         book.setId(bookDto.id());
         book.setTitle(bookDto.title());
         book.setAuthor(author);
