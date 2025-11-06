@@ -1,0 +1,67 @@
+spring:
+  # Настройки базы данных H2
+  datasource:
+    url: jdbc:h2:mem:cookbookdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+    # Явная инициализация данных
+    initialization-mode: always
+
+  # H2 Console
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+
+  # JPA настройки - ВАЖНЫЕ ИЗМЕНЕНИЯ
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: none  # Отключаем автоматическое создание DDL
+    show-sql: true
+    defer-datasource-initialization: true  # Критически важно!
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+  # Инициализация БД
+  sql:
+    init:
+      mode: always
+      platform: h2
+      schema-locations:
+        - classpath:schema.sql
+      data-locations:
+        - classpath:data.sql
+      continue-on-error: true
+
+  # Thymeleaf настройки
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false
+
+  # MVC настройки
+  mvc:
+    static-path-pattern: /**
+
+  # Ресурсы
+  web:
+    resources:
+      static-locations: classpath:/static/,classpath:/public/
+
+# Логирование для отладки
+logging:
+  level:
+    org.springframework.jdbc.datasource.init: DEBUG
+    org.springframework.boot.autoconfigure.jdbc: DEBUG
+    org.springframework.jdbc: TRACE
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    ru.otus.hw: DEBUG

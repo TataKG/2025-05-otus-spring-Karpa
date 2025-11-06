@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход - Кулинарная книга</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .login-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .card-header {
+            border-radius: 15px 15px 0 0 !important;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card login-card">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h4 class="mb-0">🔑 Вход в систему</h4>
+                </div>
+                <div class="card-body p-5">
+                    <form th:action="@{/login}" method="post">
+                        <div th:if="${param.error}" class="alert alert-danger alert-dismissible fade show">
+                            ❌ Неверное имя пользователя или пароль
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+
+                        <div th:if="${param.logout}" class="alert alert-success alert-dismissible fade show">
+                            ✅ Вы успешно вышли из системы
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="username" class="form-label fw-semibold">👤 Имя пользователя</label>
+                            <input type="text" class="form-control form-control-lg" id="username" name="username"
+                                   required placeholder="Введите имя пользователя">
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label fw-semibold">🔒 Пароль</label>
+                            <input type="password" class="form-control form-control-lg" id="password" name="password"
+                                   required placeholder="Введите пароль">
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg fw-semibold">
+                                🚀 Войти
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="mt-4 pt-3 border-top">
+                        <p class="text-muted text-center mb-2">Тестовые пользователи:</p>
+                        <div class="text-center">
+                            <small class="text-muted">
+                                <strong>admin</strong> / admin123<br>
+                                <strong>chef_ivan</strong> / ivan456
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+</body>
+</html>
