@@ -119,11 +119,17 @@ class BaseApiClient {
     }
 
     async get(url) {
-        const response = await fetch(`${this.baseUrl}${url}`);
+        console.log(`API GET: ${this.baseUrl}${url}`);
+        const response = await fetch(`${this.baseUrl}${url}`, {
+            credentials: 'include' // Важно для отправки cookies/session
+        });
+        console.log(`API Response status: ${response.status}`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        return response.json();
+        const data = await response.json();
+        console.log(`API Response data:`, data);
+        return data;
     }
 
     async post(url, data) {
@@ -132,6 +138,7 @@ class BaseApiClient {
             headers: {
                 'Content-Type': 'application/json',
             },
+            credentials: 'include',
             body: JSON.stringify(data)
         });
         if (!response.ok) {
@@ -146,6 +153,7 @@ class BaseApiClient {
             headers: {
                 'Content-Type': 'application/json',
             },
+            credentials: 'include',
             body: JSON.stringify(data)
         });
         if (!response.ok) {
@@ -156,11 +164,25 @@ class BaseApiClient {
 
     async delete(url) {
         const response = await fetch(`${this.baseUrl}${url}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            credentials: 'include'
         });
+
+        // 404 при удалении - это нормально (ресурс уже удален)
+        if (response.status === 404) {
+            console.warn(`Resource not found during DELETE ${url}, but considering as success`);
+            return { success: true, message: "Resource deleted or not found" };
+        }
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        // Если ответ пустой (204 No Content), возвращаем успех
+        if (response.status === 204) {
+            return { success: true };
+        }
+
         return response.json();
     }
 }

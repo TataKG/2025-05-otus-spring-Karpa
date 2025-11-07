@@ -248,30 +248,32 @@ public class RecipeServiceImpl implements RecipeService {
     }
 
     @Override
+    @Transactional
     public void deleteRecipe(Long id) {
         try {
             System.out.println("Starting deletion of recipe: " + id);
 
-            Recipe recipe = recipeRepository.findById(id)
-                    .orElseThrow(() -> {
-                        System.out.println("Recipe not found: " + id);
-                        return new EntityNotFoundException(
-                                messageProvider.getMessage("recipe.not_found", id)
-                        );
-                    });
+            // Проверяем существование рецепта
+            if (!recipeRepository.existsById(id)) {
+                throw new EntityNotFoundException("Recipe not found: " + id);
+            }
 
-            System.out.println("Found recipe: " + recipe.getTitle());
-
-            // Удаляем комментарии через репозиторий
+            // 1. Удаляем комментарии
             System.out.println("Deleting comments for recipe: " + id);
             commentRepository.deleteByRecipeId(id);
 
-            // Очищаем связи с инвентарем
-            recipe.getInventoryItems().clear();
+            // 2. Удаляем связи с инвентарем
+            System.out.println("Deleting inventory associations...");
+            recipeRepository.deleteInventoryAssociations(id);
 
-            // Удаляем рецепт
-            System.out.println("Deleting recipe from repository...");
-            recipeRepository.delete(recipe);
+            // 3. Удаляем ингредиенты
+            System.out.println("Deleting ingredients...");
+            recipeRepository.deleteIngredients(id);
+
+            // 4. Удаляем сам рецепт
+            System.out.println("Deleting recipe...");
+            recipeRepository.deleteById(id);
+
             System.out.println("Recipe deleted successfully: " + id);
 
         } catch (Exception e) {

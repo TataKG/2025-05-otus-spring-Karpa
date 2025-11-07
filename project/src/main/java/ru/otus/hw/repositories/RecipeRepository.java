@@ -2,6 +2,7 @@ package ru.otus.hw.repositories;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -170,4 +171,20 @@ public interface RecipeRepository extends CrudRepository<Recipe, Long> {
             "WHERE r.author.id = :authorId " +
             "ORDER BY r.createdAt DESC")
     List<Recipe> findByAuthorIdWithPagination(@Param("authorId") Long authorId, Pageable pageable);
+
+    @Modifying
+    @Query("DELETE FROM Comment c WHERE c.recipe.id = :recipeId")
+    void deleteByRecipeId(@Param("recipeId") Long recipeId);
+
+    @Modifying
+    @Query("DELETE FROM Recipe r WHERE r.id = :id")
+    void deleteById(@Param("id") Long id);
+
+    @Modifying
+    @Query(nativeQuery = true, value = "DELETE FROM recipe_inventory WHERE recipe_id = :recipeId")
+    void deleteInventoryAssociations(@Param("recipeId") Long recipeId);
+
+    @Modifying
+    @Query(nativeQuery = true, value = "DELETE FROM recipe_ingredients WHERE recipe_id = :recipeId")
+    void deleteIngredients(@Param("recipeId") Long recipeId);
 }

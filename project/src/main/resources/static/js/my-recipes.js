@@ -2,80 +2,28 @@
 class MyRecipesApp extends BaseApiClient {
     constructor() {
         super('/api/recipes');
-        this.messages = this.loadMessages();
+        console.log("MyRecipesApp initialized");
+        this.messages = window.i18nMessages || this.getFallbackMessages();
         this.currentFilter = 'all';
         this.currentUserRecipes = [];
         this.init();
-    }
-
-    loadMessages() {
-        const messageContainer = document.getElementById('i18n-messages');
-        if (!messageContainer) {
-            return this.getFallbackMessages();
-        }
-
-        const messages = {};
-        const attributes = messageContainer.attributes;
-
-        for (let i = 0; i < attributes.length; i++) {
-            const attr = attributes[i];
-            if (attr.name.startsWith('data-')) {
-                const key = attr.name.replace('data-', '');
-                let value = attr.value;
-                // Убираем Thymeleaf выражения если они есть
-                if (value.startsWith('#{') && value.endsWith('}')) {
-                    value = value.slice(2, -1);
-                }
-                messages[key] = this.getFallbackText(key, value);
-            }
-        }
-
-        return messages;
-    }
-
-    getFallbackText(key, thymeleafExpression) {
-        const fallbackTexts = {
-            'loading': 'Загрузка...',
-            'close': 'Закрыть',
-            'view': 'Детальнее',
-            'edit': 'Редактировать',
-            'delete': 'Удалить',
-            'recipe-details': 'Детали рецепта',
-            'myrecipes-loading': 'Загрузка ваших рецептов...',
-            'no-recipes': 'У вас пока нет рецептов',
-            'retry': 'Повторить',
-            'category': 'Категория',
-            'author': 'Автор',
-            'comments': 'Комментарии',
-            'actions': 'Действия',
-            'ingredients': 'Ингредиенты',
-            'description': 'Описание',
-            'inventory': 'Необходимый инвентарь',
-            'status-published': 'Опубликован',
-            'status-draft': 'Черновик',
-            'delete-confirm-title': 'Подтверждение удаления',
-            'delete-confirm-message': 'Вы уверены, что хотите удалить этот рецепт? Это действие нельзя отменить.',
-            'cancel': 'Отмена',
-            'delete-success': 'Рецепт успешно удален',
-            'delete-error': 'Ошибка при удалении рецепта'
-        };
-
-        return fallbackTexts[key] || thymeleafExpression || key;
     }
 
     getFallbackMessages() {
         return {
             loading: 'Загрузка...',
             close: 'Закрыть',
-            view: 'Детальнее',
+            view: 'Просмотр',
             edit: 'Редактировать',
             delete: 'Удалить',
-            recipeDetails: 'Детали рецепта',
-            recipesLoading: 'Загрузка ваших рецептов...',
-            noRecipesFound: 'У вас пока нет рецептов',
-            errorLoadingRecipes: 'Ошибка при загрузке рецептов',
-            errorLoadingDetails: 'Ошибка при загрузке деталей рецепта',
+            cancel: 'Отмена',
             retry: 'Повторить',
+            'recipe-details': 'Детали рецепта',
+            'recipes-loading': 'Загрузка ваших рецептов...',
+            'no-recipes': 'У вас пока нет рецептов',
+            'error-loading-recipes': 'Ошибка при загрузке рецептов',
+            'error-loading-details': 'Ошибка при загрузке деталей рецепта',
+            'error-loading-comments': 'Ошибка при загрузке комментариев',
             category: 'Категория',
             author: 'Автор',
             comments: 'Комментарии',
@@ -83,36 +31,55 @@ class MyRecipesApp extends BaseApiClient {
             ingredients: 'Ингредиенты',
             description: 'Описание',
             inventory: 'Необходимый инвентарь',
-            statusPublished: 'Опубликован',
-            statusDraft: 'Черновик',
-            deleteConfirmTitle: 'Подтверждение удаления',
-            deleteConfirmMessage: 'Вы уверены, что хотите удалить этот рецепт? Это действие нельзя отменить.',
-            cancel: 'Отмена',
-            deleteSuccess: 'Рецепт успешно удален',
-            deleteError: 'Ошибка при удалении рецепта'
+            'status-published': 'Опубликован',
+            'status-draft': 'Черновик',
+            'delete-confirm-title': 'Подтверждение удаления',
+            'delete-confirm-message': 'Вы уверены, что хотите удалить этот рецепт? Это действие нельзя отменить.',
+            'delete-success': 'Рецепт успешно удален',
+            'delete-error': 'Ошибка при удалении рецепта',
+            'comments-title': 'Комментарии к рецепту',
+            'no-comments': 'Комментариев пока нет',
+            'comment-author': 'Автор',
+            'comment-date': 'Дата',
+            'comment-content': 'Комментарий',
+            'comments-loading': 'Загрузка комментариев...',
+            'recipe-details-category': '📂 Категория',
+            'recipe-details-author': '👨‍🍳 Автор',
+            'recipe-details-ingredients': '🛒 Ингредиенты',
+            'recipe-details-description': '📝 Описание',
+            'recipe-details-inventory': '🔧 Необходимый инвентарь',
+            'recipe-details-comments': '💬 Комментарии',
+            'recipe-details-status': '📊 Статус',
+            'recipe-details-created-date': '📅 Дата создания'
         };
     }
 
     init() {
+        console.log("MyRecipesApp init started");
         this.loadMyRecipes();
         this.setupEventListeners();
     }
 
     async loadMyRecipes() {
         try {
-            CommonUtils.showLoadingState('recipesTableBody', this.messages['myrecipes-loading'], 6);
+            console.log("Starting to load my recipes...");
+            CommonUtils.showLoadingState('recipesTableBody', this.messages['recipes-loading'], 6);
+
             const response = await this.get('/my-recipes');
+            console.log("My recipes response:", response);
 
             if (response.success) {
+                console.log("Recipes loaded successfully:", response.data);
                 this.currentUserRecipes = response.data;
                 this.updateStatistics(response.data);
                 this.displayRecipes(response.data);
             } else {
-                this.showError('Ошибка при загрузке ваших рецептов');
+                console.error("API returned error:", response);
+                this.showError(this.messages['error-loading-recipes'] + ': ' + (response.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error loading my recipes:', error);
-            this.showError('Не удалось загрузить ваши рецепты');
+            this.showError(this.messages['error-loading-recipes'] + ': ' + error.message);
         }
     }
 
@@ -182,7 +149,11 @@ class MyRecipesApp extends BaseApiClient {
                     <small>${CommonUtils.formatDate(recipe.createdAt)}</small>
                 </td>
                 <td>
-                    <span class="badge bg-info text-dark">
+                    <span class="badge bg-info text-dark comments-badge"
+                          style="cursor: pointer;"
+                          data-recipe-id="${recipe.id}"
+                          data-recipe-title="${CommonUtils.escapeHtml(recipe.title)}"
+                          title="${this.messages.view} ${this.messages.comments.toLowerCase()}">
                         💬 ${recipe.commentCount || 0}
                     </span>
                 </td>
@@ -203,40 +174,85 @@ class MyRecipesApp extends BaseApiClient {
         `).join('');
 
         this.addRecipeActionListeners();
+        this.addCommentsViewListeners();
+    }
+
+    addRecipeActionListeners() {
+        document.querySelectorAll('.view-recipe').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const recipeId = e.target.closest('.view-recipe').dataset.recipeId;
+                console.log("View recipe:", recipeId);
+                this.loadRecipeDetails(recipeId);
+            });
+        });
+
+        document.querySelectorAll('.edit-recipe').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const recipeId = e.target.closest('.edit-recipe').dataset.recipeId;
+                console.log("Edit recipe:", recipeId);
+                this.editRecipe(recipeId);
+            });
+        });
+
+        document.querySelectorAll('.delete-recipe').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const recipeId = e.target.closest('.delete-recipe').dataset.recipeId;
+                const recipeTitle = e.target.closest('.delete-recipe').dataset.recipeTitle;
+                console.log("Delete recipe:", recipeId, recipeTitle);
+                this.showDeleteConfirmation(recipeId, recipeTitle);
+            });
+        });
+    }
+
+    addCommentsViewListeners() {
+        document.querySelectorAll('.comments-badge').forEach(badge => {
+            badge.addEventListener('click', (e) => {
+                const recipeId = e.target.closest('.comments-badge').dataset.recipeId;
+                const recipeTitle = e.target.closest('.comments-badge').dataset.recipeTitle;
+                console.log("View comments for recipe:", recipeId, recipeTitle);
+                this.showCommentsModal(recipeId, recipeTitle);
+            });
+        });
     }
 
     async loadRecipeDetails(recipeId) {
         try {
+            console.log("Loading detailed recipe:", recipeId);
             const response = await this.get(`/${recipeId}/detailed`);
 
             if (response.success) {
                 this.showRecipeModal(response.data);
             } else {
                 this.showError(this.messages['error-loading-details']);
+                CommonUtils.showToast(this.messages['error-loading-details'], 'error');
             }
         } catch (error) {
             console.error('Error loading recipe details:', error);
             this.showError(this.messages['error-loading-details']);
+            CommonUtils.showToast(this.messages['error-loading-details'], 'error');
         }
     }
 
-    editRecipe(recipeId) {
-        window.location.href = `/recipe/edit/${recipeId}`;
-    }
-
-    async deleteRecipe(recipeId) {
+    async loadRecipeComments(recipeId) {
         try {
-            const response = await this.delete(`/${recipeId}`);
+            console.log("Loading comments for recipe:", recipeId);
+            const response = await fetch(`/api/recipes/${recipeId}/comments`, {
+                credentials: 'include'
+            });
 
-            if (response.success) {
-                CommonUtils.showToast(response.message || this.messages['delete-success'], 'success');
-                this.loadMyRecipes();
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                return result.data;
             } else {
-                CommonUtils.showToast(response.message || this.messages['delete-error'], 'error');
+                throw new Error(result.message || 'Failed to load comments');
             }
         } catch (error) {
-            console.error('Error deleting recipe:', error);
-            CommonUtils.showToast(`${this.messages['delete-error']}: ${error.message}`, 'error');
+            console.error('Error loading recipe comments:', error);
+            throw error;
         }
     }
 
@@ -250,32 +266,17 @@ class MyRecipesApp extends BaseApiClient {
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <h6>📂 ${this.messages.category}:</h6>
-                        <p><span class="badge bg-primary">${CommonUtils.escapeHtml(recipe.category.name)}</span></p>
+                        <h6>${this.messages['recipe-details-category']}:</h6>
+                        <p><span class="badge bg-primary">${CommonUtils.escapeHtml(recipe.category?.name || 'Не указана')}</span></p>
                     </div>
 
                     <div class="mb-3">
-                        <h6>👨‍🍳 ${this.messages.author}:</h6>
-                        <p class="text-muted">${CommonUtils.escapeHtml(recipe.author.user.username)}</p>
+                        <h6>${this.messages['recipe-details-author']}:</h6>
+                        <p class="text-muted">${CommonUtils.escapeHtml(recipe.author?.user?.username || 'Неизвестен')}</p>
                     </div>
 
                     <div class="mb-3">
-                        <h6>📊 Статус:</h6>
-                        <p>
-                            ${recipe.published ?
-                                `<span class="badge bg-success">${this.messages['status-published']}</span>` :
-                                `<span class="badge bg-warning text-dark">${this.messages['status-draft']}</span>`
-                            }
-                        </p>
-                    </div>
-
-                    <div class="mb-3">
-                        <h6>📅 Дата создания:</h6>
-                        <p class="text-muted">${CommonUtils.formatDate(recipe.createdAt)}</p>
-                    </div>
-
-                    <div class="mb-3">
-                        <h6>🛒 ${this.messages.ingredients}:</h6>
+                        <h6>${this.messages['recipe-details-ingredients']}:</h6>
                         <div class="list-group">
                             ${(recipe.ingredients || []).map(ingredient => `
                                 <div class="list-group-item list-group-item-action">
@@ -288,14 +289,14 @@ class MyRecipesApp extends BaseApiClient {
 
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <h6>📝 ${this.messages.description}:</h6>
+                        <h6>${this.messages['recipe-details-description']}:</h6>
                         <p class="text-muted border-start border-3 border-primary ps-3 py-2 bg-light">
                             ${CommonUtils.escapeHtml(recipe.description)}
                         </p>
                     </div>
 
                     <div class="mb-3">
-                        <h6>🔧 ${this.messages.inventory}:</h6>
+                        <h6>${this.messages['recipe-details-inventory']}:</h6>
                         <div class="d-flex flex-wrap gap-2">
                             ${(recipe.inventoryItems || []).map(item => `
                                 <span class="badge bg-warning text-dark">
@@ -306,9 +307,13 @@ class MyRecipesApp extends BaseApiClient {
                     </div>
 
                     <div class="mb-3">
-                        <h6>💬 ${this.messages.comments}:</h6>
+                        <h6>${this.messages['recipe-details-comments']}:</h6>
                         <p>
-                            <span class="badge bg-info text-dark">
+                            <span class="badge bg-info text-dark comments-badge"
+                                  style="cursor: pointer;"
+                                  data-recipe-id="${recipe.id}"
+                                  data-recipe-title="${CommonUtils.escapeHtml(recipe.title)}"
+                                  title="${this.messages.view} ${this.messages.comments.toLowerCase()}">
                                 💬 ${recipe.commentCount || 0} ${CommonUtils.getCommentText(recipe.commentCount || 0)}
                             </span>
                         </p>
@@ -317,38 +322,101 @@ class MyRecipesApp extends BaseApiClient {
             </div>
         `;
 
+        // Добавляем обработчик для комментариев в модальном окне
+        const commentsBadge = modalBody.querySelector('.comments-badge');
+        if (commentsBadge) {
+            commentsBadge.addEventListener('click', () => {
+                const recipeId = commentsBadge.dataset.recipeId;
+                const recipeTitle = commentsBadge.dataset.recipeTitle;
+                this.showCommentsModal(recipeId, recipeTitle);
+
+                // Закрываем текущее модальное окно
+                const recipeModal = bootstrap.Modal.getInstance(document.getElementById('recipeModal'));
+                recipeModal.hide();
+            });
+        }
+
         const modal = new bootstrap.Modal(document.getElementById('recipeModal'));
         modal.show();
     }
 
-    addRecipeActionListeners() {
-        document.querySelectorAll('.view-recipe').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const recipeId = e.target.closest('.view-recipe').dataset.recipeId;
-                this.loadRecipeDetails(recipeId);
-            });
-        });
+    async showCommentsModal(recipeId, recipeTitle) {
+        const modalTitle = document.getElementById('commentsModalTitle');
+        const modalBody = document.getElementById('commentsModalBody');
 
-        document.querySelectorAll('.edit-recipe').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const recipeId = e.target.closest('.edit-recipe').dataset.recipeId;
-                this.editRecipe(recipeId);
-            });
-        });
+        modalTitle.textContent = `💬 ${this.messages['comments-title']}: ${CommonUtils.escapeHtml(recipeTitle)}`;
 
-        document.querySelectorAll('.delete-recipe').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const recipeId = e.target.closest('.delete-recipe').dataset.recipeId;
-                const recipeTitle = e.target.closest('.delete-recipe').dataset.recipeTitle;
-                this.showDeleteConfirmation(recipeId, recipeTitle);
-            });
-        });
+        modalBody.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">${this.messages.loading}</span>
+                </div>
+                <p class="mt-2 text-muted">${this.messages['comments-loading']}</p>
+            </div>
+        `;
+
+        const modal = new bootstrap.Modal(document.getElementById('commentsModal'));
+        modal.show();
+
+        try {
+            const comments = await this.loadRecipeComments(recipeId);
+            this.displayComments(comments, modalBody);
+        } catch (error) {
+            console.error('Error loading comments:', error);
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <p>${this.messages['error-loading-comments']}</p>
+                    <button class="btn btn-sm btn-outline-primary" onclick="myRecipesApp.showCommentsModal('${recipeId}', '${CommonUtils.escapeHtml(recipeTitle)}')">
+                        ${this.messages.retry}
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    displayComments(comments, modalBody) {
+        if (!comments || comments.length === 0) {
+            modalBody.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="text-muted mb-2">💬</div>
+                    <p class="text-muted">${this.messages['no-comments']}</p>
+                </div>
+            `;
+            return;
+        }
+
+        modalBody.innerHTML = `
+            <div class="comments-list">
+                ${comments.map(comment => `
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h6 class="card-title mb-1">
+                                        👤 ${CommonUtils.escapeHtml(comment.userName || comment.author || this.messages['comment-author'])}
+                                    </h6>
+                                    <small class="text-muted">
+                                        📅 ${new Date(comment.createdAt).toLocaleString()}
+                                    </small>
+                                </div>
+                            </div>
+                            <p class="card-text mt-3">${CommonUtils.escapeHtml(comment.content)}</p>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    editRecipe(recipeId) {
+        window.location.href = `/recipe/edit/${recipeId}`;
     }
 
     showDeleteConfirmation(recipeId, recipeTitle) {
         document.getElementById('recipeToDeleteTitle').textContent = recipeTitle;
 
         const confirmBtn = document.getElementById('confirmDeleteBtn');
+        // Удаляем старые обработчики и добавляем новый
         confirmBtn.replaceWith(confirmBtn.cloneNode(true));
         const newConfirmBtn = document.getElementById('confirmDeleteBtn');
 
@@ -362,21 +430,58 @@ class MyRecipesApp extends BaseApiClient {
         modal.show();
     }
 
+    async deleteRecipe(recipeId) {
+        try {
+            console.log("Deleting recipe:", recipeId);
+            const response = await this.delete(`/${recipeId}`);
+
+            if (response.success) {
+                CommonUtils.showToast(this.messages['delete-success'], 'success');
+
+                // УДАЛЯЕМ ЭТУ СТРОКУ - она вызывает повторную загрузку списка, который может быть закэширован
+                // this.loadMyRecipes(); // Перезагружаем список рецептов
+
+                // ВМЕСТО ЭТОГО: обновляем локальный массив и перерисовываем таблицу
+                this.currentUserRecipes = this.currentUserRecipes.filter(recipe => recipe.id != recipeId);
+                this.updateStatistics(this.currentUserRecipes);
+                this.displayRecipes(this.currentUserRecipes);
+
+            } else {
+                CommonUtils.showToast(this.messages['delete-error'], 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting recipe:', error);
+
+            // Обрабатываем 404 ошибку как успешное удаление
+            if (error.message.includes('404')) {
+                CommonUtils.showToast(this.messages['delete-success'], 'success');
+                // Обновляем локальный список
+                this.currentUserRecipes = this.currentUserRecipes.filter(recipe => recipe.id != recipeId);
+                this.updateStatistics(this.currentUserRecipes);
+                this.displayRecipes(this.currentUserRecipes);
+            } else {
+                CommonUtils.showToast(this.messages['delete-error'] + ': ' + error.message, 'error');
+            }
+        }
+    }
+
     setupEventListeners() {
-        // Дополнительные обработчики можно добавить здесь
+        console.log("Event listeners setup");
     }
 
     showError(message) {
         CommonUtils.showError('recipesTableBody', message, 6);
         CommonUtils.showToast(message, 'error');
     }
-
-    showSuccess(message) {
-        CommonUtils.showToast(message, 'success');
-    }
 }
 
-let myRecipesApp;
-document.addEventListener('DOMContentLoaded', () => {
-    myRecipesApp = new MyRecipesApp();
+// Инициализация приложения
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM Content Loaded - initializing MyRecipesApp");
+    try {
+        window.myRecipesApp = new MyRecipesApp();
+        console.log("MyRecipesApp initialized successfully");
+    } catch (error) {
+        console.error("Error initializing MyRecipesApp:", error);
+    }
 });

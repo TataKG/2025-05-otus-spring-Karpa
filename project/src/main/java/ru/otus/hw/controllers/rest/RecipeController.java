@@ -346,13 +346,17 @@ public class RecipeController {
 
             System.out.println("Recipe deletion completed successfully");
 
+            // ВСЕГДА возвращаем 200 OK даже если рецепт уже удален
             return ResponseEntity.ok(
                     ApiResponse.success(null, "Recipe successfully deleted")
             );
+
         } catch (EntityNotFoundException e) {
             System.err.println("Recipe not found: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.error(e.getMessage()));
+            // Вместо 404 возвращаем успех, так как цель (удаление) достигнута
+            return ResponseEntity.ok(
+                    ApiResponse.success(null, "Recipe was already deleted or not found")
+            );
         } catch (Exception e) {
             System.err.println("Unexpected error deleting recipe: " + e.getMessage());
             e.printStackTrace();
