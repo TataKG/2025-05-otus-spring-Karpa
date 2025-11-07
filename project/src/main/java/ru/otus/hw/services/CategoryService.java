@@ -1,6 +1,9 @@
 package ru.otus.hw.services;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import ru.otus.hw.dto.CategoryDto;
+import ru.otus.hw.dto.CategoryWithUsageDto;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,5 +17,30 @@ public interface CategoryService {
 
     List<CategoryDto> getAllCategories();
 
+    Page<CategoryDto> getAllCategories(Pageable pageable);
+
+    List<CategoryDto> findCategoriesByNameContaining(String name);
+
     boolean categoryExists(String name);
+
+    // Расширенные операции
+    CategoryDto createCategoryWithDescription(String name, String description);
+
+    CategoryDto updateCategory(Long id, String name, String description);
+
+    void deleteCategory(Long id);
+
+    // Проверки использования
+    boolean isCategoryUsedInRecipes(Long categoryId);
+
+    long getRecipeCountByCategory(Long categoryId);
+
+    long getPublishedRecipeCountByCategory(Long categoryId);
+
+    // Специальные запросы
+    List<CategoryDto> getUnusedCategories();
+
+    List<CategoryWithUsageDto> getCategoriesWithUsage();
+
+    Optional<CategoryWithUsageDto> getCategoryWithUsageById(Long id);
 }

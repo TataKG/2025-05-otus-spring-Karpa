@@ -44,7 +44,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/recipes/**", "/api/categories/**").permitAll()
                         .requestMatchers("/api/comments/**").authenticated()
-                        .requestMatchers("/api/authors/**", "/api/users/**", "/api/inventory/**", "/api/admin/**").hasRole("ADMIN")
+
+                        // Админские endpoints - ИСПРАВЛЕНО: убрали ROLE_ префикс
+                        .requestMatchers("/api/admin/**", "/api/authors/**", "/api/users/**", "/api/inventory/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
 
                         // H2 console - только для админов
                         .requestMatchers("/h2-console/**").hasRole("ADMIN")

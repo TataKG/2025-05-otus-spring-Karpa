@@ -30,6 +30,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                         messageProvider.getMessage("user.not_found.username", username)
                 ));
 
+        System.out.println("=== LOADING USER DETAILS ===");
+        System.out.println("Username: " + username);
+        System.out.println("User roles from DB: " + user.getRoles());
+
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPassword(),
@@ -38,9 +42,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     }
 
     private List<SimpleGrantedAuthority> getRoles(User user) {
-        return user.getRoles().stream()
-                .map(role -> "ROLE_" + role)
+        List<SimpleGrantedAuthority> authorities = user.getRoles().stream()
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
+
+        System.out.println("Granted authorities: " + authorities);
+        return authorities;
     }
 }

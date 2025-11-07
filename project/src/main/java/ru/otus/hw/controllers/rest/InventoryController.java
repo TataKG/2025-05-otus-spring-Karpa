@@ -12,7 +12,7 @@ import ru.otus.hw.util.MessageProvider;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/inventory")
+@RequestMapping("/api/inventories")
 public class InventoryController {
 
     private final InventoryService inventoryService;

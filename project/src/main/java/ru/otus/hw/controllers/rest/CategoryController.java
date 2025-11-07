@@ -61,5 +61,7 @@ public class CategoryController {
         return ResponseEntity.ok(ApiResponse.success(exists));
     }
 
+
+
     public record CreateCategoryRequest(String name) {}
 }

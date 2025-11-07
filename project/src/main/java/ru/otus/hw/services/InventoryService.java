@@ -17,4 +17,15 @@ public interface InventoryService {
     List<InventoryDto> getInventoryByNames(List<String> names);
 
     List<InventoryDto> getInventoryByRecipeId(Long recipeId);
+
+    InventoryDto updateInventory(Long id, String description);
+
+    void deleteInventory(Long id);
+
+    boolean isInventoryUsedInRecipes(Long inventoryId);
+
+    long getRecipeCountByInventory(Long inventoryId);
+
+    List<InventoryDto> getUnusedInventory();
+
 }

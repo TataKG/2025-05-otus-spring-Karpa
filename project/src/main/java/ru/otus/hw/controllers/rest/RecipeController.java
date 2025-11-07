@@ -14,6 +14,7 @@ import ru.otus.hw.services.RecipeService;
 import ru.otus.hw.util.MessageProvider;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -30,12 +31,6 @@ public class RecipeController {
     public ResponseEntity<ApiResponse<List<RecipeSummaryDto>>> getMyRecipes(Authentication authentication) {
         System.out.println("=== MY RECIPES ENDPOINT ===");
         System.out.println("Authentication: " + authentication);
-        System.out.println("Is authenticated: " + (authentication != null && authentication.isAuthenticated()));
-
-        if (authentication != null) {
-            System.out.println("Username: " + authentication.getName());
-            System.out.println("Authorities: " + authentication.getAuthorities());
-        }
 
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
@@ -46,18 +41,37 @@ public class RecipeController {
             String username = authentication.getName();
             System.out.println("Loading recipes for authenticated user: " + username);
 
-            AuthorDto author = authorService.getAuthorByUsername(username)
-                    .orElseThrow(() -> {
-                        System.out.println("Author not found for username: " + username);
-                        return new EntityNotFoundException("Author not found for user: " + username);
+            // ПРАВИЛЬНАЯ проверка ролей
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> {
+                        String authority = auth.getAuthority();
+                        return authority.equals("ROLE_ADMIN") || authority.equals("ADMIN");
                     });
 
-            System.out.println("Found author: " + author.id() + " for user: " + username);
+            System.out.println("User is ADMIN: " + isAdmin);
+            System.out.println("Authorities: " + authentication.getAuthorities());
 
-            List<RecipeSummaryDto> recipes = recipeService.getRecipesByAuthor(author.id());
-            System.out.println("Found " + recipes.size() + " recipes for author: " + author.id());
+            List<RecipeSummaryDto> recipes;
 
+            if (isAdmin) {
+                System.out.println("User is ADMIN, loading ALL recipes");
+                recipes = recipeService.getAllRecipes(); // Все рецепты для админа
+            } else {
+                // Для обычных пользователей загружаем только их рецепты
+                Optional<AuthorDto> authorOpt = authorService.getAuthorByUsername(username);
+                if (authorOpt.isEmpty()) {
+                    System.out.println("No author found for user: " + username);
+                    return ResponseEntity.ok(ApiResponse.success(List.of()));
+                }
+
+                AuthorDto author = authorOpt.get();
+                System.out.println("Found author: " + author.id() + " for user: " + username);
+                recipes = recipeService.getRecipesByAuthor(author.id());
+            }
+
+            System.out.println("Found " + recipes.size() + " recipes");
             return ResponseEntity.ok(ApiResponse.success(recipes));
+
         } catch (Exception e) {
             System.err.println("Error loading my recipes: " + e.getMessage());
             e.printStackTrace();
@@ -450,7 +464,8 @@ public class RecipeController {
             List<String> ingredients,
             String description,
             boolean published
-    ) {}
+    ) {
+    }
 
     public record UpdateRecipeRequest(
             String title,
@@ -459,5 +474,6 @@ public class RecipeController {
             String description,
             List<Long> inventoryIds,
             boolean published
-    ) {}
+    ) {
+    }
 }

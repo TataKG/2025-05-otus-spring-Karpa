@@ -4,12 +4,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 import ru.otus.hw.dto.ApiResponse;
 import ru.otus.hw.dto.UserDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.services.UserService;
 import ru.otus.hw.util.MessageProvider;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -33,20 +37,47 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<String>> login(@RequestBody LoginRequest request) {
-        // Spring Security автоматически обработает аутентификацию
         return ResponseEntity.ok(ApiResponse.success("Login successful"));
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<ApiResponse<UserDto>> getCurrentUser(Authentication authentication) {
+    // ДОБАВЬТЕ ЭТОТ МЕТОД
+    @GetMapping("/user")
+    public ResponseEntity<ApiResponse<AuthUserResponse>> getCurrentUser(Authentication authentication) {
+        System.out.println("=== AUTH USER ENDPOINT ===");
+        System.out.println("Authentication: " + authentication);
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            System.out.println("User not authenticated");
+            return ResponseEntity.ok(ApiResponse.success(new AuthUserResponse(false, null, null)));
+        }
+
         String username = authentication.getName();
+        System.out.println("Authenticated user: " + username);
+
         UserDto userDto = userService.getUserByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException(
                         messageProvider.getMessage("user.not_found.username", username)
                 ));
-        return ResponseEntity.ok(ApiResponse.success(userDto));
+
+        List<String> authorities = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
+
+        System.out.println("User authorities: " + authorities);
+        System.out.println("Returning user data: " + new AuthUserResponse(true, userDto.username(), authorities));
+
+        return ResponseEntity.ok(ApiResponse.success(
+                new AuthUserResponse(true, userDto.username(), authorities)
+        ));
     }
 
-    public record RegisterRequest(String username, String email, String password) {}
-    public record LoginRequest(String username, String password) {}
+    public record RegisterRequest(String username, String email, String password) {
+    }
+
+    public record LoginRequest(String username, String password) {
+    }
+
+    // ДОБАВЬТЕ ЭТУ ЗАПИСЬ
+    public record AuthUserResponse(boolean authenticated, String name, List<String> authorities) {
+    }
 }

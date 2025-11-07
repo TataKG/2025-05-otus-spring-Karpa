@@ -8,6 +8,7 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import ru.otus.hw.models.Category;
+import ru.otus.hw.models.Recipe;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +21,7 @@ public interface CategoryRepository extends CrudRepository<Category, Long> {
     Optional<Category> findByNameIgnoreCase(String name);
     List<Category> findByNameContainingIgnoreCase(String name);
     boolean existsByName(String name);
+    List<Category> findAll();
 
     // Методы с пагинацией
     Page<Category> findAll(Pageable pageable);
@@ -120,4 +122,7 @@ public interface CategoryRepository extends CrudRepository<Category, Long> {
             "LEFT JOIN c.recipes r " +
             "WHERE r IS NULL")
     List<Category> findUnusedCategories();
+
+    @Query("SELECT r FROM Recipe r WHERE r.category.id = :categoryId")
+    List<Recipe> findByCategoryIdWithBasicDetails(@Param("categoryId") Long categoryId);
 }

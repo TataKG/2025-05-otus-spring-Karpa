@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление авторами - Админ-панель</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/admin">🍳 Админ-панель</a>
+        <div class="navbar-nav">
+            <a class="nav-link" href="/admin">📊 Панель управления</a>
+            <a class="nav-link" href="/admin/categories">📂 Категории</a>
+            <a class="nav-link" href="/admin/ingredients">🥕 Ингредиенты</a>
+            <a class="nav-link active" href="/admin/authors">👨‍🍳 Авторы</a>
+            <a class="nav-link" href="/">🏠 На сайт</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="text-primary">👨‍🍳 Управление авторами</h1>
+    </div>
+
+    <div class="alert alert-info">
+        <strong>Внимание!</strong> Функциональность управления авторами находится в разработке.
+    </div>
+</div>
+
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+</body>
+</html>
