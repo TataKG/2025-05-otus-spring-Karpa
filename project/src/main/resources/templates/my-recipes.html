@@ -66,7 +66,7 @@
                         📖 <span th:text="#{navbar.my_recipes}">Мои рецепты</span>
                     </a>
                 </li>
-                <li class="nav-item" sec:authorize="hasRole('AUTHOR')">
+                <li class="nav-item" sec:authorize="isAuthenticated()">
                     <a class="nav-link" href="/recipe/create">
                         ✏️ <span th:text="#{myrecipes.create_new}">Создать рецепт</span>
                     </a>
@@ -116,7 +116,7 @@
                         Управляйте своими рецептами - просматривайте, редактируйте и удаляйте
                     </p>
                 </div>
-                <div sec:authorize="hasRole('AUTHOR')">
+                <div sec:authorize="isAuthenticated()">
                     <a href="/recipe/create" class="btn btn-success btn-lg">
                         ➕ <span th:text="#{myrecipes.create_new}">Создать рецепт</span>
                     </a>

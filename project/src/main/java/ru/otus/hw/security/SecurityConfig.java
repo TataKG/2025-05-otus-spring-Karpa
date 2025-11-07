@@ -19,15 +19,11 @@ import ru.otus.hw.services.UserServiceImpl;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    // Теперь зависит от отдельного UserDetailsService
     private final UserDetailsService userDetailsService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // ВРЕМЕННО для тестирования
-         return NoOpPasswordEncoder.getInstance();
-        // Позже заменить на:
-//        return new BCryptPasswordEncoder();
+        return NoOpPasswordEncoder.getInstance();
     }
 
     @Bean
@@ -44,21 +40,17 @@ public class SecurityConfig {
                         .requestMatchers("/", "/index.html", "/login", "/logout", "/error").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
 
-                        // API endpoints - разделяем доступ
+                        // API endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/recipes/**", "/api/categories/**").permitAll()
-                        .requestMatchers("/api/comments/**").hasAnyRole("USER", "AUTHOR", "ADMIN")
-                        .requestMatchers("/api/authors/**").hasAnyRole("AUTHOR", "ADMIN")
-                        .requestMatchers("/api/users/**", "/api/inventory/**").hasRole("ADMIN")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/my-recipes").authenticated()
-//                        .requestMatchers("/api/recipes/my-recipes").authenticated()
+                        .requestMatchers("/api/comments/**").authenticated()
+                        .requestMatchers("/api/authors/**", "/api/users/**", "/api/inventory/**", "/api/admin/**").hasRole("ADMIN")
 
                         // H2 console - только для админов
                         .requestMatchers("/h2-console/**").hasRole("ADMIN")
 
-                        // Web страницы
-                        .requestMatchers("/my-recipes").hasAnyRole("USER", "AUTHOR", "ADMIN")
+                        // Web страницы - разрешить всем аутентифицированным
+                        .requestMatchers("/my-recipes", "/recipe/create", "/recipe/edit/**").authenticated()
                         .requestMatchers("/recipe/**").permitAll()
 
                         .anyRequest().authenticated()

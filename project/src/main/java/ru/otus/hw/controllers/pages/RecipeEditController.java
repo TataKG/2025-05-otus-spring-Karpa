@@ -9,14 +9,17 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import ru.otus.hw.dto.AuthorDto;
 import ru.otus.hw.dto.RecipeDto;
+import ru.otus.hw.dto.UserDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.services.AuthorService;
 import ru.otus.hw.services.CategoryService;
 import ru.otus.hw.services.InventoryService;
 import ru.otus.hw.services.RecipeService;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Controller
 @RequestMapping("/recipe")
@@ -31,10 +34,19 @@ public class RecipeEditController {
     @GetMapping("/create")
     public String createRecipePage(Model model, Authentication authentication) {
         String username = authentication.getName();
-        AuthorDto author = authorService.getAuthorByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException("Author not found for user: " + username));
 
-        // Создаем пустой RecipeDto с текущим автором
+        AuthorDto author = authorService.getAuthorByUsername(username)
+                .orElseGet(() -> {
+                    // Если автора нет, создаем временного
+                    return new AuthorDto(
+                            null,
+                            new UserDto(null, username, username + "@example.com", Set.of("ROLE_USER")),
+                            "Автор: " + username,
+                            LocalDateTime.now(),
+                            0
+                    );
+                });
+
         RecipeDto emptyRecipe = new RecipeDto(
                 null,
                 "",
