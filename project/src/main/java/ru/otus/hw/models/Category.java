@@ -1,18 +1,14 @@
 package ru.otus.hw.models;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,11 +28,25 @@ public class Category {
     @Column(nullable = false, unique = true)
     private String name;
 
-    @OneToMany(mappedBy = "category")
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
     @ToString.Exclude
     private List<Recipe> recipes = new ArrayList<>();
 
     public Category(String name) {
         this.name = name;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public Category(String name, String description) {
+        this.name = name;
+        this.description = description;
+        this.createdAt = LocalDateTime.now();
     }
 }

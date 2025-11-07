@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{myrecipes.title}">Мои рецепты - Кулинарная книга</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <style>
+        .recipe-card {
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .recipe-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .language-switcher {
+            cursor: pointer;
+        }
+        .navbar-brand {
+            font-weight: 600;
+        }
+        .table th {
+            border-top: none;
+            font-weight: 600;
+        }
+        .badge {
+            font-size: 0.75em;
+        }
+        .action-buttons {
+            min-width: 200px;
+        }
+        .btn-action {
+            margin: 2px;
+        }
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1055;
+        }
+    </style>
+</head>
+<body>
+<!-- Навигационная панель -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/" th:text="#{navbar.brand}">
+            🍳 Кулинарная книга
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">
+                        🏠 <span th:text="#{navbar.home}">Домой</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/my-recipes">
+                        📖 <span th:text="#{navbar.my_recipes}">Мои рецепты</span>
+                    </a>
+                </li>
+                <li class="nav-item" sec:authorize="hasRole('AUTHOR')">
+                    <a class="nav-link" href="/recipe/create">
+                        ✏️ <span th:text="#{myrecipes.create_new}">Создать рецепт</span>
+                    </a>
+                </li>
+            </ul>
+
+            <ul class="navbar-nav">
+                <!-- Смена языка -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle language-switcher" href="#" id="languageDropdown"
+                       role="button" data-bs-toggle="dropdown" th:text="#{navbar.language}">
+                        🌐 Язык
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="?lang=ru" th:text="#{language.russian}">Русский</a></li>
+                        <li><a class="dropdown-item" href="?lang=en" th:text="#{language.english}">English</a></li>
+                    </ul>
+                </li>
+
+                <!-- Авторизация -->
+                <li class="nav-item" sec:authorize="!isAuthenticated()">
+                    <a class="nav-link" href="/login" th:text="#{navbar.login}">
+                        🔑 Войти
+                    </a>
+                </li>
+                <li class="nav-item" sec:authorize="isAuthenticated()">
+                    <form th:action="@{/logout}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-link nav-link p-0 border-0">
+                            🚪 <span th:text="#{navbar.logout}">Выйти</span> (<span sec:authentication="name"></span>)
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Основной контент -->
+<div class="container mt-4">
+    <!-- Заголовок -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="text-primary mb-2" th:text="#{myrecipes.title}">📚 Мои рецепты</h1>
+                    <p class="lead text-muted" th:text="#{myrecipes.subtitle}">
+                        Управляйте своими рецептами - просматривайте, редактируйте и удаляйте
+                    </p>
+                </div>
+                <div sec:authorize="hasRole('AUTHOR')">
+                    <a href="/recipe/create" class="btn btn-success btn-lg">
+                        ➕ <span th:text="#{myrecipes.create_new}">Создать рецепт</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4 id="totalRecipesCount">0</h4>
+                    <p class="mb-0" th:text="#{myrecipes.total_recipes}">Всего рецептов</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4 id="publishedRecipesCount">0</h4>
+                    <p class="mb-0" th:text="#{myrecipes.published}">Опубликовано</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h4 id="draftRecipesCount">0</h4>
+                    <p class="mb-0" th:text="#{myrecipes.drafts}">Черновики</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4 id="totalCommentsCount">0</h4>
+                    <p class="mb-0" th:text="#{myrecipes.total_comments}">Всего комментариев</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица рецептов -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0" th:text="#{myrecipes.my_recipes_list}">📋 Список моих рецептов</h5>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-light active" id="filterAll" onclick="myRecipesApp.filterRecipes('all')">
+                            <span th:text="#{myrecipes.filter_all}">Все</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-light" id="filterPublished" onclick="myRecipesApp.filterRecipes('published')">
+                            <span th:text="#{myrecipes.filter_published}">Опубликованные</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-light" id="filterDrafts" onclick="myRecipesApp.filterRecipes('drafts')">
+                            <span th:text="#{myrecipes.filter_drafts}">Черновики</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="recipesTable">
+                            <thead class="table-light">
+                            <tr>
+                                <th width="25%">📝 <span th:text="#{recipes.table.name}">Название рецепта</span></th>
+                                <th width="15%">📂 <span th:text="#{recipes.table.category}">Категория</span></th>
+                                <th width="10%">📊 <span th:text="#{myrecipes.status}">Статус</span></th>
+                                <th width="15%">📅 <span th:text="#{myrecipes.created_date}">Дата создания</span></th>
+                                <th width="10%">💬 <span th:text="#{recipes.table.comments}">Комментарии</span></th>
+                                <th width="25%" class="text-center">🎯 <span th:text="#{recipes.table.actions}">Действия</span></th>
+                            </tr>
+                            </thead>
+                            <tbody id="recipesTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden" th:text="#{common.loading}">Загрузка...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted" th:text="#{myrecipes.loading}">Загрузка ваших рецептов...</p>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения удаления -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">⚠️ <span th:text="#{myrecipes.delete_confirm_title}">Подтверждение удаления</span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p th:text="#{myrecipes.delete_confirm_message}">Вы уверены, что хотите удалить этот рецепт? Это действие нельзя отменить.</p>
+                <p class="fw-bold" id="recipeToDeleteTitle"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <span th:text="#{common.cancel}">Отмена</span>
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    🗑️ <span th:text="#{myrecipes.delete}">Удалить</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно деталей рецепта -->
+<div class="modal fade" id="recipeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="recipeModalTitle">📖 <span th:text="#{recipe.details.title}">Детали рецепта</span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="recipeModalBody">
+                <!-- Контент загружается через JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.close}">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast уведомления -->
+<div class="toast-container">
+    <div id="successToast" class="toast align-items-center text-bg-success border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body" id="successToastMessage"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+    <div id="errorToast" class="toast align-items-center text-bg-danger border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body" id="errorToastMessage"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Скрытый контейнер с локализованными текстами для JavaScript -->
+<div id="i18n-messages" style="display: none;"
+     data-loading="#{common.loading}"
+     data-close="#{common.close}"
+     data-view="#{common.view}"
+     data-edit="#{myrecipes.edit}"
+     data-delete="#{myrecipes.delete}"
+     data-recipe-details="#{recipe.details.title}"
+     data-myrecipes-loading="#{myrecipes.loading}"
+     data-no-recipes="#{myrecipes.no_recipes}"
+     data-retry="#{common.retry}"
+     data-category="#{recipes.table.category}"
+     data-author="#{recipes.table.author}"
+     data-comments="#{recipes.table.comments}"
+     data-actions="#{recipes.table.actions}"
+     data-ingredients="#{recipe.ingredients}"
+     data-description="#{recipe.description}"
+     data-inventory="#{recipe.inventory}"
+     data-status-published="#{myrecipes.status_published}"
+     data-status-draft="#{myrecipes.status_draft}"
+     data-delete-confirm-title="#{myrecipes.delete_confirm_title}"
+     data-delete-confirm-message="#{myrecipes.delete_confirm_message}"
+     data-cancel="#{common.cancel}"
+     data-delete-success="#{myrecipes.delete_success}"
+     data-delete-error="#{myrecipes.delete_error}">
+</div>
+
+<!-- Bootstrap JS -->
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+<!-- Основной JS приложения для "Мои рецепты" -->
+<script th:src="@{/js/my-recipes.js}"></script>
+</body>
+</html>

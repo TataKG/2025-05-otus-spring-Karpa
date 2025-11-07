@@ -1,27 +1,19 @@
 package ru.otus.hw.models;
 
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.NamedAttributeNode;
-import jakarta.persistence.NamedEntityGraph;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Data
 @Setter
@@ -39,20 +31,32 @@ public class User {
     @Column(nullable = false, unique = true)
     private String username;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String email;
 
     @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false)
     private boolean enabled = true;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "role")
-    private List<String> roles = new ArrayList<>();
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "user")
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id")
+    )
+    @Column(name = "role")
+    private Set<String> roles = new HashSet<>();
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ToString.Exclude
+    private Author author;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude
     private List<Comment> comments = new ArrayList<>();
 
@@ -61,14 +65,22 @@ public class User {
         this.email = email;
         this.password = password;
         this.enabled = true;
-        this.roles = List.of("USER");
+        this.createdAt = LocalDateTime.now();
     }
 
-    public User(String username, String email, String password, List<String> roles) {
-        this.username = username;
-        this.email = email;
-        this.password = password;
-        this.enabled = true;
-        this.roles = roles != null ? roles : List.of("USER");
+    public void addRole(String role) {
+        this.roles.add(role);
+    }
+
+    public void removeRole(String role) {
+        this.roles.remove(role);
+    }
+
+    public boolean hasRole(String role) {
+        return this.roles.contains(role);
+    }
+
+    public boolean isAuthor() {
+        return this.roles.contains("ROLE_AUTHOR") || this.author != null;
     }
 }

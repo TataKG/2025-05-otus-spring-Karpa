@@ -62,4 +62,12 @@ public class InventoryServiceImpl implements InventoryService {
                 .map(inventoryConverter::toDto)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<InventoryDto> getInventoryByRecipeId(Long recipeId) {
+        return inventoryRepository.findByRecipeId(recipeId).stream()
+                .map(inventoryConverter::toDto)
+                .collect(Collectors.toList());
+    }
+
 }

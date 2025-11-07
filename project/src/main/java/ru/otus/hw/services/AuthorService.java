@@ -12,6 +12,8 @@ public interface AuthorService {
 
     Optional<AuthorDto> getAuthorByUserId(Long userId);
 
+    Optional<AuthorDto> getAuthorByUsername(String username);
+
     List<AuthorDto> getAllAuthors();
 
     AuthorDto convertUserToAuthor(Long userId, String bio);

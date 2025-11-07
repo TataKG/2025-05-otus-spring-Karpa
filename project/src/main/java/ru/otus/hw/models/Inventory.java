@@ -13,7 +13,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +35,12 @@ public class Inventory {
     @Column(nullable = false)
     private String name;
 
+    @Column(columnDefinition = "TEXT")
     private String description;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     @ManyToMany(mappedBy = "inventoryItems")
     @ToString.Exclude
@@ -42,5 +49,6 @@ public class Inventory {
     public Inventory(String name, String description) {
         this.name = name;
         this.description = description;
+        this.createdAt = LocalDateTime.now();
     }
 }

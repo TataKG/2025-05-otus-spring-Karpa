@@ -20,29 +20,32 @@ public class GlobalExceptionHandler {
         this.messageProvider = messageProvider;
     }
 
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<Object>> handleGenericException(Exception ex) {
+         String errorMessage = ex.getMessage();
+        if (errorMessage == null) {
+            errorMessage = "An unexpected error occurred";
+        }
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(errorMessage));
+    }
+
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<ApiResponse<Object>> handleEntityNotFound(EntityNotFoundException ex) {
-        ApiResponse<Object> response = ApiResponse.error(ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    public ResponseEntity<ApiResponse<Object>> handleEntityNotFoundException(EntityNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(ex.getMessage()));
     }
 
     @ExceptionHandler(EntityAlreadyExistsException.class)
-    public ResponseEntity<ApiResponse<Object>> handleEntityAlreadyExists(EntityAlreadyExistsException ex) {
-        ApiResponse<Object> response = ApiResponse.error(ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    public ResponseEntity<ApiResponse<Object>> handleEntityAlreadyExistsException(EntityAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(ex.getMessage()));
     }
 
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ApiResponse<Object>> handleValidationException(ValidationException ex) {
-        ApiResponse<Object> response = ApiResponse.error(ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Object>> handleGenericException(Exception ex) {
-        ApiResponse<Object> response = ApiResponse.error(
-                messageProvider.getMessage("error.generic", ex.getMessage())
-        );
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage()));
     }
 }

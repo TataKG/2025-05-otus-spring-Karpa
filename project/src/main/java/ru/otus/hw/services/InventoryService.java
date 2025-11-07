@@ -15,4 +15,6 @@ public interface InventoryService {
     List<InventoryDto> getAllInventory();
 
     List<InventoryDto> getInventoryByNames(List<String> names);
+
+    List<InventoryDto> getInventoryByRecipeId(Long recipeId);
 }

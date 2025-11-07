@@ -3,7 +3,7 @@ package ru.otus.hw.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record RecipeDto(
+public record RecipeDetailsDto(
         Long id,
         String title,
         CategoryDto category,
@@ -11,9 +11,8 @@ public record RecipeDto(
         List<InventoryDto> inventoryItems,
         List<String> ingredients,
         String description,
-        int commentCount,
+        List<CommentDto> comments,
         boolean published,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
-) {
-}
+) {}

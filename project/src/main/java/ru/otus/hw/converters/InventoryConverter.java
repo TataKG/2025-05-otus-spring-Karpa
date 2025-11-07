@@ -16,7 +16,8 @@ public class InventoryConverter {
         return new InventoryDto(
                 inventory.getId(),
                 inventory.getName(),
-                inventory.getDescription()
+                inventory.getDescription(),
+                inventory.getCreatedAt()
         );
     }
 

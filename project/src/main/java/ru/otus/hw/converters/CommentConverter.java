@@ -24,7 +24,8 @@ public class CommentConverter {
                 comment.getContent(),
                 userConverter.toDto(comment.getUser()),
                 comment.getRecipe() != null ? comment.getRecipe().getId() : null,
-                comment.getCreatedAt()
+                comment.getCreatedAt(),
+                comment.getUpdatedAt()
         );
     }
 

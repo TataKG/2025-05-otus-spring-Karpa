@@ -12,6 +12,8 @@ public interface CommentService {
 
     List<CommentDto> getCommentsByRecipe(Long recipeId);
 
+    List<CommentDto> getCommentsByRecipeId(Long recipeId);
+
     List<CommentDto> getCommentsByUser(Long userId);
 
     int getCommentCountForRecipe(Long recipeId);

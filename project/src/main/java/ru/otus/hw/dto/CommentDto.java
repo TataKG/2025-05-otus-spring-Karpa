@@ -7,6 +7,7 @@ public record CommentDto(
         String content,
         UserDto user,
         Long recipeId,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
 ) {
 }

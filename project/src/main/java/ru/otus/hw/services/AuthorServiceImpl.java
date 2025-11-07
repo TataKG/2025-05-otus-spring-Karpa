@@ -66,6 +66,31 @@ public class AuthorServiceImpl implements AuthorService {
     }
 
     @Override
+    public Optional<AuthorDto> getAuthorByUsername(String username) {
+        System.out.println("Searching author by username: " + username); // Логирование
+
+        Optional<Author> authorOpt = authorRepository.findByUserUsername(username);
+
+        if (authorOpt.isPresent()) {
+            AuthorDto authorDto = authorConverter.toDto(authorOpt.get());
+            System.out.println("Found author: " + authorDto.id() + " for username: " + username);
+            return Optional.of(authorDto);
+        } else {
+            System.out.println("No author found for username: " + username);
+
+            // Дополнительная проверка - существует ли пользователь
+            Optional<User> userOpt = userRepository.findByUsername(username);
+            if (userOpt.isPresent()) {
+                System.out.println("But user exists: " + userOpt.get().getId());
+            } else {
+                System.out.println("User not found: " + username);
+            }
+
+            return Optional.empty();
+        }
+    }
+
+    @Override
     public List<AuthorDto> getAllAuthors() {
         return authorRepository.findAllWithUser().stream()
                 .map(authorConverter::toDto)

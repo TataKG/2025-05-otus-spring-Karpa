@@ -1,5 +1,6 @@
 package ru.otus.hw.services;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.converters.CommentConverter;
@@ -18,6 +19,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 @Transactional
 public class CommentServiceImpl implements CommentService {
 
@@ -26,18 +28,6 @@ public class CommentServiceImpl implements CommentService {
     private final RecipeRepository recipeRepository;
     private final CommentConverter commentConverter;
     private final MessageProvider messageProvider;
-
-    public CommentServiceImpl(CommentRepository commentRepository,
-                              UserRepository userRepository,
-                              RecipeRepository recipeRepository,
-                              CommentConverter commentConverter,
-                              MessageProvider messageProvider) {
-        this.commentRepository = commentRepository;
-        this.userRepository = userRepository;
-        this.recipeRepository = recipeRepository;
-        this.commentConverter = commentConverter;
-        this.messageProvider = messageProvider;
-    }
 
     @Override
     public CommentDto createComment(String content, Long userId, Long recipeId) {
@@ -67,6 +57,12 @@ public class CommentServiceImpl implements CommentService {
         return commentRepository.findByRecipeIdWithUser(recipeId).stream()
                 .map(commentConverter::toDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<CommentDto> getCommentsByRecipeId(Long recipeId) {
+        // Делегируем существующему методу для консистентности
+        return getCommentsByRecipe(recipeId);
     }
 
     @Override

@@ -15,7 +15,9 @@ public class CategoryConverter {
 
         return new CategoryDto(
                 category.getId(),
-                category.getName()
+                category.getName(),
+                category.getDescription(),
+                category.getCreatedAt()
         );
     }
 

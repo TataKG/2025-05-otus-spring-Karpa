@@ -25,8 +25,9 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         // ВРЕМЕННО для тестирования
-        return NoOpPasswordEncoder.getInstance();
-        // Позже заменить на: return new BCryptPasswordEncoder();
+         return NoOpPasswordEncoder.getInstance();
+        // Позже заменить на:
+//        return new BCryptPasswordEncoder();
     }
 
     @Bean
@@ -50,6 +51,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/authors/**").hasAnyRole("AUTHOR", "ADMIN")
                         .requestMatchers("/api/users/**", "/api/inventory/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/my-recipes").authenticated()
+//                        .requestMatchers("/api/recipes/my-recipes").authenticated()
 
                         // H2 console - только для админов
                         .requestMatchers("/h2-console/**").hasRole("ADMIN")

@@ -23,6 +23,7 @@ public class AuthorConverter {
                 author.getId(),
                 userConverter.toDto(author.getUser()),
                 author.getBio(),
+                author.getCreatedAt(),
                 author.getRecipes() != null ? author.getRecipes().size() : 0
         );
     }

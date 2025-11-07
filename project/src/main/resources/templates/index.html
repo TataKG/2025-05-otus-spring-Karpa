@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Кулинарная книга</title>
+    <title th:text="#{page.title}">Кулинарная книга</title>
     <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
     <style>
         .recipe-card {
@@ -28,13 +28,22 @@
         .badge {
             font-size: 0.75em;
         }
+        .filter-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .filter-row {
+            align-items: end;
+        }
     </style>
 </head>
 <body>
 <!-- Навигационная панель -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
-        <a class="navbar-brand" href="/">
+        <a class="navbar-brand" href="/" th:text="#{navbar.brand}">
             🍳 Кулинарная книга
         </a>
 
@@ -45,12 +54,12 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
-                    <a class="nav-link active" href="/">
+                    <a class="nav-link active" href="/" th:text="#{navbar.home}">
                         🏠 Домой
                     </a>
                 </li>
                 <li class="nav-item" sec:authorize="isAuthenticated()">
-                    <a class="nav-link" href="/my-recipes">
+                    <a class="nav-link" href="/my-recipes" th:text="#{navbar.my_recipes}">
                         📖 Мои рецепты
                     </a>
                 </li>
@@ -60,25 +69,25 @@
                 <!-- Смена языка -->
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle language-switcher" href="#" id="languageDropdown"
-                       role="button" data-bs-toggle="dropdown">
+                       role="button" data-bs-toggle="dropdown" th:text="#{navbar.language}">
                         🌐 Язык
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="?lang=ru">Русский</a></li>
-                        <li><a class="dropdown-item" href="?lang=en">English</a></li>
+                        <li><a class="dropdown-item" href="?lang=ru" th:text="#{language.russian}">Русский</a></li>
+                        <li><a class="dropdown-item" href="?lang=en" th:text="#{language.english}">English</a></li>
                     </ul>
                 </li>
 
                 <!-- Авторизация -->
                 <li class="nav-item" sec:authorize="!isAuthenticated()">
-                    <a class="nav-link" href="/login">
+                    <a class="nav-link" href="/login" th:text="#{navbar.login}">
                         🔑 Войти
                     </a>
                 </li>
                 <li class="nav-item" sec:authorize="isAuthenticated()">
                     <form th:action="@{/logout}" method="post" class="d-inline">
                         <button type="submit" class="btn btn-link nav-link p-0 border-0">
-                            🚪 Выйти (<span sec:authentication="name"></span>)
+                            🚪 <span th:text="#{navbar.logout}">Выйти</span> (<span sec:authentication="name"></span>)
                         </button>
                     </form>
                 </li>
@@ -93,10 +102,37 @@
     <div class="row mb-4">
         <div class="col">
             <div class="text-center">
-                <h1 class="text-primary mb-3">🍽️ Добро пожаловать в Кулинарную книгу!</h1>
-                <p class="lead text-muted">
+                <h1 class="text-primary mb-3" th:text="#{welcome.title}">🍽️ Добро пожаловать в Кулинарную книгу!</h1>
+                <p class="lead text-muted" th:text="#{welcome.subtitle}">
                     Откройте для себя лучшие рецепты от наших авторов
                 </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="filter-section">
+        <div class="row filter-row g-3">
+            <div class="col-md-4">
+                <label for="categoryFilter" class="form-label">📂 Фильтр по категории</label>
+                <select class="form-select" id="categoryFilter">
+                    <option value="">Все категории</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="authorFilter" class="form-label">👨‍🍳 Фильтр по автору</label>
+                <select class="form-select" id="authorFilter">
+                    <option value="">Все авторы</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="searchInput" class="form-label">🔍 Поиск по названию</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Введите название рецепта...">
+                    <button class="btn btn-outline-secondary" type="button" id="clearFilters">
+                        Очистить
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -105,28 +141,30 @@
     <div class="row">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">📋 Все рецепты</h5>
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0" th:text="#{recipes.title}">📋 Все рецепты</h5>
+                    <span class="badge bg-light text-dark" id="recipesCount">0 рецептов</span>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover mb-0" id="recipesTable">
                             <thead class="table-light">
                             <tr>
-                                <th width="30%">Название рецепта</th>
-                                <th width="15%">Категория</th>
-                                <th width="20%">Автор</th>
-                                <th width="15%">Комментарии</th>
-                                <th width="20%">Действия</th>
+                                <th width="25%" th:text="#{recipes.table.name}">Название рецепта</th>
+                                <th width="15%" th:text="#{recipes.table.category}">Категория</th>
+                                <th width="20%" th:text="#{recipes.table.author}">Автор</th>
+                                <th width="15%" th:text="#{recipes.table.comments}">Комментарии</th>
+                                <th width="15%" th:text="#{recipes.table.created_date}">Дата создания</th>
+                                <th width="10%" th:text="#{recipes.table.actions}">Действия</th>
                             </tr>
                             </thead>
                             <tbody id="recipesTableBody">
                             <tr>
-                                <td colspan="5" class="text-center py-4">
+                                <td colspan="6" class="text-center py-4">
                                     <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Загрузка...</span>
+                                        <span class="visually-hidden" th:text="#{common.loading}">Загрузка...</span>
                                     </div>
-                                    <p class="mt-2 text-muted">Загрузка рецептов...</p>
+                                    <p class="mt-2 text-muted" th:text="#{recipes.loading}">Загрузка рецептов...</p>
                                 </td>
                             </tr>
                             </tbody>
@@ -138,19 +176,36 @@
     </div>
 </div>
 
-<!-- Модальное окно деталей рецепта -->
+<!-- Модальные окна -->
 <div class="modal fade" id="recipeModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="recipeModalTitle">📖 Детали рецепта</h5>
+                <h5 class="modal-title" id="recipeModalTitle" th:text="#{recipe.details.title}">📖 Детали рецепта</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="recipeModalBody">
                 <!-- Контент загружается через JavaScript -->
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.close}">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="commentsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="commentsModalTitle">💬 Комментарии к рецепту</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="commentsModalBody">
+                <!-- Контент загружается через JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.close}">Закрыть</button>
             </div>
         </div>
     </div>
@@ -158,7 +213,44 @@
 
 <!-- Bootstrap JS -->
 <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+<!-- Общие утилиты -->
+<script th:src="@{/js/common.js}"></script>
 <!-- Основной JS приложения -->
 <script th:src="@{/js/app.js}"></script>
+
+<script th:inline="javascript">
+    window.i18nMessages = {
+        loading: /*[[#{common.loading}]]*/ 'Загрузка...',
+        close: /*[[#{common.close}]]*/ 'Закрыть',
+        view: /*[[#{common.view}]]*/ 'Просмотр',
+        retry: /*[[#{common.retry}]]*/ 'Повторить',
+        cancel: /*[[#{common.cancel}]]*/ 'Отмена',
+        'recipe-details': /*[[#{recipe.details.title}]]*/ 'Детали рецепта',
+        'recipes-loading': /*[[#{recipes.loading}]]*/ 'Загрузка рецептов...',
+        'no-recipes': /*[[#{recipes.no_recipes}]]*/ 'Рецепты не найдены',
+        'error-loading-recipes': /*[[#{error.loading_recipes}]]*/ 'Ошибка при загрузке рецептов',
+        'error-loading-details': /*[[#{error.loading_recipe_details}]]*/ 'Ошибка при загрузке деталей рецепта',
+        'error-loading-comments': /*[[#{error.loading_comments}]]*/ 'Ошибка при загрузке комментариев',
+        category: /*[[#{recipes.table.category}]]*/ 'Категория',
+        author: /*[[#{recipes.table.author}]]*/ 'Автор',
+        comments: /*[[#{recipes.table.comments}]]*/ 'Комментарии',
+        actions: /*[[#{recipes.table.actions}]]*/ 'Действия',
+        ingredients: /*[[#{recipe.ingredients}]]*/ 'Ингредиенты',
+        description: /*[[#{recipe.description}]]*/ 'Описание',
+        inventory: /*[[#{recipe.inventory}]]*/ 'Необходимый инвентарь',
+        'comments-title': /*[[#{comment.view_title}]]*/ 'Комментарии к рецепту',
+        'no-comments': /*[[#{comment.no_comments}]]*/ 'Комментариев пока нет',
+        'comment-author': /*[[#{comment.author}]]*/ 'Автор',
+        'comment-date': /*[[#{comment.date}]]*/ 'Дата',
+        'comment-content': /*[[#{comment.content}]]*/ 'Комментарий',
+        'comments-loading': /*[[#{comment.loading}]]*/ 'Загрузка комментариев...',
+        'recipe-details-category': /*[[#{recipe.details.category}]]*/ '📂 Категория',
+        'recipe-details-author': /*[[#{recipe.details.author}]]*/ '👨‍🍳 Автор',
+        'recipe-details-ingredients': /*[[#{recipe.details.ingredients}]]*/ '🛒 Ингредиенты',
+        'recipe-details-description': /*[[#{recipe.details.description}]]*/ '📝 Описание',
+        'recipe-details-inventory': /*[[#{recipe.details.inventory}]]*/ '🔧 Необходимый инвентарь',
+        'recipe-details-comments': /*[[#{recipe.details.comments}]]*/ '💬 Комментарии'
+    };
+</script>
 </body>
 </html>

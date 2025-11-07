@@ -12,7 +12,7 @@ import ru.otus.hw.util.MessageProvider;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/comments")
+@RequestMapping("/api/recipes/{recipeId}/comments")
 public class CommentController {
 
     private final CommentService commentService;
@@ -24,7 +24,15 @@ public class CommentController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<CommentDto>> createComment(@RequestBody CreateCommentRequest request) {
+    public ResponseEntity<ApiResponse<CommentDto>> createComment(
+            @PathVariable Long recipeId,
+            @RequestBody CreateCommentRequest request) {
+
+        // Убедимся, что recipeId из пути совпадает с recipeId из запроса
+        if (!recipeId.equals(request.recipeId())) {
+            throw new IllegalArgumentException("Recipe ID in path doesn't match request body");
+        }
+
         CommentDto commentDto = commentService.createComment(
                 request.content(),
                 request.userId(),
@@ -36,34 +44,41 @@ public class CommentController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<CommentDto>> getCommentById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<CommentDto>> getCommentById(
+            @PathVariable Long recipeId,
+            @PathVariable Long id) {
+
         CommentDto commentDto = commentService.getCommentById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
                         messageProvider.getMessage("comment.not_found", id)
                 ));
+
+        // Проверяем, что комментарий принадлежит указанному рецепту
+        if (!commentDto.recipeId().equals(recipeId)) {
+            throw new EntityNotFoundException("Comment not found for this recipe");
+        }
+
         return ResponseEntity.ok(ApiResponse.success(commentDto));
     }
 
-    @GetMapping("/recipe/{recipeId}")
+    @GetMapping
     public ResponseEntity<ApiResponse<List<CommentDto>>> getCommentsByRecipe(@PathVariable Long recipeId) {
         List<CommentDto> comments = commentService.getCommentsByRecipe(recipeId);
         return ResponseEntity.ok(ApiResponse.success(comments));
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<ApiResponse<List<CommentDto>>> getCommentsByUser(@PathVariable Long userId) {
-        List<CommentDto> comments = commentService.getCommentsByUser(userId);
-        return ResponseEntity.ok(ApiResponse.success(comments));
-    }
-
-    @GetMapping("/recipe/{recipeId}/count")
+    @GetMapping("/count")
     public ResponseEntity<ApiResponse<Integer>> getCommentCountForRecipe(@PathVariable Long recipeId) {
         int count = commentService.getCommentCountForRecipe(recipeId);
         return ResponseEntity.ok(ApiResponse.success(count));
     }
 
     @DeleteMapping("/{commentId}")
-    public ResponseEntity<ApiResponse<Void>> deleteComment(@PathVariable Long commentId) {
+    public ResponseEntity<ApiResponse<Void>> deleteComment(
+            @PathVariable Long recipeId,
+            @PathVariable Long commentId) {
+
+        // Можно добавить проверку, что комментарий принадлежит рецепту
         commentService.deleteComment(commentId);
         return ResponseEntity.ok(
                 ApiResponse.success(null, messageProvider.getMessage("comment.deleted"))
