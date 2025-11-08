@@ -353,4 +353,29 @@ public class RecipeServiceImpl implements RecipeService {
         }
         return inventoryItems;
     }
+
+    @Override
+    public List<RecipeDto> findPublishedRecipesWithFilters(String search, Long categoryId, Long authorId) {
+        List<Recipe> recipes;
+
+        if (search != null && !search.trim().isEmpty()) {
+            // Поиск по названию
+            recipes = recipeRepository.findPublishedByTitleContainingIgnoreCase(search.trim());
+        } else if (categoryId != null || authorId != null) {
+            // Фильтрация по категории и/или автору
+            recipes = recipeRepository.findPublishedByFilters(
+                    null, // search
+                    categoryId,
+                    authorId
+            );
+        } else {
+            // Все опубликованные рецепты
+            recipes = recipeRepository.findPublishedRecipesWithBasicAssociations();
+        }
+
+        return recipes.stream()
+                .map(recipeConverter::toDto)
+                .collect(Collectors.toList());
+    }
+
 }

@@ -49,6 +49,8 @@ public interface RecipeService {
         List<RecipeSummaryDto> getRecentPublishedRecipes(int limit);
         List<RecipeSummaryDto> getPopularPublishedRecipes(int limit);
 
+        List<RecipeDto> findPublishedRecipesWithFilters(String search, Long categoryId, Long authorId);
+
         long getPublishedRecipesCount();
         long getTotalRecipesCount();
         long getRecipesCountByAuthor(Long authorId);

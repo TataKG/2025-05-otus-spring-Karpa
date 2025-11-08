@@ -36,4 +36,11 @@ public class AdminController {
         model.addAttribute("currentUrl", request.getRequestURI());
         return "admin/authors";
     }
+
+    @GetMapping("/recipes")
+    public String recipesManagement(HttpServletRequest request, Model model) {
+        model.addAttribute("currentUrl", request.getRequestURI());
+        return "admin/recipes";
+    }
+
 }

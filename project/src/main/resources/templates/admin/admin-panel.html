@@ -64,6 +64,24 @@
                 </div>
             </div>
         </div>
+
+        <!-- Управление рецептами -->
+        <div class="col-md-3">
+            <div class="card admin-card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <span class="display-4">📖</span>
+                    </div>
+                    <h5 class="card-title" th:text="#{admin.nav.recipes}">Рецепты</h5>
+                    <p class="card-text text-muted" th:text="#{admin.recipes.description}">
+                        Просмотр и управление опубликованными рецептами, фильтрация и удаление
+                    </p>
+                    <a href="/admin/recipes" class="btn btn-primary">
+                        📖 <span th:text="#{admin.nav.recipes}">Управление рецептами</span>
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Статистика -->
