@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${id} ? 'Edit Book' : 'Add Book'">Book Form</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <script src="/webjars/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875em;
+            margin-top: 0.25rem;
+        }
+        .selected-info {
+            color: #198754;
+            font-weight: 500;
+            margin-top: 0.25rem;
+            padding: 0.5rem;
+            background-color: #f8f9fa;
+            border-radius: 0.375rem;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg">
+    <div class="container-fluid px-0">
+        <a class="navbar-brand pt-0" href="#">Library</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" aria-current="page" href="book-list.html" th:href="@{/}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="author-list.html" th:href="@{/authors}">Authors</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="genre-list.html" th:href="@{/genres}">Genres</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header text-white">
+                    <h2 class="card-title mb-0" id="formTitle">
+                        <i class="bi bi-book"></i>
+                        <span th:text="${id} ? 'Edit Book' : 'Add New Book'">Book Form</span>
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <form id="bookForm" novalidate>
+                        <input type="hidden" id="id" th:value="${id}">
+
+                        <!-- Title Field -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label fw-bold">Book Title *</label>
+                            <input type="text" class="form-control form-control-lg" id="title"
+                                   placeholder="Enter book title" required maxlength="255">
+                            <div class="error-message" id="titleError"></div>
+                        </div>
+
+                        <!-- Author Field -->
+                        <div class="mb-3">
+                            <label for="authorId" class="form-label fw-bold">Author *</label>
+                            <select class="form-control" id="authorId" required>
+                                <option value="">-- Select Author --</option>
+                            </select>
+                            <div class="error-message" id="authorError"></div>
+                        </div>
+
+                        <!-- Genre Field -->
+                        <div class="mb-3">
+                            <label for="genreId" class="form-label fw-bold">Genre *</label>
+                            <select class="form-control" id="genreId" required>
+                                <option value="">-- Select Genre --</option>
+                            </select>
+                            <div class="error-message" id="genreError"></div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-2 mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-success btn-lg px-4" id="submitBtn">
+                                    <span id="submitText">
+                                        <i class="bi bi-check-circle"></i>
+                                        <span th:text="${id} ? 'Update Book' : 'Create Book'">Save Book</span>
+                                    </span>
+                                <div id="submitSpinner" class="spinner-border spinner-border-sm d-none ms-2"
+                                     role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </button>
+
+                            <a th:href="@{/books}" class="btn btn-secondary btn-lg px-4">
+                                <i class="bi bi-arrow-left"></i> Back to List
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    class BookEditApp {
+        constructor() {
+            this.API_BASE = '/api/v1';
+            this.id = document.getElementById('id').value;
+            this.authors = [];
+            this.genres = [];
+            this.currentBook = null;
+            this.init();
+        }
+
+        async init() {
+            await this.loadAuthors();
+            await this.loadGenres();
+            if (this.id) {
+                await this.loadBookData();
+            }
+            this.setupEventListeners();
+            this.updateUI();
+        }
+
+        async loadAuthors() {
+            try {
+                this.setLoading(true);
+                console.log('Loading form data from:', `${this.API_BASE}/authors`);
+
+                const response = await fetch(`${this.API_BASE}/authors`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const authors = await response.json();
+                console.log('Form data loaded:', authors);
+
+                this.authors = authors || [];
+
+                this.populateSelect('authorId', this.authors, 'fullName');
+                this.populateSelect('genreId', this.genres, 'name');
+
+            } catch (error) {
+                console.error('Error loading form data:', error);
+                this.showError('Failed to load authors. Please refresh the page.');
+            } finally {
+                this.setLoading(false);
+            }
+        }
+
+        async loadGenres() {
+            try {
+                this.setLoading(true);
+                console.log('Loading form data from:', `${this.API_BASE}/genres`);
+
+                const response = await fetch(`${this.API_BASE}/genres`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const genres = await response.json();
+                console.log('Form data loaded:', genres);
+
+                this.genres = genres || [];
+
+                this.populateSelect('genreId', this.genres, 'name');
+
+            } catch (error) {
+                console.error('Error loading form data:', error);
+                this.showError('Failed to load genres. Please refresh the page.');
+            } finally {
+                this.setLoading(false);
+            }
+        }
+
+        async loadBookData() {
+            if (!this.id) return;
+
+            try {
+                this.setLoading(true);
+                console.log('Loading book data from:', `${this.API_BASE}/books/${this.id}`);
+
+                const response = await fetch(`${this.API_BASE}/books/${this.id}`);
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        this.showError('Book not found. Redirecting to list...');
+                        setTimeout(() => window.location.href = '/book/list', 2000);
+                        return;
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const bookDto = await response.json();
+                console.log('Book DTO loaded:', bookDto);
+
+                this.currentBook = bookDto;
+                this.fillForm(bookDto);
+
+            } catch (error) {
+                console.error('Error loading book:', error);
+                this.showError('Failed to load book data.');
+            } finally {
+                this.setLoading(false);
+            }
+        }
+
+        populateSelect(selectId, items, displayField) {
+            const select = document.getElementById(selectId);
+            // Clear existing options except the first one
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+
+            items.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item[displayField] || 'Unknown';
+                option.setAttribute('data-full-data', JSON.stringify(item));
+                select.appendChild(option);
+            });
+        }
+
+        fillForm(bookDto) {
+            // Fill title from BookDto
+            document.getElementById('title').value = bookDto.title || '';
+
+            // Fill author from BookDto.author and show info
+            if (bookDto.author && bookDto.author.id) {
+                document.getElementById('authorId').value = bookDto.author.id;
+            }
+
+            // Fill genre from BookDto.genre and show info
+            if (bookDto.genre && bookDto.genre.id) {
+                document.getElementById('genreId').value = bookDto.genre.id;
+            }
+
+            this.updateUI();
+        }
+
+        setupEventListeners() {
+            const form = document.getElementById('bookForm');
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleSubmit();
+            });
+
+            // Author select change
+            document.getElementById('authorId').addEventListener('change', (e) => {
+                this.clearError('authorId');
+                const selectedOption = e.target.options[e.target.selectedIndex];
+            });
+
+            // Genre select change
+            document.getElementById('genreId').addEventListener('change', (e) => {
+                this.clearError('genreId');
+                const selectedOption = e.target.options[e.target.selectedIndex];
+            });
+
+            // Title input validation
+            document.getElementById('title').addEventListener('input', () => {
+                this.clearError('title');
+            });
+        }
+
+        async handleSubmit() {
+            if (!this.validateForm()) {
+                return;
+            }
+
+            try {
+                this.setSubmitState(true);
+
+                // Create BookFormDto for API
+                const bookFormDto = this.getFormData();
+                console.log('Submitting BookFormDto:', bookFormDto);
+
+                const url = this.id ? `${this.API_BASE}/books/${this.id}` : `${this.API_BASE}/books`;
+                const method = this.id ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(bookFormDto)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || `HTTP error! status: ${response.status}`);
+                }
+
+                const savedBookDto = await response.json();
+                console.log('BookDto saved successfully:', savedBookDto);
+
+                const successMessage = this.id ?
+                    'Book updated successfully!' : 'Book created successfully!';
+
+                this.showSuccess(successMessage, () => {
+                    window.location.href = '/books';
+                });
+
+            } catch (error) {
+                console.error('Error saving book:', error);
+                this.showError('Failed to save book. Please check the data and try again.');
+            } finally {
+                this.setSubmitState(false);
+            }
+        }
+
+        getFormData() {
+            return {
+                id: this.id || "",
+                title: document.getElementById('title').value.trim(),
+                authorId: document.getElementById('authorId').value,
+                genreId: document.getElementById('genreId').value
+            };
+        }
+
+        validateForm() {
+            let isValid = true;
+            const formData = this.getFormData();
+
+            // Validate title
+            if (!formData.title) {
+                this.showFieldError('title', 'Book title is required');
+                isValid = false;
+            } else if (formData.title.length < 2) {
+                this.showFieldError('title', 'Title must be at least 2 characters long');
+                isValid = false;
+            }
+
+            // Validate author
+            if (!formData.authorId) {
+                this.showFieldError('authorId', 'Please select an author');
+                isValid = false;
+            }
+
+            // Validate genre
+            if (!formData.genreId) {
+                this.showFieldError('genreId', 'Please select a genre');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        showFieldError(fieldId, message) {
+            const errorElement = document.getElementById(fieldId + 'Error');
+            if (errorElement) {
+                errorElement.textContent = message;
+            }
+            document.getElementById(fieldId).classList.add('is-invalid');
+        }
+
+        clearError(fieldId) {
+            const errorElement = document.getElementById(fieldId + 'Error');
+            if (errorElement) {
+                errorElement.textContent = '';
+            }
+            document.getElementById(fieldId).classList.remove('is-invalid');
+        }
+
+        updateUI() {
+            // Update form title
+            const titleElement = document.getElementById('formTitle');
+            const mode = this.id ? 'Edit' : 'Add New';
+            titleElement.innerHTML = `<i class="bi bi-book"></i> ${mode} Book`;
+
+            // Update submit button text
+            const submitText = document.getElementById('submitText');
+            submitText.innerHTML = `<i class="bi bi-check-circle"></i> ${this.id ? 'Update' : 'Create'} Book`;
+
+        }
+
+        setLoading(loading) {
+            const form = document.getElementById('bookForm');
+            if (loading) {
+                form.classList.add('loading');
+            } else {
+                form.classList.remove('loading');
+            }
+        }
+
+        setSubmitState(submitting) {
+            const submitBtn = document.getElementById('submitBtn');
+            const submitSpinner = document.getElementById('submitSpinner');
+
+            if (submitting) {
+                submitBtn.disabled = true;
+                submitSpinner.classList.remove('d-none');
+            } else {
+                submitBtn.disabled = false;
+                submitSpinner.classList.add('d-none');
+            }
+        }
+
+        showSuccess(message, callback) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: message,
+                timer: 2000,
+                showConfirmButton: false
+            }).then(callback);
+        }
+
+        showError(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: message
+            });
+        }
+
+    }
+
+    // Simple DTO classes for JavaScript
+    class AuthorDto {
+        constructor(id, fullName) {
+            this.id = id || '';
+            this.fullName = fullName || '';
+        }
+    }
+
+    class GenreDto {
+        constructor(id, name) {
+            this.id = id || '';
+            this.name = name || '';
+        }
+    }
+
+    // Initialize the application when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        window.app = new BookEditApp();
+    });
+</script>
+</body>
+</html>

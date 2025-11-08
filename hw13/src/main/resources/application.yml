@@ -1,0 +1,51 @@
+spring:
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: true
+  messages:
+    baseName: messages
+    encoding: UTF-8
+    fallbackToSystemLocale: false
+  output:
+    ansi:
+      enabled: always
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true
+  thymeleaf:
+    cache: false
+  datasource:
+    url: jdbc:h2:mem:maindb
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  sql:
+    init:
+      mode: always
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: false
+        trace: false
+  jpa:
+    open-in-view: false
+    generate-ddl: false
+    hibernate:
+      ddl-auto: none
+    show-sql: true  # Включите для отладки
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+        show_sql: true
+
+# Дополнительные настройки для логирования
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8"/>
+    <title>List of books</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <script src="/webjars/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+        function deleteBook(bookId) {
+            if (confirm('Delete this book?')) {
+                fetch('/api/v1/books/' + bookId, {
+                    method: 'DELETE',
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Book deleted successfully');
+                        location.reload();
+                    } else {
+                        alert('Error deleting book');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting book');
+                });
+            }
+        }
+    </script>
+</head>
+
+<body>
+<div class="container">
+
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid px-0">
+            <a class="navbar-brand pt-0" href="#">Library</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="author-list.html" th:href="@{/authors}">Authors</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="genre-list.html" th:href="@{/genres}">Genres</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <p class="h3">List of books</p>
+
+    <a class="btn btn-success" href="book-edit.html" th:href="@{'/books/new'}">
+        Add book
+    </a>
+
+    <table class="table mt-2 align-middle">
+        <thead>
+        <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Genre</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody id="book-table">
+        </tbody>
+    </table>
+
+    <div class="warning" id="no-books-warning">
+        No books available
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/api/v1/books')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(books => {
+                const tbody = document.getElementById("book-table");
+
+                const warning = document.getElementById("no-books-warning");
+
+                if (books.length === 0) {
+                    warning.style.display = 'block';
+                    return;
+                } else {
+                    warning.style.display = 'none';
+                }
+
+                books.forEach(function (book) {
+                    const row = document.createElement('tr');
+
+                    // Название книги
+                    const title = document.createElement('td');
+                    title.textContent = book.title;
+                    row.appendChild(title);
+
+                    // Автор
+                    const authorName = document.createElement('td');
+                    authorName.textContent = book.author.fullName;
+                    row.appendChild(authorName);
+
+                    // Жанры
+                    const genreName = document.createElement('td');
+                    genreName.textContent = book.genre.name;
+                    row.appendChild(genreName);
+
+                    // Действия
+                    const actionsCell = document.createElement('td');
+                    actionsCell.className = 'comment-actions';
+
+                    // Кнопка Browse
+                    const browseLink = document.createElement('a');
+                    browseLink.className = 'btn btn-info btn-sm';
+                    browseLink.href = `/books/view/${book.id}`;
+                    browseLink.textContent = 'Browse';
+                    actionsCell.appendChild(browseLink);
+
+                    // Кнопка Edit
+                    const editLink = document.createElement('a');
+                    editLink.className = 'btn btn-success btn-sm';
+                    editLink.href = `/books/edit/${book.id}`;
+                    editLink.textContent = 'Edit';
+                    actionsCell.appendChild(editLink);
+
+                    // Форма Delete
+                    const deleteForm = document.createElement('form');
+                    deleteForm.method = 'delete';
+                    deleteForm.action = 'book-delete';
+
+                    const bookIdInput = document.createElement('input');
+                    bookIdInput.id = "book-id";
+                    bookIdInput.name = 'bookId';
+                    bookIdInput.type = 'hidden';
+                    bookIdInput.value = book.id;
+                    deleteForm.appendChild(bookIdInput);
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className = 'btn btn-danger btn-sm';
+                    deleteButton.style.display = 'inline';
+                    deleteButton.type = 'button';
+                    deleteButton.textContent = 'Delete';
+                    deleteButton.onclick = () => deleteBook(book.id);
+                    deleteForm.appendChild(deleteButton);
+
+                    actionsCell.appendChild(deleteForm);
+                    row.appendChild(actionsCell);
+
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching books:', error);
+                document.getElementById('no-books-warning').textContent =
+                    'Error loading books';
+                document.getElementById('no-books-warning').style.display = 'block';
+            });
+    });
+</script>
+
+</body>
+
+</html>
