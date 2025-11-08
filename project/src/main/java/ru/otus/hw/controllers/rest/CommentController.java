@@ -28,7 +28,6 @@ public class CommentController {
             @PathVariable Long recipeId,
             @RequestBody CreateCommentRequest request) {
 
-        // Убедимся, что recipeId из пути совпадает с recipeId из запроса
         if (!recipeId.equals(request.recipeId())) {
             throw new IllegalArgumentException("Recipe ID in path doesn't match request body");
         }
@@ -53,7 +52,6 @@ public class CommentController {
                         messageProvider.getMessage("comment.not_found", id)
                 ));
 
-        // Проверяем, что комментарий принадлежит указанному рецепту
         if (!commentDto.recipeId().equals(recipeId)) {
             throw new EntityNotFoundException("Comment not found for this recipe");
         }
@@ -78,7 +76,6 @@ public class CommentController {
             @PathVariable Long recipeId,
             @PathVariable Long commentId) {
 
-        // Можно добавить проверку, что комментарий принадлежит рецепту
         commentService.deleteComment(commentId);
         return ResponseEntity.ok(
                 ApiResponse.success(null, messageProvider.getMessage("comment.deleted"))
