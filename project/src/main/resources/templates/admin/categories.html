@@ -79,8 +79,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.cancel}">Отмена</button>
-                    <button type="button" class="btn btn-primary" id="createCategoryBtn"
-                            onclick="categoriesApp.createCategory()" th:text="#{admin.button.create}">
+                    <button type="button" class="btn btn-primary" id="createCategoryBtn" th:text="#{admin.button.create}">
                         Создать
                     </button>
                 </div>
@@ -112,8 +111,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.cancel}">Отмена</button>
-                    <button type="button" class="btn btn-primary" id="updateCategoryBtn"
-                            onclick="categoriesApp.updateCategory()" th:text="#{common.save}">
+                    <button type="button" class="btn btn-primary" id="updateCategoryBtn" th:text="#{common.save}">
                         Сохранить
                     </button>
                 </div>
@@ -130,17 +128,17 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p th:text="#{admin.modal.delete_message}">Вы уверены, что хотите удалить категорию <strong id="deleteCategoryName"></strong>?</p>
+                    <p><span th:text="#{admin.modal.delete_message}">Вы уверены, что хотите удалить категорию</span> <strong id="deleteCategoryName"></strong>?</p>
+
+                    <!-- Контейнер для предупреждений (будет заполняться динамически) -->
                     <div id="deleteWarning" style="display: none;">
-                        <div class="alert alert-warning">
-                            <span th:text="#{admin.modal.delete_warning}">⚠️ Эта категория используется в <span id="recipeCount">0</span> рецептах и не может быть удалена.</span>
-                        </div>
+                        <!-- Содержимое будет добавляться через JavaScript -->
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.cancel}">Отмена</button>
-                    <button type="button" class="btn btn-danger" onclick="categoriesApp.deleteCategory()" th:text="#{common.delete}">
-                        Удалить
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>
+                        <span th:text="#{common.delete}">Удалить</span>
                     </button>
                 </div>
             </div>

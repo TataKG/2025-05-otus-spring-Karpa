@@ -2,29 +2,62 @@ class CategoriesAdminApp extends BaseApiClient {
     constructor() {
         super('/api/admin');
         this.categories = [];
+        this.translations = this.getTranslations();
         this.init();
     }
 
+    getTranslations() {
+        return {
+            loading: 'Загрузка...',
+            create: 'Создать',
+            save: 'Сохранить',
+            delete: 'Удалить',
+            cancel: 'Отмена',
+            required: 'Это поле обязательно для заполнения',
+            errorLoad: 'Ошибка загрузки категорий',
+            errorCreate: 'Ошибка создания категории',
+            errorUpdate: 'Ошибка обновления категории',
+            errorDelete: 'Ошибка удаления категории',
+            errorUsageCheck: 'Ошибка проверки использования',
+            successCreated: 'Категория создана успешно',
+            successUpdated: 'Категория обновлена успешно',
+            successDeleted: 'Категория удалена успешно',
+            noData: 'Категории не найдены',
+            cannotDelete: 'Нельзя удалить (используется)',
+            usedIn: 'Используется в',
+            notUsed: 'Не используется в рецептах',
+            recipes: 'рецептах',
+            checkUsage: 'Проверить использование',
+            checkingUsage: 'Проверка использования...'
+        };
+    }
+
     async init() {
+        console.log('CategoriesAdminApp initialized');
         await this.loadCategories();
         this.setupEventListeners();
-        this.setupCreateFormHandlers(); // Добавьте эту строку
+        this.setupCreateFormHandlers();
     }
 
     async loadCategories() {
         try {
-                console.log('Loading categories...');
-                const response = await this.get('/categories');
-                console.log('Categories loaded:', response);
-                if (response.success) {
-                    this.categories = response.data;
-                    console.log('Categories count:', this.categories.length);
-                    this.displayCategories();
-                }
-            } catch (error) {
-                console.error('Error loading categories:', error);
-                CommonUtils.showToast('Ошибка загрузки категорий', 'error');
+            console.log('Loading categories...');
+            CommonUtils.showLoadingState('categoriesTableBody', this.translations.loading, 6);
+
+            const response = await this.get('/categories');
+            console.log('Categories loaded:', response);
+
+            if (response.success) {
+                this.categories = response.data;
+                console.log('Categories count:', this.categories.length);
+                this.displayCategories();
+            } else {
+                CommonUtils.showError('categoriesTableBody', this.translations.errorLoad, 6);
             }
+        } catch (error) {
+            console.error('Error loading categories:', error);
+            CommonUtils.showError('categoriesTableBody', this.translations.errorLoad, 6);
+        }
     }
 
     displayCategories() {
@@ -34,7 +67,7 @@ class CategoriesAdminApp extends BaseApiClient {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="6" class="text-center text-muted py-4">
-                        Категории не найдены
+                        ${this.translations.noData}
                     </td>
                 </tr>
             `;
@@ -50,8 +83,9 @@ class CategoriesAdminApp extends BaseApiClient {
                 <td>
                     <span class="badge bg-secondary usage-badge"
                           data-category-id="${category.id}"
-                          style="cursor: pointer;">
-                        Проверить использование
+                          style="cursor: pointer;"
+                          title="${this.translations.checkUsage}">
+                        ${this.translations.checkUsage}
                     </span>
                 </td>
                 <td>
@@ -72,7 +106,6 @@ class CategoriesAdminApp extends BaseApiClient {
     }
 
     addEventListeners() {
-        // Редактирование
         document.querySelectorAll('.edit-category').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const categoryId = e.target.closest('.edit-category').dataset.categoryId;
@@ -80,7 +113,6 @@ class CategoriesAdminApp extends BaseApiClient {
             });
         });
 
-        // Удаление
         document.querySelectorAll('.delete-category').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const categoryId = e.target.closest('.delete-category').dataset.categoryId;
@@ -89,7 +121,6 @@ class CategoriesAdminApp extends BaseApiClient {
             });
         });
 
-        // Проверка использования
         document.querySelectorAll('.usage-badge').forEach(badge => {
             badge.addEventListener('click', (e) => {
                 const categoryId = e.target.dataset.categoryId;
@@ -99,12 +130,70 @@ class CategoriesAdminApp extends BaseApiClient {
     }
 
     setupEventListeners() {
-        // Очистка формы при закрытии модального окна создания
         const createModal = document.getElementById('createCategoryModal');
         if (createModal) {
             createModal.addEventListener('hidden.bs.modal', () => {
                 this.resetCreateForm();
             });
+        }
+
+        // Обработчики для кнопок модальных окон
+        const createBtn = document.getElementById('createCategoryBtn');
+        if (createBtn) {
+            createBtn.addEventListener('click', () => {
+                this.createCategory();
+            });
+        }
+
+        const updateBtn = document.getElementById('updateCategoryBtn');
+        if (updateBtn) {
+            updateBtn.addEventListener('click', () => {
+                this.updateCategory();
+            });
+        }
+
+        const deleteBtn = document.getElementById('confirmDeleteBtn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                this.deleteCategory();
+            });
+        }
+    }
+
+    setupCreateFormHandlers() {
+        const createForm = document.getElementById('createCategoryForm');
+
+        if (createForm) {
+            createForm.addEventListener('input', (e) => {
+                if (e.target.id === 'categoryName') {
+                    e.target.classList.remove('is-invalid');
+                }
+            });
+
+            createForm.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.createCategory();
+                }
+            });
+        }
+
+        const createModal = document.getElementById('createCategoryModal');
+        if (createModal) {
+            createModal.addEventListener('show.bs.modal', () => {
+                this.resetCreateForm();
+            });
+        }
+    }
+
+    resetCreateForm() {
+        const form = document.getElementById('createCategoryForm');
+        if (form) {
+            form.reset();
+            const nameInput = document.getElementById('categoryName');
+            if (nameInput) {
+                nameInput.classList.remove('is-invalid');
+            }
         }
     }
 
@@ -116,18 +205,16 @@ class CategoriesAdminApp extends BaseApiClient {
         const name = nameInput.value.trim();
         const description = descriptionInput.value.trim();
 
-        // Валидация на фронтенде
         if (!name) {
             nameInput.classList.add('is-invalid');
             nameInput.focus();
-            CommonUtils.showToast('Введите название категории', 'error');
+            CommonUtils.showToast(this.translations.required, 'error');
             return;
         }
 
-        // Блокируем кнопку во время запроса
         if (createBtn) {
             createBtn.disabled = true;
-            createBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Создание...';
+            createBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> ' + this.translations.loading;
         }
 
         try {
@@ -136,23 +223,21 @@ class CategoriesAdminApp extends BaseApiClient {
             console.log('Category creation response:', response);
 
             if (response.success) {
-                CommonUtils.showToast(response.message || 'Категория создана успешно');
+                CommonUtils.showToast(response.message || this.translations.successCreated);
                 this.resetCreateForm();
 
-                // Закрываем модальное окно
                 const modal = bootstrap.Modal.getInstance(document.getElementById('createCategoryModal'));
                 if (modal) {
                     modal.hide();
                 }
 
-                // Перезагружаем список категорий
                 await this.loadCategories();
             } else {
-                CommonUtils.showToast(response.message || 'Ошибка создания категории', 'error');
+                CommonUtils.showToast(response.message || this.translations.errorCreate, 'error');
             }
         } catch (error) {
             console.error('Error creating category:', error);
-            let errorMessage = 'Ошибка создания категории';
+            let errorMessage = this.translations.errorCreate;
 
             if (error.response) {
                 try {
@@ -167,10 +252,9 @@ class CategoriesAdminApp extends BaseApiClient {
 
             CommonUtils.showToast(errorMessage, 'error');
         } finally {
-            // Разблокируем кнопку
             if (createBtn) {
                 createBtn.disabled = false;
-                createBtn.innerHTML = 'Создать';
+                createBtn.innerHTML = this.translations.create;
             }
         }
     }
@@ -190,71 +274,183 @@ class CategoriesAdminApp extends BaseApiClient {
         const id = document.getElementById('editCategoryId').value;
         const name = document.getElementById('editCategoryName').value.trim();
         const description = document.getElementById('editCategoryDescription').value.trim();
+        const updateBtn = document.getElementById('updateCategoryBtn');
 
         if (!name) {
-            CommonUtils.showToast('Введите название категории', 'error');
+            CommonUtils.showToast(this.translations.required, 'error');
             return;
+        }
+
+        if (updateBtn) {
+            updateBtn.disabled = true;
+            updateBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> ' + this.translations.loading;
         }
 
         try {
             const response = await this.put(`/categories/${id}`, { name, description });
+
             if (response.success) {
-                CommonUtils.showToast('Категория обновлена успешно');
+                CommonUtils.showToast(response.message || this.translations.successUpdated);
                 document.getElementById('editCategoryModal').querySelector('.btn-close').click();
                 await this.loadCategories();
+            } else {
+                CommonUtils.showToast(response.message || this.translations.errorUpdate, 'error');
             }
         } catch (error) {
             console.error('Error updating category:', error);
-            CommonUtils.showToast('Ошибка обновления категории', 'error');
+            let errorMessage = this.translations.errorUpdate;
+
+            if (error.response) {
+                try {
+                    const errorData = await error.response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch (e) {
+                    errorMessage = error.message || errorMessage;
+                }
+            }
+
+            CommonUtils.showToast(errorMessage, 'error');
+        } finally {
+            if (updateBtn) {
+                updateBtn.disabled = false;
+                updateBtn.innerHTML = this.translations.save;
+            }
         }
     }
 
-     async openDeleteModal(categoryId, categoryName) {
-            document.getElementById('deleteCategoryName').textContent = categoryName;
+    // УПРОЩЕННАЯ ЛОГИКА УДАЛЕНИЯ (как в инвентаре)
+    async openDeleteModal(categoryId, categoryName) {
+        document.getElementById('deleteCategoryName').textContent = categoryName;
+        document.getElementById('deleteCategoryModal').dataset.categoryId = categoryId;
 
-            // Проверяем использование категории
-            try {
-                const response = await this.get(`/categories/${categoryId}/usage`);
-                if (response.success) {
-                    const usage = response.data;
-                    const warningDiv = document.getElementById('deleteWarning');
-                    const recipeCountSpan = document.getElementById('recipeCount');
+        const warningDiv = document.getElementById('deleteWarning');
+        const deleteBtn = document.getElementById('confirmDeleteBtn');
 
-                    if (usage.isUsed) {
-                        recipeCountSpan.textContent = usage.recipeCount;
-                        warningDiv.style.display = 'block';
-                        // Делаем кнопку удаления неактивной
-                        document.querySelector('#deleteCategoryModal .btn-danger').disabled = true;
-                        document.querySelector('#deleteCategoryModal .btn-danger').innerHTML =
-                            '❌ Нельзя удалить (используется)';
-                    } else {
-                        warningDiv.style.display = 'none';
-                        document.querySelector('#deleteCategoryModal .btn-danger').disabled = false;
-                        document.querySelector('#deleteCategoryModal .btn-danger').innerHTML = 'Удалить';
-                    }
+        // Начальное состояние: скрываем предупреждение, блокируем кнопку до завершения проверки
+        warningDiv.style.display = 'none';
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> ' + this.translations.checkingUsage;
+
+        const modal = new bootstrap.Modal(document.getElementById('deleteCategoryModal'));
+        modal.show();
+
+        try {
+            console.log('Checking usage for category ID:', categoryId);
+            const response = await this.get(`/categories/${categoryId}/usage`);
+            console.log('Usage check response:', response);
+
+            if (response.success) {
+                const usage = response.data;
+                console.log('Usage data:', usage);
+
+                if (usage.isUsed) {
+                    // Категория используется - показываем информацию и блокируем удаление
+                    warningDiv.style.display = 'block';
+                    warningDiv.innerHTML = `
+                        <div class="alert alert-warning">
+                            ⚠️ Эта категория используется в <strong>${usage.recipeCount}</strong> рецептах и не может быть удалена.
+                        </div>
+                    `;
+
+                    deleteBtn.disabled = true;
+                    deleteBtn.innerHTML = '❌ ' + this.translations.cannotDelete;
+                } else {
+                    // Категория не используется - разрешаем удаление
+                    warningDiv.style.display = 'none';
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = this.translations.delete;
                 }
-            } catch (error) {
-                console.error('Error checking category usage:', error);
+            } else {
+                // Ошибка от сервера при проверке использования
+                console.error('Server returned error during usage check:', response.message);
+                warningDiv.style.display = 'block';
+                warningDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        ❌ Ошибка при проверке использования: ${response.message || 'Неизвестная ошибка'}
+                    </div>
+                `;
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = '❌ Ошибка проверки';
             }
+        } catch (error) {
+            // Ошибка сети или другая ошибка при запросе
+            console.error('Network error during usage check:', error);
+            warningDiv.style.display = 'block';
+            warningDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    ❌ Ошибка соединения при проверке использования. Удаление невозможно.
+                </div>
+            `;
+            deleteBtn.disabled = true;
+            deleteBtn.innerHTML = '❌ Ошибка сети';
+        }
+    }
 
-            document.getElementById('deleteCategoryModal').dataset.categoryId = categoryId;
-            new bootstrap.Modal(document.getElementById('deleteCategoryModal')).show();
+    async deleteCategory() {
+        const categoryId = document.getElementById('deleteCategoryModal').dataset.categoryId;
+        const deleteBtn = document.getElementById('confirmDeleteBtn');
+
+        if (!categoryId) {
+            console.error('No category ID found for deletion');
+            CommonUtils.showToast('Ошибка: ID категории не найден', 'error');
+            return;
         }
 
-        async deleteCategory() {
-            const categoryId = document.getElementById('deleteCategoryModal').dataset.categoryId;
+        // Дополнительная проверка - не пытаемся удалить, если кнопка заблокирована
+        if (deleteBtn.disabled) {
+            console.log('Delete button is disabled, skipping deletion');
+            return;
+        }
 
-            try {
-                const response = await this.delete(`/categories/${categoryId}`);
-                CommonUtils.showToast(response.message || 'Категория удалена успешно');
-                document.getElementById('deleteCategoryModal').querySelector('.btn-close').click();
+        // Блокируем кнопку во время удаления
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> ' + this.translations.delete + '...';
+
+        try {
+            console.log('Sending DELETE request for category ID:', categoryId);
+            const response = await this.delete(`/categories/${categoryId}`);
+            console.log('Delete response:', response);
+
+            if (response.success) {
+                CommonUtils.showToast(response.message || this.translations.successDeleted);
+                console.log('Category deleted successfully');
+
+                // Закрываем модальное окно
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteCategoryModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                // Перезагружаем список категорий
                 await this.loadCategories();
-            } catch (error) {
-                console.error('Error deleting category:', error);
-                const errorMessage = error.message || 'Ошибка удаления категории';
-                CommonUtils.showToast(errorMessage, 'error');
+            } else {
+                console.error('Delete failed:', response.message);
+                CommonUtils.showToast(response.message || this.translations.errorDelete, 'error');
+
+                // Разблокируем кнопку при ошибке
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = this.translations.delete;
             }
+        } catch (error) {
+            console.error('Error deleting category:', error);
+            let errorMessage = this.translations.errorDelete;
+
+            if (error.response) {
+                try {
+                    const errorData = await error.response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch (e) {
+                    errorMessage = error.message || errorMessage;
+                }
+            }
+
+            CommonUtils.showToast(errorMessage, 'error');
+
+            // Разблокируем кнопку при ошибке
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = this.translations.delete;
         }
+    }
 
     async checkCategoryUsage(categoryId) {
         try {
@@ -262,62 +458,21 @@ class CategoriesAdminApp extends BaseApiClient {
             if (response.success) {
                 const usage = response.data;
                 const message = usage.isUsed ?
-                    `Используется в ${usage.recipeCount} рецептах` :
-                    'Не используется в рецептах';
+                    `${this.translations.usedIn} ${usage.recipeCount} ${this.translations.recipes}` :
+                    this.translations.notUsed;
 
                 CommonUtils.showToast(message, usage.isUsed ? 'info' : 'success');
             }
         } catch (error) {
             console.error('Error checking usage:', error);
-            CommonUtils.showToast('Ошибка проверки использования', 'error');
+            CommonUtils.showToast(this.translations.errorUsageCheck, 'error');
         }
     }
-
-    setupCreateFormHandlers() {
-        const createForm = document.getElementById('createCategoryForm');
-        const createBtn = document.getElementById('createCategoryBtn');
-
-        if (createForm) {
-            // Обработка ввода для сброса состояния валидации
-            createForm.addEventListener('input', (e) => {
-                if (e.target.id === 'categoryName') {
-                    e.target.classList.remove('is-invalid');
-                }
-            });
-
-            // Обработка отправки формы по Enter
-            createForm.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.createCategory();
-                }
-            });
-        }
-
-        // Очистка формы при открытии модального окна
-        const createModal = document.getElementById('createCategoryModal');
-        if (createModal) {
-            createModal.addEventListener('show.bs.modal', () => {
-                this.resetCreateForm();
-            });
-        }
-    }
-
-    resetCreateForm() {
-        const form = document.getElementById('createCategoryForm');
-        if (form) {
-            form.reset();
-            // Сбрасываем состояния валидации
-            const nameInput = document.getElementById('categoryName');
-            if (nameInput) {
-                nameInput.classList.remove('is-invalid');
-            }
-        }
-    }
-
 }
 
+// Инициализация приложения
 let categoriesApp;
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing CategoriesAdminApp...');
     categoriesApp = new CategoriesAdminApp();
 });

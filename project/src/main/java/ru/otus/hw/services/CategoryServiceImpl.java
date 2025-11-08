@@ -141,7 +141,7 @@ public class CategoryServiceImpl implements CategoryService {
         // Проверяем, используется ли категория в рецептах
         if (categoryRepository.isUsedInRecipes(id)) {
             throw new IllegalStateException(
-                    messageProvider.getMessage("category.cannot_delete_used", id)
+                    messageProvider.getMessage("category.cannot_delete_used")
             );
         }
 
