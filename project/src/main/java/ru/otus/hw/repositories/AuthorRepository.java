@@ -22,6 +22,15 @@ public interface AuthorRepository extends CrudRepository<Author, Long> {
     @Query("SELECT a FROM Author a JOIN FETCH a.user WHERE a.id = :id")
     Optional<Author> findByIdWithUser(@Param("id") Long id);
 
-    @Query("SELECT a FROM Author a JOIN FETCH a.user")
+    @Query("SELECT DISTINCT a FROM Author a " +
+            "LEFT JOIN FETCH a.user u " +  // Роли уже загружаются благодаря EAGER или мы можем использовать JOIN FETCH для коллекции
+            "ORDER BY a.createdAt DESC")
     List<Author> findAllWithUser();
+
+    // Если роли не загружаются, можно использовать этот запрос:
+    @Query("SELECT DISTINCT a FROM Author a " +
+            "LEFT JOIN FETCH a.user u " +
+            "LEFT JOIN FETCH u.roles " +  // Это сработает для ElementCollection
+            "ORDER BY a.createdAt DESC")
+    List<Author> findAllWithUserAndRoles();
 }

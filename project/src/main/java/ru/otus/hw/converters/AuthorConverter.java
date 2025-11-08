@@ -4,7 +4,9 @@ import org.springframework.stereotype.Component;
 import ru.otus.hw.dto.AuthorDto;
 import ru.otus.hw.models.Author;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -17,20 +19,38 @@ public class AuthorConverter {
     }
 
     public AuthorDto toDto(Author author) {
-        if (author == null) return null;
+        if (author == null) {
+            return null;
+        }
+
+        // Получаем роли пользователя напрямую из User
+        Set<String> roles = author.getUser().getRoles();
 
         return new AuthorDto(
                 author.getId(),
                 userConverter.toDto(author.getUser()),
                 author.getBio(),
                 author.getCreatedAt(),
-                author.getRecipes() != null ? author.getRecipes().size() : 0
+                author.getRecipes().size(), // Добавить подсчет рецептов
+                new ArrayList<>(roles)
         );
     }
 
-    public List<AuthorDto> toDtoList(List<Author> authors) {
-        return authors.stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+    public AuthorDto toDto(Author author, int recipeCount) {
+        if (author == null) {
+            return null;
+        }
+
+        // Получаем роли пользователя напрямую из User
+        Set<String> roles = author.getUser().getRoles();
+
+        return new AuthorDto(
+                author.getId(),
+                userConverter.toDto(author.getUser()),
+                author.getBio(),
+                author.getCreatedAt(),
+                recipeCount,
+                new ArrayList<>(roles) // Конвертируем Set в List для DTO
+        );
     }
 }
