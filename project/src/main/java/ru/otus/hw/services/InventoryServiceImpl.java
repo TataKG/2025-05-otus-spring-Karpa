@@ -4,7 +4,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.converters.InventoryConverter;
 import ru.otus.hw.dto.InventoryDto;
+import ru.otus.hw.exceptions.EntityAlreadyExistsException;
 import ru.otus.hw.exceptions.EntityNotFoundException;
+import ru.otus.hw.exceptions.ValidationException;
 import ru.otus.hw.models.Inventory;
 import ru.otus.hw.repositories.InventoryRepository;
 import ru.otus.hw.util.MessageProvider;
@@ -32,8 +34,26 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public InventoryDto createInventory(String name, String description) {
-        Inventory inventory = new Inventory(name, description);
+        System.out.println("Creating inventory with name: '" + name + "', description: '" + description + "'");
+
+        if (name == null || name.trim().isEmpty()) {
+            throw new ValidationException("Название инвентаря не может быть пустым");
+        }
+
+        String trimmedName = name.trim();
+
+        // Проверяем существование инвентаря
+        Optional<Inventory> existingInventory = inventoryRepository.findByName(trimmedName);
+        System.out.println("Inventory exists check for '" + trimmedName + "': " + existingInventory.isPresent());
+
+        if (existingInventory.isPresent()) {
+            throw new EntityAlreadyExistsException("Инвентарь с названием '" + trimmedName + "' уже существует");
+        }
+
+        Inventory inventory = new Inventory(trimmedName, description != null ? description.trim() : null);
         Inventory savedInventory = inventoryRepository.save(inventory);
+        System.out.println("Inventory saved with ID: " + savedInventory.getId());
+
         return inventoryConverter.toDto(savedInventory);
     }
 

@@ -22,9 +22,9 @@ public class AdminController {
         return "admin/categories";   // должен вести на categories.html
     }
 
-    @GetMapping("/ingredients")
-    public String ingredientsManagement() {
-        return "admin/ingredients";  // должен вести на ingredients.html
+    @GetMapping("/inventory")
+    public String inventoryManagement() {
+        return "admin/inventory"; // должен вести на inventory.html
     }
 
     @GetMapping("/authors")
