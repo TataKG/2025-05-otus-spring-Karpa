@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserService userService; // Зависим от интерфейса, а не реализации
+    private final UserService userService;
     private final MessageProvider messageProvider;
 
     @PostMapping("/register")
@@ -40,7 +40,6 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Login successful"));
     }
 
-    // ДОБАВЬТЕ ЭТОТ МЕТОД
     @GetMapping("/user")
     public ResponseEntity<ApiResponse<AuthUserResponse>> getCurrentUser(Authentication authentication) {
         System.out.println("=== AUTH USER ENDPOINT ===");
@@ -77,7 +76,6 @@ public class AuthController {
     public record LoginRequest(String username, String password) {
     }
 
-    // ДОБАВЬТЕ ЭТУ ЗАПИСЬ
     public record AuthUserResponse(boolean authenticated, String name, List<String> authorities) {
     }
 }

@@ -141,9 +141,13 @@ class BaseApiClient {
             credentials: 'include',
             body: JSON.stringify(data)
         });
+
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const error = new Error(`HTTP error! status: ${response.status}`);
+            error.response = response;
+            throw error;
         }
+
         return response.json();
     }
 

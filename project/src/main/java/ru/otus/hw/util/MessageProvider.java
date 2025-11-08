@@ -1,7 +1,10 @@
 package ru.otus.hw.util;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.LocaleResolver;
 
 import java.util.Locale;
@@ -18,8 +21,20 @@ public class MessageProvider {
     }
 
     public String getMessage(String code, Object... args) {
-        Locale locale = localeResolver.resolveLocale(null);
-        return messageSource.getMessage(code, args, locale);
+        try {
+            // Получаем текущий запрос из контекста
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes != null) {
+                HttpServletRequest request = attributes.getRequest();
+                Locale locale = localeResolver.resolveLocale(request);
+                return messageSource.getMessage(code, args, locale);
+            }
+        } catch (Exception e) {
+            System.out.println("Warning: Could not resolve locale from request, using default: " + e.getMessage());
+        }
+
+        // Fallback: используем локаль по умолчанию
+        return messageSource.getMessage(code, args, Locale.getDefault());
     }
 
     public String getMessage(String code, Locale locale, Object... args) {

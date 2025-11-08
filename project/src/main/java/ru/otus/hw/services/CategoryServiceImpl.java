@@ -10,6 +10,7 @@ import ru.otus.hw.dto.CategoryDto;
 import ru.otus.hw.dto.CategoryWithUsageDto;
 import ru.otus.hw.exceptions.EntityAlreadyExistsException;
 import ru.otus.hw.exceptions.EntityNotFoundException;
+import ru.otus.hw.exceptions.ValidationException;
 import ru.otus.hw.models.Category;
 import ru.otus.hw.models.Recipe;
 import ru.otus.hw.repositories.CategoryRepository;
@@ -84,14 +85,28 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryDto createCategoryWithDescription(String name, String description) {
-        if (categoryRepository.existsByName(name)) {
+        System.out.println("Creating category with name: '" + name + "', description: '" + description + "'");
+
+        if (name == null || name.trim().isEmpty()) {
+            throw new ValidationException("Название категории не может быть пустым");
+        }
+
+        String trimmedName = name.trim();
+
+        // Проверяем существование категории
+        boolean exists = categoryRepository.existsByName(trimmedName);
+        System.out.println("Category exists check for '" + trimmedName + "': " + exists);
+
+        if (exists) {
             throw new EntityAlreadyExistsException(
-                    messageProvider.getMessage("category.already_exists", name)
+                    messageProvider.getMessage("category.already_exists", trimmedName)
             );
         }
 
-        Category category = new Category(name, description);
+        Category category = new Category(trimmedName, description != null ? description.trim() : null);
         Category savedCategory = categoryRepository.save(category);
+        System.out.println("Category saved with ID: " + savedCategory.getId());
+
         return categoryConverter.toDto(savedCategory);
     }
 
@@ -130,7 +145,11 @@ public class CategoryServiceImpl implements CategoryService {
             );
         }
 
-        categoryRepository.delete(category);
+        try {
+            categoryRepository.delete(category);
+        } catch (Exception e) {
+            throw new IllegalStateException("Не удалось удалить категорию: " + e.getMessage());
+        }
     }
 
     @Override

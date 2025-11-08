@@ -8,19 +8,23 @@ class CategoriesAdminApp extends BaseApiClient {
     async init() {
         await this.loadCategories();
         this.setupEventListeners();
+        this.setupCreateFormHandlers(); // Добавьте эту строку
     }
 
     async loadCategories() {
         try {
-            const response = await this.get('/categories');
-            if (response.success) {
-                this.categories = response.data;
-                this.displayCategories();
+                console.log('Loading categories...');
+                const response = await this.get('/categories');
+                console.log('Categories loaded:', response);
+                if (response.success) {
+                    this.categories = response.data;
+                    console.log('Categories count:', this.categories.length);
+                    this.displayCategories();
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                CommonUtils.showToast('Ошибка загрузки категорий', 'error');
             }
-        } catch (error) {
-            console.error('Error loading categories:', error);
-            CommonUtils.showToast('Ошибка загрузки категорий', 'error');
-        }
     }
 
     displayCategories() {
@@ -97,30 +101,77 @@ class CategoriesAdminApp extends BaseApiClient {
     setupEventListeners() {
         // Очистка формы при закрытии модального окна создания
         const createModal = document.getElementById('createCategoryModal');
-        createModal.addEventListener('hidden.bs.modal', () => {
-            document.getElementById('createCategoryForm').reset();
-        });
+        if (createModal) {
+            createModal.addEventListener('hidden.bs.modal', () => {
+                this.resetCreateForm();
+            });
+        }
     }
 
     async createCategory() {
-        const name = document.getElementById('categoryName').value.trim();
-        const description = document.getElementById('categoryDescription').value.trim();
+        const nameInput = document.getElementById('categoryName');
+        const descriptionInput = document.getElementById('categoryDescription');
+        const createBtn = document.getElementById('createCategoryBtn');
 
+        const name = nameInput.value.trim();
+        const description = descriptionInput.value.trim();
+
+        // Валидация на фронтенде
         if (!name) {
+            nameInput.classList.add('is-invalid');
+            nameInput.focus();
             CommonUtils.showToast('Введите название категории', 'error');
             return;
         }
 
+        // Блокируем кнопку во время запроса
+        if (createBtn) {
+            createBtn.disabled = true;
+            createBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Создание...';
+        }
+
         try {
+            console.log('Sending category creation request:', { name, description });
             const response = await this.post('/categories', { name, description });
+            console.log('Category creation response:', response);
+
             if (response.success) {
-                CommonUtils.showToast('Категория создана успешно');
-                document.getElementById('createCategoryModal').querySelector('.btn-close').click();
+                CommonUtils.showToast(response.message || 'Категория создана успешно');
+                this.resetCreateForm();
+
+                // Закрываем модальное окно
+                const modal = bootstrap.Modal.getInstance(document.getElementById('createCategoryModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                // Перезагружаем список категорий
                 await this.loadCategories();
+            } else {
+                CommonUtils.showToast(response.message || 'Ошибка создания категории', 'error');
             }
         } catch (error) {
             console.error('Error creating category:', error);
-            CommonUtils.showToast('Ошибка создания категории', 'error');
+            let errorMessage = 'Ошибка создания категории';
+
+            if (error.response) {
+                try {
+                    const errorData = await error.response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch (e) {
+                    errorMessage = error.message || errorMessage;
+                }
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            CommonUtils.showToast(errorMessage, 'error');
+        } finally {
+            // Разблокируем кнопку
+            if (createBtn) {
+                createBtn.disabled = false;
+                createBtn.innerHTML = 'Создать';
+            }
         }
     }
 
@@ -194,17 +245,14 @@ class CategoriesAdminApp extends BaseApiClient {
             const categoryId = document.getElementById('deleteCategoryModal').dataset.categoryId;
 
             try {
-                await this.delete(`/categories/${categoryId}`);
-                CommonUtils.showToast('Категория удалена успешно');
+                const response = await this.delete(`/categories/${categoryId}`);
+                CommonUtils.showToast(response.message || 'Категория удалена успешно');
                 document.getElementById('deleteCategoryModal').querySelector('.btn-close').click();
                 await this.loadCategories();
             } catch (error) {
                 console.error('Error deleting category:', error);
-                if (error.message.includes('409')) {
-                    CommonUtils.showToast('Невозможно удалить категорию, так как она используется в рецептах', 'error');
-                } else {
-                    CommonUtils.showToast('Ошибка удаления категории', 'error');
-                }
+                const errorMessage = error.message || 'Ошибка удаления категории';
+                CommonUtils.showToast(errorMessage, 'error');
             }
         }
 
@@ -224,6 +272,49 @@ class CategoriesAdminApp extends BaseApiClient {
             CommonUtils.showToast('Ошибка проверки использования', 'error');
         }
     }
+
+    setupCreateFormHandlers() {
+        const createForm = document.getElementById('createCategoryForm');
+        const createBtn = document.getElementById('createCategoryBtn');
+
+        if (createForm) {
+            // Обработка ввода для сброса состояния валидации
+            createForm.addEventListener('input', (e) => {
+                if (e.target.id === 'categoryName') {
+                    e.target.classList.remove('is-invalid');
+                }
+            });
+
+            // Обработка отправки формы по Enter
+            createForm.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.createCategory();
+                }
+            });
+        }
+
+        // Очистка формы при открытии модального окна
+        const createModal = document.getElementById('createCategoryModal');
+        if (createModal) {
+            createModal.addEventListener('show.bs.modal', () => {
+                this.resetCreateForm();
+            });
+        }
+    }
+
+    resetCreateForm() {
+        const form = document.getElementById('createCategoryForm');
+        if (form) {
+            form.reset();
+            // Сбрасываем состояния валидации
+            const nameInput = document.getElementById('categoryName');
+            if (nameInput) {
+                nameInput.classList.remove('is-invalid');
+            }
+        }
+    }
+
 }
 
 let categoriesApp;

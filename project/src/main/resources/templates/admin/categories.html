@@ -96,20 +96,26 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="createCategoryForm">
+                <form id="createCategoryForm" onsubmit="return false;">
                     <div class="mb-3">
                         <label for="categoryName" class="form-label">Название категории *</label>
-                        <input type="text" class="form-control" id="categoryName" required>
+                        <input type="text" class="form-control" id="categoryName" required
+                               placeholder="Введите название категории">
+                        <div class="invalid-feedback">Пожалуйста, введите название категории</div>
                     </div>
                     <div class="mb-3">
                         <label for="categoryDescription" class="form-label">Описание</label>
-                        <textarea class="form-control" id="categoryDescription" rows="3"></textarea>
+                        <textarea class="form-control" id="categoryDescription" rows="3"
+                                  placeholder="Введите описание категории (необязательно)"></textarea>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" onclick="categoriesApp.createCategory()">Создать</button>
+                <button type="button" class="btn btn-primary" id="createCategoryBtn"
+                        onclick="categoriesApp.createCategory()">
+                    Создать
+                </button>
             </div>
         </div>
     </div>
