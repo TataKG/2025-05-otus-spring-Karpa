@@ -1,128 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="#{myrecipes.title}">Мои рецепты - Кулинарная книга</title>
-    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
-    <style>
-        .recipe-card {
-            transition: transform 0.2s;
-            cursor: pointer;
-        }
-        .recipe-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .language-switcher {
-            cursor: pointer;
-        }
-        .navbar-brand {
-            font-weight: 600;
-        }
-        .table th {
-            border-top: none;
-            font-weight: 600;
-        }
-        .badge {
-            font-size: 0.75em;
-        }
-        .action-buttons {
-            min-width: 200px;
-        }
-        .btn-action {
-            margin: 2px;
-        }
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1055;
-        }
-
-        .publish-recipe {
-            transition: all 0.3s ease;
-        }
-
-        .publish-recipe:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .publish-recipe:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .btn-group-sm .btn {
-            margin: 1px;
-            font-size: 0.75rem;
-            padding: 0.25rem 0.5rem;
-        }
-    </style>
+<head th:replace="fragments/head :: head(#{myrecipes.title})">
 </head>
 <body>
 <!-- Навигационная панель -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container">
-        <a class="navbar-brand" href="/" th:text="#{navbar.brand}">
-            🍳 Кулинарная книга
-        </a>
-
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="/">
-                        🏠 <span th:text="#{navbar.home}">Домой</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link active" href="/my-recipes">
-                        📖 <span th:text="#{navbar.my_recipes}">Мои рецепты</span>
-                    </a>
-                </li>
-                <li class="nav-item" sec:authorize="isAuthenticated()">
-                    <a class="nav-link" href="/recipe/create">
-                        ✏️ <span th:text="#{myrecipes.create_new}">Создать рецепт</span>
-                    </a>
-                </li>
-            </ul>
-
-            <ul class="navbar-nav">
-                <!-- Смена языка -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle language-switcher" href="#" id="languageDropdown"
-                       role="button" data-bs-toggle="dropdown" th:text="#{navbar.language}">
-                        🌐 Язык
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="?lang=ru" th:text="#{language.russian}">Русский</a></li>
-                        <li><a class="dropdown-item" href="?lang=en" th:text="#{language.english}">English</a></li>
-                    </ul>
-                </li>
-
-                <!-- Авторизация -->
-                <li class="nav-item" sec:authorize="!isAuthenticated()">
-                    <a class="nav-link" href="/login" th:text="#{navbar.login}">
-                        🔑 Войти
-                    </a>
-                </li>
-                <li class="nav-item" sec:authorize="isAuthenticated()">
-                    <form th:action="@{/logout}" method="post" class="d-inline">
-                        <button type="submit" class="btn btn-link nav-link p-0 border-0">
-                            🚪 <span th:text="#{navbar.logout}">Выйти</span> (<span sec:authentication="name"></span>)
-                        </button>
-                    </form>
-                </li>
-            </ul>
-        </div>
-    </div>
-</nav>
+<div th:replace="fragments/navbar :: navbar"></div>
 
 <!-- Основной контент -->
 <div class="container mt-4">
@@ -136,6 +19,7 @@
                         Управляйте своими рецептами - просматривайте, редактируйте и удаляйте
                     </p>
                 </div>
+                <!-- Кнопка создания рецепта - показывается только авторизованным пользователям -->
                 <div sec:authorize="isAuthenticated()">
                     <a href="/recipe/create" class="btn btn-success btn-lg">
                         ➕ <span th:text="#{myrecipes.create_new}">Создать рецепт</span>
@@ -254,62 +138,15 @@
     </div>
 </div>
 
-<!-- Модальное окно деталей рецепта -->
-<div class="modal fade" id="recipeModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="recipeModalTitle">📖 <span th:text="#{recipe.details.title}">Детали рецепта</span></h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="recipeModalBody">
-                <!-- Контент загружается через JavaScript -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.close}">Закрыть</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно комментариев -->
-<div class="modal fade" id="commentsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title" id="commentsModalTitle">💬 <span th:text="#{comment.view_title}">Комментарии к рецепту</span></h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="commentsModalBody">
-                <!-- Контент загружается через JavaScript -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.close}">Закрыть</button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Модальные окна -->
+<div th:replace="fragments/modals :: modals"></div>
 
 <!-- Toast уведомления -->
-<div class="toast-container">
-    <div id="successToast" class="toast align-items-center text-bg-success border-0" role="alert">
-        <div class="d-flex">
-            <div class="toast-body" id="successToastMessage"></div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    </div>
-    <div id="errorToast" class="toast align-items-center text-bg-danger border-0" role="alert">
-        <div class="d-flex">
-            <div class="toast-body" id="errorToastMessage"></div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    </div>
-</div>
+<div th:replace="fragments/toasts :: toasts"></div>
 
-<!-- Bootstrap JS -->
-<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
-<!-- Общие утилиты -->
-<script th:src="@{/js/common.js}"></script>
+<!-- Скрипты -->
+<div th:replace="fragments/scripts :: scripts"></div>
+
 <!-- Основной JS приложения для "Мои рецепты" -->
 <script th:src="@{/js/my-recipes.js}"></script>
 
@@ -368,11 +205,12 @@
         'recipe-details-inventory': /*[[#{recipe.details.inventory}]]*/ '🔧 Необходимый инвентарь',
         'recipe-details-comments': /*[[#{recipe.details.comments}]]*/ '💬 Комментарии',
         'recipe-details-status': /*[[#{recipe.details.status}]]*/ '📊 Статус',
-        'recipe-details-created-date': /*[[#{recipe.details.created_date}]]*/ '📅 Дата создания'
+        'recipe-details-created-date': /*[[#{recipe.details.created_date}]]*/ '📅 Дата создания',
+
+        // Публикация
         'publish': /*[[#{myrecipes.publish}]]*/ 'Опубликовать',
         'publish-success': /*[[#{myrecipes.publish_success}]]*/ 'Рецепт успешно опубликован',
         'publish-error': /*[[#{myrecipes.publish_error}]]*/ 'Ошибка при публикации рецепта',
-
     };
 </script>
 </body>

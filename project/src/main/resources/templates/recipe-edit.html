@@ -1,99 +1,10 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="pageTitle">Создание рецепта - Кулинарная книга</title>
-    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
-    <style>
-        .ingredient-row {
-            margin-bottom: 10px;
-        }
-        .ingredient-actions {
-            margin-left: 10px;
-        }
-        .form-section {
-            margin-bottom: 2rem;
-            padding: 1.5rem;
-            border: 1px solid #dee2e6;
-            border-radius: 0.375rem;
-        }
-        .form-section h5 {
-            color: #495057;
-            margin-bottom: 1rem;
-        }
-        .loading-spinner {
-            display: none;
-            text-align: center;
-            padding: 2rem;
-        }
-        .form-control.is-invalid {
-            border-color: #dc3545;
-            padding-right: calc(1.5em + 0.75rem);
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 3.6.4.4.4-.4'/%3e%3cpath d='M6 7v1'/%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right calc(0.375em + 0.1875rem) center;
-            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
-        }
-    </style>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head(#{myrecipes.create_new})">
 </head>
 <body>
 <!-- Навигационная панель -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container">
-        <a class="navbar-brand" href="/" th:text="#{navbar.brand}">
-            🍳 Кулинарная книга
-        </a>
-
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="/">
-                        🏠 <span th:text="#{navbar.home}">Домой</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/my-recipes">
-                        📖 <span th:text="#{navbar.my_recipes}">Мои рецепты</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link active" href="/recipe/create">
-                        ✏️ <span th:text="#{myrecipes.create_new}">Создать рецепт</span>
-                    </a>
-                </li>
-            </ul>
-
-            <ul class="navbar-nav">
-                <!-- Смена языка -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle language-switcher" href="#" id="languageDropdown"
-                       role="button" data-bs-toggle="dropdown" th:text="#{navbar.language}">
-                        🌐 Язык
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="?lang=ru" th:text="#{language.russian}">Русский</a></li>
-                        <li><a class="dropdown-item" href="?lang=en" th:text="#{language.english}">English</a></li>
-                    </ul>
-                </li>
-
-                <!-- Авторизация -->
-                <li class="nav-item" sec:authorize="isAuthenticated()">
-                    <form th:action="@{/logout}" method="post" class="d-inline">
-                        <button type="submit" class="btn btn-link nav-link p-0 border-0">
-                            🚪 <span th:text="#{navbar.logout}">Выйти</span> (<span sec:authentication="name"></span>)
-                        </button>
-                    </form>
-                </li>
-            </ul>
-        </div>
-    </div>
-</nav>
+<div th:replace="fragments/navbar :: navbar"></div>
 
 <!-- Основной контент -->
 <div class="container mt-4">
@@ -103,10 +14,12 @@
             <div class="row mb-4">
                 <div class="col">
                     <h1 class="text-primary mb-2" id="pageHeader">
-                        ➕ Создание нового рецепта
+                        <span th:if="${isEdit}">✏️ <span th:text="#{myrecipes.edit}">Редактирование рецепта</span></span>
+                        <span th:unless="${isEdit}">➕ <span th:text="#{myrecipes.create_new}">Создание нового рецепта</span></span>
                     </h1>
                     <p class="lead text-muted" id="pageDescription">
-                        Заполните информацию о новом рецепте
+                        <span th:if="${isEdit}" th:text="#{myrecipes.edit_description}">Внесите изменения в ваш рецепт</span>
+                        <span th:unless="${isEdit}" th:text="#{myrecipes.create_description}">Заполните информацию о новом рецепте</span>
                     </p>
                 </div>
             </div>
@@ -114,59 +27,59 @@
             <!-- Индикатор загрузки -->
             <div class="loading-spinner" id="loadingSpinner">
                 <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Загрузка...</span>
+                    <span class="visually-hidden" th:text="#{common.loading}">Загрузка...</span>
                 </div>
-                <p class="mt-2 text-muted">Загрузка данных...</p>
+                <p class="mt-2 text-muted" th:text="#{recipes.loading}">Загрузка данных...</p>
             </div>
 
             <!-- Форма -->
             <div id="recipeFormContainer" style="display: none;">
                 <!-- Основная информация -->
                 <div class="form-section">
-                    <h5>📝 Основная информация</h5>
+                    <h5>📝 <span th:text="#{recipe.basic_info}">Основная информация</span></h5>
 
                     <!-- Заголовок -->
                     <div class="mb-3">
-                        <label for="title" class="form-label fw-bold">Название рецепта *</label>
+                        <label for="title" class="form-label fw-bold" th:text="#{recipes.table.name}">Название рецепта *</label>
                         <input type="text" class="form-control" id="title" required
-                               placeholder="Введите название рецепта">
-                        <div class="invalid-feedback">Пожалуйста, введите название рецепта</div>
+                               th:placeholder="#{recipe.title.placeholder}">
+                        <div class="invalid-feedback" th:text="#{validation.required}">Пожалуйста, введите название рецепта</div>
                     </div>
 
                     <!-- Категория -->
                     <div class="mb-3">
-                        <label for="category" class="form-label fw-bold">Категория *</label>
+                        <label for="category" class="form-label fw-bold" th:text="#{recipe.category}">Категория *</label>
                         <select class="form-select" id="category" required>
-                            <option value="">Выберите категорию</option>
+                            <option value="" th:text="#{recipe.category.placeholder}">Выберите категорию</option>
                             <!-- Опции будут заполнены через JavaScript -->
                         </select>
-                        <div class="invalid-feedback">Пожалуйста, выберите категорию</div>
+                        <div class="invalid-feedback" th:text="#{validation.required}">Пожалуйста, выберите категорию</div>
                     </div>
                 </div>
 
                 <!-- Ингредиенты -->
                 <div class="form-section">
-                    <h5>🛒 Ингредиенты</h5>
-                    <p class="text-muted mb-3">Добавьте все необходимые ингредиенты для рецепта</p>
+                    <h5>🛒 <span th:text="#{recipe.ingredients}">Ингредиенты</span></h5>
+                    <p class="text-muted mb-3" th:text="#{recipe.ingredients.description}">Добавьте все необходимые ингредиенты для рецепта</p>
 
                     <div id="ingredientsContainer">
                         <!-- Ингредиенты будут добавляться динамически -->
                         <div class="ingredient-row input-group">
                             <input type="text" class="form-control ingredient-input"
-                                   placeholder="Например: Мука - 200г">
+                                   th:placeholder="#{recipe.ingredient.placeholder}">
                             <button type="button" class="btn btn-outline-danger remove-ingredient" style="display: none;">🗑️</button>
                         </div>
                     </div>
 
                     <button type="button" class="btn btn-outline-success btn-sm mt-2" id="addIngredient">
-                        ➕ Добавить еще ингредиент
+                        ➕ <span th:text="#{recipe.ingredient.add}">Добавить еще ингредиент</span>
                     </button>
                 </div>
 
                 <!-- Инвентарь -->
                 <div class="form-section">
-                    <h5>🔧 Необходимый инвентарь</h5>
-                    <p class="text-muted mb-3">Выберите кухонный инвентарь, который понадобится для приготовления</p>
+                    <h5>🔧 <span th:text="#{recipe.inventory}">Необходимый инвентарь</span></h5>
+                    <p class="text-muted mb-3" th:text="#{recipe.inventory.description}">Выберите кухонный инвентарь, который понадобится для приготовления</p>
 
                     <div class="row" id="inventoryContainer">
                         <!-- Инвентарь будет заполнен через JavaScript -->
@@ -175,12 +88,12 @@
 
                 <!-- Описание -->
                 <div class="form-section">
-                    <h5>📝 Описание рецепта</h5>
+                    <h5>📝 <span th:text="#{recipe.description}">Описание рецепта</span></h5>
                     <div class="mb-3">
-                        <label for="description" class="form-label fw-bold">Подробное описание *</label>
+                        <label for="description" class="form-label fw-bold" th:text="#{recipe.description}">Подробное описание *</label>
                         <textarea class="form-control" id="description" rows="6" required
-                                  placeholder="Опишите процесс приготовления по шагам..."></textarea>
-                        <div class="invalid-feedback">Пожалуйста, заполните описание рецепта</div>
+                                  th:placeholder="#{recipe.description.placeholder}"></textarea>
+                        <div class="invalid-feedback" th:text="#{validation.required}">Пожалуйста, заполните описание рецепта</div>
                     </div>
                 </div>
 
@@ -189,13 +102,13 @@
                     <div class="col-12">
                         <div class="d-flex gap-2 justify-content-end">
                             <button type="button" class="btn btn-secondary" onclick="window.history.back()">
-                                ↩️ Отмена
+                                ↩️ <span th:text="#{common.cancel}">Отмена</span>
                             </button>
                             <button type="button" class="btn btn-primary" id="saveDraftBtn">
-                                💾 Сохранить черновик
+                                💾 <span th:text="#{recipe.save_draft}">Сохранить черновик</span>
                             </button>
                             <button type="button" class="btn btn-success" id="publishBtn">
-                                🚀 Опубликовать
+                                🚀 <span th:text="#{recipe.publish}">Опубликовать</span>
                             </button>
                         </div>
                     </div>
@@ -204,10 +117,10 @@
 
             <!-- Сообщение об ошибке загрузки -->
             <div class="alert alert-danger mt-4" id="errorAlert" style="display: none;">
-                <h4 class="alert-heading">❌ Ошибка загрузки</h4>
+                <h4 class="alert-heading">❌ <span th:text="#{common.error}">Ошибка</span></h4>
                 <p id="errorMessage"></p>
                 <button class="btn btn-outline-primary" onclick="window.location.reload()">
-                    🔄 Повторить попытку
+                    🔄 <span th:text="#{common.retry}">Повторить попытку</span>
                 </button>
             </div>
         </div>
@@ -215,43 +128,31 @@
 </div>
 
 <!-- Toast уведомления -->
-<div class="toast-container position-fixed top-0 end-0 p-3">
-    <div id="successToast" class="toast align-items-center text-bg-success border-0" role="alert">
-        <div class="d-flex">
-            <div class="toast-body" id="successToastMessage"></div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    </div>
-    <div id="errorToast" class="toast align-items-center text-bg-danger border-0" role="alert">
-        <div class="d-flex">
-            <div class="toast-body" id="errorToastMessage"></div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    </div>
-</div>
+<div th:replace="fragments/toasts :: toasts"></div>
 
-<!-- Bootstrap JS -->
-<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
-<!-- Общие утилиты -->
-<script th:src="@{/js/common.js}"></script>
+<!-- Скрипты -->
+<div th:replace="fragments/scripts :: scripts"></div>
+
 <!-- JavaScript для страницы редактирования -->
 <script th:src="@{/js/recipe-edit.js}"></script>
 
-<script>
-    // Инициализация при загрузке страницы
-    document.addEventListener('DOMContentLoaded', function() {
-        // Обновляем заголовок страницы в зависимости от режима
-        const isEdit = window.location.pathname.includes('/edit/');
-        if (isEdit) {
-            document.getElementById('pageTitle').textContent = 'Редактирование рецепта - Кулинарная книга';
-            document.getElementById('pageHeader').textContent = '✏️ Редактирование рецепта';
-            document.getElementById('pageDescription').textContent = 'Внесите изменения в ваш рецепт';
-        } else {
-            document.getElementById('pageTitle').textContent = 'Создание рецепта - Кулинарная книга';
-            document.getElementById('pageHeader').textContent = '➕ Создание нового рецепта';
-            document.getElementById('pageDescription').textContent = 'Заполните информацию о новом рецепте';
-        }
-    });
+<script th:inline="javascript">
+    // Дополнительные сообщения для страницы редактирования
+    window.i18nMessages = {
+        ...window.i18nMessages,
+        'recipe.basic_info': /*[[#{recipe.basic_info}]]*/ 'Основная информация',
+        'recipe.title.placeholder': /*[[#{recipe.title.placeholder}]]*/ 'Введите название рецепта',
+        'recipe.category.placeholder': /*[[#{recipe.category.placeholder}]]*/ 'Выберите категорию',
+        'recipe.ingredients.description': /*[[#{recipe.ingredients.description}]]*/ 'Добавьте все необходимые ингредиенты для рецепта',
+        'recipe.ingredient.placeholder': /*[[#{recipe.ingredient.placeholder}]]*/ 'Например: Мука - 200г',
+        'recipe.ingredient.add': /*[[#{recipe.ingredient.add}]]*/ 'Добавить еще ингредиент',
+        'recipe.inventory.description': /*[[#{recipe.inventory.description}]]*/ 'Выберите кухонный инвентарь, который понадобится для приготовления',
+        'recipe.description.placeholder': /*[[#{recipe.description.placeholder}]]*/ 'Опишите процесс приготовления по шагам...',
+        'recipe.save_draft': /*[[#{recipe.save_draft}]]*/ 'Сохранить черновик',
+        'recipe.publish': /*[[#{recipe.publish}]]*/ 'Опубликовать',
+        'myrecipes.edit_description': /*[[#{myrecipes.edit_description}]]*/ 'Внесите изменения в ваш рецепт',
+        'myrecipes.create_description': /*[[#{myrecipes.create_description}]]*/ 'Заполните информацию о новом рецепте'
+    };
 </script>
 </body>
 </html>

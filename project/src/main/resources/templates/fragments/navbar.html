@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<div th:fragment="navbar">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/" th:text="#{navbar.brand}">
+                🍳 Кулинарная книга
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/" th:text="#{navbar.home}">
+                            🏠 Домой
+                        </a>
+                    </li>
+                    <li class="nav-item" id="myRecipesLink" style="display: none;">
+                        <a class="nav-link" href="/my-recipes" th:text="#{navbar.my_recipes}">
+                            📖 Мои рецепты
+                        </a>
+                    </li>
+                    <li class="nav-item admin-panel-link">
+                        <a class="nav-link text-warning" href="/admin" th:text="#{navbar.admin_panel}">
+                            ⚙️ Админ-панель
+                        </a>
+                    </li>
+                </ul>
+
+                <ul class="navbar-nav">
+                    <!-- Смена языка -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle language-switcher" href="#" id="languageDropdown"
+                           role="button" data-bs-toggle="dropdown" th:text="#{navbar.language}">
+                            🌐 Язык
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="?lang=ru" th:text="#{language.russian}">Русский</a></li>
+                            <li><a class="dropdown-item" href="?lang=en" th:text="#{language.english}">English</a></li>
+                        </ul>
+                    </li>
+
+                    <!-- Авторизация -->
+                    <li class="nav-item" id="loginLink">
+                        <a class="nav-link" href="/login" th:text="#{navbar.login}">
+                            🔑 Войти
+                        </a>
+                    </li>
+                    <li class="nav-item" id="logoutLink" style="display: none;">
+                        <form th:action="@{/logout}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-link nav-link p-0 border-0">
+                                🚪 <span th:text="#{navbar.logout}">Выйти</span>
+                                (<span id="usernameDisplay"></span>)
+                                <small class="text-warning" id="adminBadge" style="display: none;">[ADMIN]</small>
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</div>

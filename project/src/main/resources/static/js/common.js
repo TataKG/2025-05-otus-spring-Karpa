@@ -319,5 +319,130 @@ class BaseApiClient {
             throw error;
         }
     }
-
 }
+
+// Функции для проверки аутентификации
+class AuthUtils {
+    static async checkAuthStatus() {
+        try {
+            console.log("Checking auth status...");
+            const response = await fetch('/api/auth/user', {
+                credentials: 'include'
+            });
+
+            console.log("Auth response status:", response.status);
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log("Auth response data:", result);
+
+                if (result.success && result.data && result.data.authenticated) {
+                    console.log("User authenticated:", result.data);
+                    this.showAuthenticatedUI(result.data);
+                } else {
+                    console.log("User not authenticated");
+                    this.showUnauthenticatedUI();
+                }
+            } else {
+                console.log("Auth endpoint failed, using fallback");
+                this.checkAuthFallback();
+            }
+        } catch (error) {
+            console.log('Auth check failed, using fallback:', error);
+            this.checkAuthFallback();
+        }
+    }
+
+    static showAuthenticatedUI(userData) {
+        console.log("Showing authenticated UI for:", userData);
+
+        // Скрываем кнопку входа
+        const loginLink = document.getElementById('loginLink');
+        if (loginLink) loginLink.style.display = 'none';
+
+        // Показываем кнопку выхода и "Мои рецепты" для всех авторизованных
+        const logoutLink = document.getElementById('logoutLink');
+        const myRecipesLink = document.getElementById('myRecipesLink');
+        if (logoutLink) logoutLink.style.display = 'block';
+        if (myRecipesLink) myRecipesLink.style.display = 'block';
+
+        // Устанавливаем имя пользователя
+        const usernameDisplay = document.getElementById('usernameDisplay');
+        if (usernameDisplay && userData.name) {
+            usernameDisplay.textContent = userData.name;
+        }
+
+        // Проверяем роль ADMIN
+        const adminBadge = document.getElementById('adminBadge');
+        const adminPanelLink = document.querySelector('.admin-panel-link');
+
+        if (userData.authorities &&
+            (userData.authorities.includes('ROLE_ADMIN') || userData.authorities.includes('ADMIN'))) {
+            console.log("User has ADMIN role");
+            if (adminBadge) adminBadge.style.display = 'inline';
+            if (adminPanelLink) adminPanelLink.style.display = 'block';
+        } else {
+            console.log("User does not have ADMIN role");
+            if (adminBadge) adminBadge.style.display = 'none';
+            if (adminPanelLink) adminPanelLink.style.display = 'none';
+        }
+    }
+
+    static showUnauthenticatedUI() {
+        console.log("Showing unauthenticated UI");
+
+        // Показываем кнопку входа, скрываем остальное
+        const loginLink = document.getElementById('loginLink');
+        const logoutLink = document.getElementById('logoutLink');
+        const myRecipesLink = document.getElementById('myRecipesLink');
+
+        if (loginLink) loginLink.style.display = 'block';
+        if (logoutLink) logoutLink.style.display = 'none';
+        if (myRecipesLink) myRecipesLink.style.display = 'none';
+
+        const adminPanelLink = document.querySelector('.admin-panel-link');
+        if (adminPanelLink) adminPanelLink.style.display = 'none';
+    }
+
+    // Fallback метод
+    static async checkAuthFallback() {
+        try {
+            const response = await fetch('/api/recipes/my-recipes', {
+                credentials: 'include'
+            });
+
+            if (response.status === 200) {
+                this.showAuthenticatedUI({ name: 'Пользователь' });
+                this.checkAdminRights();
+            } else {
+                this.showUnauthenticatedUI();
+            }
+        } catch (error) {
+            this.showUnauthenticatedUI();
+        }
+    }
+
+    // Проверка админских прав
+    static async checkAdminRights() {
+        try {
+            const response = await fetch('/api/admin/categories', {
+                credentials: 'include'
+            });
+
+            if (response.status === 200) {
+                const adminBadge = document.getElementById('adminBadge');
+                const adminPanelLink = document.querySelector('.admin-panel-link');
+
+                if (adminBadge) adminBadge.style.display = 'inline';
+                if (adminPanelLink) adminPanelLink.style.display = 'block';
+            }
+        } catch (error) {
+            // Не админ - ничего не делаем
+        }
+    }
+}
+
+// Инициализация аутентификации при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    AuthUtils.checkAuthStatus();
+});
