@@ -54,9 +54,9 @@ class MyRecipesApp extends BaseApiClient {
         };
     }
 
-    init() {
+    async init() {
         console.log("MyRecipesApp init started");
-        this.loadMyRecipes();
+        await this.loadMyRecipes();
         this.setupEventListeners();
     }
 
@@ -79,7 +79,8 @@ class MyRecipesApp extends BaseApiClient {
             }
         } catch (error) {
             console.error('Error loading my recipes:', error);
-            this.showError(this.messages['error-loading-recipes'] + ': ' + error.message);
+            const errorMessage = CommonUtils.handleApiError(error, this.messages['error-loading-recipes']);
+            this.showError(errorMessage);
         }
     }
 
@@ -224,31 +225,23 @@ class MyRecipesApp extends BaseApiClient {
                 this.showRecipeModal(response.data);
             } else {
                 this.showError(this.messages['error-loading-details']);
-                CommonUtils.showToast(this.messages['error-loading-details'], 'error');
             }
         } catch (error) {
             console.error('Error loading recipe details:', error);
-            this.showError(this.messages['error-loading-details']);
-            CommonUtils.showToast(this.messages['error-loading-details'], 'error');
+            const errorMessage = CommonUtils.handleApiError(error, this.messages['error-loading-details']);
+            this.showError(errorMessage);
         }
     }
 
     async loadRecipeComments(recipeId) {
         try {
             console.log("Loading comments for recipe:", recipeId);
-            const response = await fetch(`/api/recipes/${recipeId}/comments`, {
-                credentials: 'include'
-            });
+            const response = await this.get(`/${recipeId}/comments`);
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            if (result.success) {
-                return result.data;
+            if (response.success) {
+                return response.data;
             } else {
-                throw new Error(result.message || 'Failed to load comments');
+                throw new Error(response.message || 'Failed to load comments');
             }
         } catch (error) {
             console.error('Error loading recipe comments:', error);
@@ -438,10 +431,7 @@ class MyRecipesApp extends BaseApiClient {
             if (response.success) {
                 CommonUtils.showToast(this.messages['delete-success'], 'success');
 
-                // УДАЛЯЕМ ЭТУ СТРОКУ - она вызывает повторную загрузку списка, который может быть закэширован
-                // this.loadMyRecipes(); // Перезагружаем список рецептов
-
-                // ВМЕСТО ЭТОГО: обновляем локальный массив и перерисовываем таблицу
+                // Обновляем локальный массив и перерисовываем таблицу
                 this.currentUserRecipes = this.currentUserRecipes.filter(recipe => recipe.id != recipeId);
                 this.updateStatistics(this.currentUserRecipes);
                 this.displayRecipes(this.currentUserRecipes);
@@ -460,7 +450,8 @@ class MyRecipesApp extends BaseApiClient {
                 this.updateStatistics(this.currentUserRecipes);
                 this.displayRecipes(this.currentUserRecipes);
             } else {
-                CommonUtils.showToast(this.messages['delete-error'] + ': ' + error.message, 'error');
+                const errorMessage = CommonUtils.handleApiError(error, this.messages['delete-error']);
+                CommonUtils.showToast(errorMessage, 'error');
             }
         }
     }

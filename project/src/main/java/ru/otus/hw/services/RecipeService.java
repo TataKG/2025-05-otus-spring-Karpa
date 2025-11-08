@@ -1,5 +1,6 @@
 package ru.otus.hw.services;
 
+import ru.otus.hw.dto.InventoryDto;
 import ru.otus.hw.dto.RecipeDto;
 import ru.otus.hw.dto.RecipeSummaryDto;
 import ru.otus.hw.dto.RecipeWithDetailsDto;
@@ -55,4 +56,14 @@ public interface RecipeService {
         long getTotalRecipesCount();
         long getRecipesCountByAuthor(Long authorId);
         long getPublishedRecipesCountByAuthor(Long authorId);
+
+        List<InventoryDto> getInventoryByRecipeId(Long recipeId);
+        List<InventoryDto> getInventoryByRecipeIds(List<Long> recipeIds);
+        boolean isInventoryUsedInRecipes(Long inventoryId);
+        boolean isInventoryUsedInPublishedRecipes(Long inventoryId);
+        long getRecipeCountByInventoryId(Long inventoryId);
+        RecipeDto createRecipeWithInventory(String title, Long categoryId, Long authorId,
+                                            List<String> ingredients, String description,
+                                            List<Long> inventoryIds, boolean published);
+
 }

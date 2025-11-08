@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import ru.otus.hw.models.Inventory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -96,5 +97,16 @@ public interface InventoryRepository extends CrudRepository<Inventory, Long> {
 
     default List<Inventory> findRecentInventory(int limit) {
         return findRecentInventory(PageRequest.of(0, limit));
+    }
+
+    @Query("SELECT i FROM Inventory i WHERE i.id IN :ids")
+    List<Inventory> findAllByIdIn(@Param("ids") List<Long> ids);
+
+    // Или используйте существующий метод с преобразованием
+    default List<Inventory> findAllByIdList(List<Long> ids) {
+        Iterable<Inventory> inventoryIterable = findAllById(ids);
+        List<Inventory> inventoryItems = new ArrayList<>();
+        inventoryIterable.forEach(inventoryItems::add);
+        return inventoryItems;
     }
 }

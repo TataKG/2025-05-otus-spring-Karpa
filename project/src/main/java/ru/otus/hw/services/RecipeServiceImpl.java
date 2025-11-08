@@ -3,6 +3,7 @@ package ru.otus.hw.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.otus.hw.converters.InventoryConverter;
 import ru.otus.hw.converters.RecipeConverter;
 import ru.otus.hw.dto.*;
 import ru.otus.hw.exceptions.EntityNotFoundException;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Service
 @Transactional
@@ -32,6 +34,7 @@ public class RecipeServiceImpl implements RecipeService {
     private final CommentRepository commentRepository;
     private final InventoryService inventoryService;
     private final CommentService commentService;
+    private final InventoryConverter inventoryConverter;
 
     @Override
     public RecipeWithDetailsDto getRecipeWithDetails(Long id) {
@@ -56,6 +59,13 @@ public class RecipeServiceImpl implements RecipeService {
     @Override
     public RecipeDto createRecipe(String title, Long categoryId, Long authorId,
                                   List<String> ingredients, String description, boolean published) {
+        return createRecipeWithInventory(title, categoryId, authorId, ingredients, description, null, published);
+    }
+
+    @Override
+    public RecipeDto createRecipeWithInventory(String title, Long categoryId, Long authorId,
+                                               List<String> ingredients, String description,
+                                               List<Long> inventoryIds, boolean published) {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         messageProvider.getMessage("category.not_found", categoryId)
@@ -68,24 +78,37 @@ public class RecipeServiceImpl implements RecipeService {
 
         Recipe recipe = new Recipe(title, category, author, ingredients, description);
         recipe.setPublished(published);
+
+        // Добавляем инвентарь при создании
+        if (inventoryIds != null && !inventoryIds.isEmpty()) {
+            Iterable<Inventory> inventoryIterable = inventoryRepository.findAllById(inventoryIds);
+            List<Inventory> inventoryItems = new ArrayList<>();
+            inventoryIterable.forEach(inventoryItems::add);
+
+            recipe.getInventoryItems().addAll(inventoryItems);
+
+            // Двусторонняя связь
+            for (Inventory inventory : inventoryItems) {
+                if (!inventory.getRecipes().contains(recipe)) {
+                    inventory.getRecipes().add(recipe);
+                }
+            }
+        }
+
         Recipe savedRecipe = recipeRepository.save(recipe);
         return recipeConverter.toDto(savedRecipe);
     }
 
     @Override
-    public RecipeDto updateRecipe(Long id, String title, Long categoryId, List<String> ingredients,
-                                  String description, List<Long> inventoryIds, boolean published) {
-        Recipe recipe = recipeRepository.findByIdWithBasicRelations(id)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        messageProvider.getMessage("recipe.not_found", id)
-                ));
+    public RecipeDto updateRecipe(Long id, String title, Long categoryId,
+                                  List<String> ingredients, String description,
+                                  List<Long> inventoryIds, boolean published) {
+        Recipe recipe = recipeRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Recipe not found"));
 
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        messageProvider.getMessage("category.not_found", categoryId)
-                ));
+                .orElseThrow(() -> new EntityNotFoundException("Category not found"));
 
-        // Обновляем основные поля
         recipe.setTitle(title);
         recipe.setCategory(category);
         recipe.setDescription(description);
@@ -93,19 +116,29 @@ public class RecipeServiceImpl implements RecipeService {
 
         // Обновляем ингредиенты
         recipe.getIngredients().clear();
-        if (ingredients != null) {
-            ingredients.forEach(recipe::addIngredient);
+        if (ingredients != null && !ingredients.isEmpty()) {
+            recipe.getIngredients().addAll(ingredients);
         }
 
-        // Обновляем инвентарь
+        // Обновляем инвентарь - ИСПРАВЛЕННАЯ ЛОГИКА
         recipe.getInventoryItems().clear();
         if (inventoryIds != null && !inventoryIds.isEmpty()) {
-            List<Inventory> inventoryItems = getInventoryItemsByIds(inventoryIds);
-            inventoryItems.forEach(recipe::addInventoryItem);
+            Iterable<Inventory> inventoryIterable = inventoryRepository.findAllById(inventoryIds);
+            List<Inventory> inventoryItems = new ArrayList<>();
+            inventoryIterable.forEach(inventoryItems::add);
+
+            recipe.getInventoryItems().addAll(inventoryItems);
+
+            // Двусторонняя связь
+            for (Inventory inventory : inventoryItems) {
+                if (!inventory.getRecipes().contains(recipe)) {
+                    inventory.getRecipes().add(recipe);
+                }
+            }
         }
 
-        Recipe updatedRecipe = recipeRepository.save(recipe);
-        return recipeConverter.toDto(updatedRecipe);
+        Recipe savedRecipe = recipeRepository.save(recipe);
+        return recipeConverter.toDto(savedRecipe);
     }
 
     @Override
@@ -118,11 +151,7 @@ public class RecipeServiceImpl implements RecipeService {
     public Optional<RecipeDto> getRecipeByIdWithAllRelations(Long id) {
         // Используем новый метод с отдельными запросами
         return Optional.of(getRecipeWithDetails(id))
-                .map(this::convertToRecipeDto);
-    }
-
-    private RecipeDto convertToRecipeDto(RecipeWithDetailsDto details) {
-        return recipeConverter.toDtoFromDetails(details);
+                .map(recipeConverter::toDtoFromDetails);
     }
 
     @Override
@@ -341,19 +370,6 @@ public class RecipeServiceImpl implements RecipeService {
         return recipeRepository.countByAuthorIdAndPublishedTrue(authorId);
     }
 
-    // Вспомогательный метод для получения инвентаря по IDs с проверкой
-    private List<Inventory> getInventoryItemsByIds(List<Long> inventoryIds) {
-        List<Inventory> inventoryItems = new ArrayList<>();
-        for (Long inventoryId : inventoryIds) {
-            Inventory inventory = inventoryRepository.findById(inventoryId)
-                    .orElseThrow(() -> new EntityNotFoundException(
-                            messageProvider.getMessage("inventory.not_found", inventoryId)
-                    ));
-            inventoryItems.add(inventory);
-        }
-        return inventoryItems;
-    }
-
     @Override
     public List<RecipeDto> findPublishedRecipesWithFilters(String search, Long categoryId, Long authorId) {
         List<Recipe> recipes;
@@ -377,5 +393,44 @@ public class RecipeServiceImpl implements RecipeService {
                 .map(recipeConverter::toDto)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<InventoryDto> getInventoryByRecipeId(Long recipeId) {
+        List<Inventory> inventory = inventoryRepository.findByRecipeId(recipeId);
+        return inventory.stream()
+                .map(inventoryConverter::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<InventoryDto> getInventoryByRecipeIds(List<Long> recipeIds) {
+        List<Inventory> inventory = inventoryRepository.findByRecipeIds(recipeIds);
+        return inventory.stream()
+                .map(inventoryConverter::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean isInventoryUsedInRecipes(Long inventoryId) {
+        return inventoryRepository.isUsedInRecipes(inventoryId);
+    }
+
+    @Override
+    public boolean isInventoryUsedInPublishedRecipes(Long inventoryId) {
+        return inventoryRepository.isUsedInPublishedRecipes(inventoryId);
+    }
+
+    @Override
+    public long getRecipeCountByInventoryId(Long inventoryId) {
+        return inventoryRepository.countPublishedRecipesByInventoryId(inventoryId);
+    }
+
+    // Вспомогательный метод для получения инвентаря по IDs с проверкой
+    private List<Inventory> getInventoryItemsByIds(List<Long> inventoryIds) {
+        return StreamSupport
+                .stream(inventoryRepository.findAllById(inventoryIds).spliterator(), false)
+                .collect(Collectors.toList());
+    }
+
 
 }

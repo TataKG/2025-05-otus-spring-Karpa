@@ -4,15 +4,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import ru.otus.hw.dto.*;
 import ru.otus.hw.exceptions.EntityNotFoundException;
-import ru.otus.hw.services.AuthorService;
-import ru.otus.hw.services.CommentService;
-import ru.otus.hw.services.RecipeService;
+import ru.otus.hw.services.*;
 import ru.otus.hw.util.MessageProvider;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -26,12 +27,75 @@ public class RecipeController {
     private final MessageProvider messageProvider;
     private final CommentService commentService;
     private final AuthorService authorService;
+    private final CategoryService categoryService;
+    private final InventoryService inventoryService;
+
+    @GetMapping("/create-form-data")
+    public ResponseEntity<ApiResponse<RecipeFormData>> getCreateFormData(Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            AuthorDto author = authorService.getAuthorByUsername(username)
+                    .orElseThrow(() -> new EntityNotFoundException("Author not found"));
+
+            RecipeFormData formData = new RecipeFormData(
+                    new RecipeDto(
+                            null,
+                            "",
+                            null,
+                            author,
+                            new ArrayList<>(),
+                            new ArrayList<>(),
+                            "",
+                            0,
+                            false,
+                            null,
+                            null
+                    ),
+                    categoryService.getAllCategories(),
+                    inventoryService.getAllInventory()
+            );
+
+            return ResponseEntity.ok(ApiResponse.success(formData));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to load form data: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/edit-form-data/{id}")
+    public ResponseEntity<ApiResponse<RecipeFormData>> getEditFormData(@PathVariable Long id, Authentication authentication) {
+        try {
+            String username = authentication.getName();
+
+            RecipeDto recipe = recipeService.getRecipeByIdWithAllRelations(id)
+                    .orElseThrow(() -> new EntityNotFoundException("Recipe not found"));
+
+            AuthorDto currentAuthor = authorService.getAuthorByUsername(username)
+                    .orElseThrow(() -> new EntityNotFoundException("Author not found"));
+
+            if (!recipe.author().id().equals(currentAuthor.id())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(ApiResponse.error("You can only edit your own recipes"));
+            }
+
+            RecipeFormData formData = new RecipeFormData(
+                    recipe,
+                    categoryService.getAllCategories(),
+                    inventoryService.getAllInventory()
+            );
+
+            return ResponseEntity.ok(ApiResponse.success(formData));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Failed to load edit form data: " + e.getMessage()));
+        }
+    }
 
     @GetMapping("/my-recipes")
     public ResponseEntity<ApiResponse<List<RecipeSummaryDto>>> getMyRecipes(Authentication authentication) {
-//        System.out.println("=== MY RECIPES ENDPOINT ===");
-//        System.out.println("Authentication: " + authentication);
-
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -39,42 +103,19 @@ public class RecipeController {
             }
 
             String username = authentication.getName();
-//            System.out.println("Loading recipes for authenticated user: " + username);
-
-//            // ПРАВИЛЬНАЯ проверка ролей
-//            boolean isAdmin = authentication.getAuthorities().stream()
-//                    .anyMatch(auth -> {
-//                        String authority = auth.getAuthority();
-//                        return authority.equals("ROLE_ADMIN") || authority.equals("ADMIN");
-//                    });
-//
-//            System.out.println("User is ADMIN: " + isAdmin);
-//            System.out.println("Authorities: " + authentication.getAuthorities());
-
             List<RecipeSummaryDto> recipes;
 
-//            if (isAdmin) {
-//                System.out.println("User is ADMIN, loading ALL recipes");
-//                recipes = recipeService.getAllRecipes(); // Все рецепты для админа
-//            } else {
-                // Для обычных пользователей загружаем только их рецепты
-                Optional<AuthorDto> authorOpt = authorService.getAuthorByUsername(username);
-                if (authorOpt.isEmpty()) {
-//                    System.out.println("No author found for user: " + username);
-                    return ResponseEntity.ok(ApiResponse.success(List.of()));
-                }
+            Optional<AuthorDto> authorOpt = authorService.getAuthorByUsername(username);
+            if (authorOpt.isEmpty()) {
+                return ResponseEntity.ok(ApiResponse.success(List.of()));
+            }
 
-                AuthorDto author = authorOpt.get();
-//                System.out.println("Found author: " + author.id() + " for user: " + username);
-                recipes = recipeService.getRecipesByAuthor(author.id());
-//            }
+            AuthorDto author = authorOpt.get();
+            recipes = recipeService.getRecipesByAuthor(author.id());
 
-//            System.out.println("Found " + recipes.size() + " recipes");
             return ResponseEntity.ok(ApiResponse.success(recipes));
 
         } catch (Exception e) {
-//            System.err.println("Error loading my recipes: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Failed to load your recipes: " + e.getMessage()));
         }
@@ -92,14 +133,17 @@ public class RecipeController {
                         .body(ApiResponse.error("You can only create recipes for yourself"));
             }
 
-            RecipeDto recipeDto = recipeService.createRecipe(
+            // Создаем рецепт с инвентарем
+            RecipeDto recipeDto = recipeService.createRecipeWithInventory(
                     request.title(),
                     request.categoryId(),
                     request.authorId(),
                     request.ingredients(),
                     request.description(),
+                    request.inventoryIds(),
                     request.published()
             );
+
             return ResponseEntity.status(HttpStatus.CREATED).body(
                     ApiResponse.success(recipeDto, messageProvider.getMessage("recipe.created"))
             );
@@ -142,9 +186,15 @@ public class RecipeController {
                     request.published()
             );
 
-            return ResponseEntity.ok(
-                    ApiResponse.success(updatedRecipe, messageProvider.getMessage("recipe.updated"))
-            );
+            // Используем fallback сообщение если нет в properties
+            String message;
+            try {
+                message = messageProvider.getMessage("recipe.updated");
+            } catch (Exception e) {
+                message = "Рецепт успешно обновлен";
+            }
+
+            return ResponseEntity.ok(ApiResponse.success(updatedRecipe, message));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(e.getMessage()));
@@ -162,9 +212,7 @@ public class RecipeController {
                             messageProvider.getMessage("recipe.not_found", id)
                     ));
 
-            // Проверяем, опубликован ли рецепт или пользователь имеет права
             if (!recipeDto.published()) {
-                // Здесь можно добавить проверку прав, если нужно
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("Recipe not found or not published"));
             }
@@ -184,7 +232,6 @@ public class RecipeController {
                             messageProvider.getMessage("recipe.not_found", id)
                     ));
 
-            // Для неопубликованных рецептов проверяем права доступа
             if (!recipeDto.published()) {
                 if (authentication == null || !authentication.isAuthenticated()) {
                     return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -231,20 +278,16 @@ public class RecipeController {
         try {
             List<RecipeSummaryDto> recipes;
 
-            // Проверяем, запрашивает ли автор свои собственные рецепты
             if (authentication != null && authentication.isAuthenticated()) {
                 String username = authentication.getName();
                 AuthorDto currentAuthor = authorService.getAuthorByUsername(username).orElse(null);
 
                 if (currentAuthor != null && currentAuthor.id().equals(authorId)) {
-                    // Автор запрашивает свои рецепты - показываем все
                     recipes = recipeService.getRecipesByAuthor(authorId);
                 } else {
-                    // Другой пользователь запрашивает рецепты автора - показываем только опубликованные
                     recipes = recipeService.getPublishedRecipesByAuthor(authorId);
                 }
             } else {
-                // Неавторизованный пользователь - только опубликованные
                 recipes = recipeService.getPublishedRecipesByAuthor(authorId);
             }
 
@@ -284,7 +327,6 @@ public class RecipeController {
 
         List<RecipeSummaryDto> recipes;
 
-        // Если указан автор и пользователь запрашивает свои рецепты, показываем все
         if (authorId != null && authentication != null && authentication.isAuthenticated()) {
             String username = authentication.getName();
             AuthorDto currentAuthor = authorService.getAuthorByUsername(username).orElse(null);
@@ -308,7 +350,6 @@ public class RecipeController {
             Authentication authentication) {
 
         try {
-            // Проверяем права доступа
             RecipeDto existingRecipe = recipeService.getRecipeById(recipeId)
                     .orElseThrow(() -> new EntityNotFoundException("Recipe not found"));
 
@@ -339,10 +380,6 @@ public class RecipeController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteRecipe(@PathVariable Long id, Authentication authentication) {
         try {
-            System.out.println("=== DELETE RECIPE ENDPOINT CALLED ===");
-            System.out.println("Deleting recipe ID: " + id);
-
-            // Проверяем права доступа
             RecipeDto existingRecipe = recipeService.getRecipeById(id)
                     .orElseThrow(() -> new EntityNotFoundException("Recipe not found"));
 
@@ -357,22 +394,15 @@ public class RecipeController {
 
             recipeService.deleteRecipe(id);
 
-            System.out.println("Recipe deletion completed successfully");
-
-            // ВСЕГДА возвращаем 200 OK даже если рецепт уже удален
             return ResponseEntity.ok(
                     ApiResponse.success(null, "Recipe successfully deleted")
             );
 
         } catch (EntityNotFoundException e) {
-            System.err.println("Recipe not found: " + e.getMessage());
-            // Вместо 404 возвращаем успех, так как цель (удаление) достигнута
             return ResponseEntity.ok(
                     ApiResponse.success(null, "Recipe was already deleted or not found")
             );
         } catch (Exception e) {
-            System.err.println("Unexpected error deleting recipe: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Failed to delete recipe: " + e.getMessage()));
         }
@@ -402,7 +432,7 @@ public class RecipeController {
                     existingRecipe.inventoryItems().stream()
                             .map(InventoryDto::id)
                             .collect(Collectors.toList()),
-                    true // published = true
+                    true
             );
 
             return ResponseEntity.ok(
@@ -441,7 +471,7 @@ public class RecipeController {
                     existingRecipe.inventoryItems().stream()
                             .map(InventoryDto::id)
                             .collect(Collectors.toList()),
-                    false // published = false
+                    false
             );
 
             return ResponseEntity.ok(
@@ -456,15 +486,16 @@ public class RecipeController {
         }
     }
 
+    // Records для запросов и ответов
     public record CreateRecipeRequest(
             String title,
             Long categoryId,
             Long authorId,
             List<String> ingredients,
+            List<Long> inventoryIds,
             String description,
             boolean published
-    ) {
-    }
+    ) {}
 
     public record UpdateRecipeRequest(
             String title,
@@ -473,6 +504,11 @@ public class RecipeController {
             String description,
             List<Long> inventoryIds,
             boolean published
-    ) {
-    }
+    ) {}
+
+    public record RecipeFormData(
+            RecipeDto recipe,
+            List<CategoryDto> categories,
+            List<InventoryDto> inventoryItems
+    ) {}
 }

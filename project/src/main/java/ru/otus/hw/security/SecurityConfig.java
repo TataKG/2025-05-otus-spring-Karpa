@@ -18,7 +18,6 @@ import ru.otus.hw.services.UserServiceImpl;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-
     private final UserDetailsService userDetailsService;
 
     @Bean
@@ -40,20 +39,29 @@ public class SecurityConfig {
                         .requestMatchers("/", "/index.html", "/login", "/logout", "/error").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
 
-                        // API endpoints
+                        // API endpoints - разрешаем неаутентифицированный доступ к публичным данным
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/recipes/**", "/api/categories/**").permitAll()
+                        .requestMatchers("/api/recipes", "/api/recipes/published", "/api/recipes/category/**").permitAll()
+                        .requestMatchers("/api/recipes/{id}", "/api/recipes/{id}/detailed").permitAll()
+                        .requestMatchers("/api/recipes/search/**", "/api/recipes/filter").permitAll()
+                        .requestMatchers("/api/categories/**").permitAll()
+
+                        // API endpoints требующие аутентификации
+                        .requestMatchers("/api/recipes/my-recipes").authenticated()
+                        .requestMatchers("/api/recipes/create-form-data", "/api/recipes/edit-form-data/**").authenticated()
+                        .requestMatchers("/api/recipes/**").authenticated() // все остальные API рецептов
                         .requestMatchers("/api/comments/**").authenticated()
 
-                        // Админские endpoints - ИСПРАВЛЕНО: используем hasAuthority вместо hasRole
+                        // Админские endpoints
                         .requestMatchers("/api/admin/**", "/api/authors/**", "/api/users/**", "/api/inventory/**").hasAuthority("ADMIN")
                         .requestMatchers("/admin/**").hasAuthority("ADMIN")
 
                         // H2 console - только для админов
                         .requestMatchers("/h2-console/**").hasAuthority("ADMIN")
 
-                        // Web страницы - разрешить всем аутентифицированным
-                        .requestMatchers("/my-recipes", "/recipe/create", "/recipe/edit/**").authenticated()
+                        // Web страницы
+                        .requestMatchers("/my-recipes").authenticated()
+                        .requestMatchers("/recipe/create", "/recipe/edit/**").authenticated()
                         .requestMatchers("/recipe/**").permitAll()
 
                         .anyRequest().authenticated()
