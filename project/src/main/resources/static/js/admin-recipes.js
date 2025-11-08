@@ -313,6 +313,7 @@ class RecipesAdminApp extends BaseApiClient {
     }
 }
 
+
 // Инициализация приложения
 let recipesApp;
 document.addEventListener('DOMContentLoaded', () => {

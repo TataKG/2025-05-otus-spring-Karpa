@@ -34,12 +34,9 @@ public class AdminRecipeController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteRecipe(@PathVariable Long id) {
         try {
-            System.out.println("🔄 Attempting to delete recipe ID: " + id);
             recipeService.deleteRecipe(id);
-            System.out.println("✅ Recipe deleted successfully: " + id);
             return ResponseEntity.ok(ApiResponse.success(null, "Рецепт успешно удален"));
         } catch (Exception e) {
-            System.out.println("❌ Error deleting recipe " + id + ": " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500)
                     .body(ApiResponse.error("Ошибка при удалении рецепта: " + e.getMessage()));
