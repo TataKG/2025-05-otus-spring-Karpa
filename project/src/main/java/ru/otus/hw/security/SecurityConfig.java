@@ -45,6 +45,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/recipes/{id}", "/api/recipes/{id}/detailed").permitAll()
                         .requestMatchers("/api/recipes/search/**", "/api/recipes/filter").permitAll()
                         .requestMatchers("/api/categories/**").permitAll()
+                        .requestMatchers("/api/recipes/*/comments", "/api/recipes/*/comments/**").permitAll()
 
                         // API endpoints требующие аутентификации
                         .requestMatchers("/api/recipes/my-recipes").authenticated()
