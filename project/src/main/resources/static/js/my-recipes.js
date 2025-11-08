@@ -166,6 +166,11 @@ class MyRecipesApp extends BaseApiClient {
                         <button class="btn btn-outline-warning edit-recipe" data-recipe-id="${recipe.id}">
                             ✏️ ${this.messages.edit}
                         </button>
+                        ${!recipe.published ? `
+                            <button class="btn btn-outline-success publish-recipe" data-recipe-id="${recipe.id}">
+                                📢 ${this.messages.publish || 'Опубликовать'}
+                            </button>
+                        ` : ''}
                         <button class="btn btn-outline-danger delete-recipe" data-recipe-id="${recipe.id}" data-recipe-title="${CommonUtils.escapeHtml(recipe.title)}">
                             🗑️ ${this.messages.delete}
                         </button>
@@ -192,6 +197,15 @@ class MyRecipesApp extends BaseApiClient {
                 const recipeId = e.target.closest('.edit-recipe').dataset.recipeId;
                 console.log("Edit recipe:", recipeId);
                 this.editRecipe(recipeId);
+            });
+        });
+
+        // ОБНОВЛЕННЫЙ ОБРАБОТЧИК ДЛЯ КНОПКИ ПУБЛИКАЦИИ
+        document.querySelectorAll('.publish-recipe').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const recipeId = e.target.closest('.publish-recipe').dataset.recipeId;
+                console.log("Publish recipe:", recipeId);
+                this.publishRecipeSimple(recipeId); // Используем упрощенный метод
             });
         });
 
@@ -453,6 +467,52 @@ class MyRecipesApp extends BaseApiClient {
                 const errorMessage = CommonUtils.handleApiError(error, this.messages['delete-error']);
                 CommonUtils.showToast(errorMessage, 'error');
             }
+        }
+    }
+
+    async publishRecipeSimple(recipeId) {
+        try {
+            console.log("Publishing recipe (simple):", recipeId);
+
+            // Показываем индикатор загрузки
+            const publishButton = document.querySelector(`.publish-recipe[data-recipe-id="${recipeId}"]`);
+            if (publishButton) {
+                const originalText = publishButton.innerHTML;
+                publishButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Публикация...';
+                publishButton.disabled = true;
+            }
+
+            // Используем существующий endpoint PATCH /api/recipes/{id}/publish
+            const response = await this.patch(`/${recipeId}/publish`, {});
+
+            if (response.success) {
+                CommonUtils.showToast(this.messages['publish-success'] || 'Рецепт успешно опубликован!', 'success');
+
+                // Обновляем локальные данные
+                const recipeIndex = this.currentUserRecipes.findIndex(r => r.id == recipeId);
+                if (recipeIndex !== -1) {
+                    this.currentUserRecipes[recipeIndex].published = true;
+                }
+
+                this.updateStatistics(this.currentUserRecipes);
+                this.displayRecipes(this.currentUserRecipes);
+
+            } else {
+                throw new Error(response.message || 'Ошибка при публикации рецепта');
+            }
+
+        } catch (error) {
+            console.error('Error publishing recipe:', error);
+
+            // Восстанавливаем кнопку
+            const publishButton = document.querySelector(`.publish-recipe[data-recipe-id="${recipeId}"]`);
+            if (publishButton) {
+                publishButton.innerHTML = '📢 Опубликовать';
+                publishButton.disabled = false;
+            }
+
+            const errorMessage = CommonUtils.handleApiError(error, this.messages['publish-error'] || 'Ошибка при публикации рецепта');
+            CommonUtils.showToast(errorMessage, 'error');
         }
     }
 

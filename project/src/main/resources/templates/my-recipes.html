@@ -40,6 +40,26 @@
             right: 20px;
             z-index: 1055;
         }
+
+        .publish-recipe {
+            transition: all 0.3s ease;
+        }
+
+        .publish-recipe:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .publish-recipe:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-group-sm .btn {
+            margin: 1px;
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -349,6 +369,10 @@
         'recipe-details-comments': /*[[#{recipe.details.comments}]]*/ '💬 Комментарии',
         'recipe-details-status': /*[[#{recipe.details.status}]]*/ '📊 Статус',
         'recipe-details-created-date': /*[[#{recipe.details.created_date}]]*/ '📅 Дата создания'
+        'publish': /*[[#{myrecipes.publish}]]*/ 'Опубликовать',
+        'publish-success': /*[[#{myrecipes.publish_success}]]*/ 'Рецепт успешно опубликован',
+        'publish-error': /*[[#{myrecipes.publish_error}]]*/ 'Ошибка при публикации рецепта',
+
     };
 </script>
 </body>

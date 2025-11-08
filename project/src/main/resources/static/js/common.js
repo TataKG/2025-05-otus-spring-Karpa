@@ -284,4 +284,40 @@ class BaseApiClient {
             throw error;
         }
     }
+
+    async patch(url, data) {
+        const fullUrl = `${this.baseUrl}${url}`;
+        console.log(`🔗 API PATCH: ${fullUrl}`, data);
+
+        try {
+            const response = await fetch(fullUrl, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify(data)
+            });
+
+            console.log(`📨 API Response status: ${response.status} ${response.statusText}`);
+
+            if (!response.ok) {
+                let errorMessage = `HTTP error! status: ${response.status}`;
+                try {
+                    const errorResult = await response.json();
+                    errorMessage = errorResult.message || errorMessage;
+                } catch (e) {
+                    // Ignore JSON parsing error
+                }
+                throw new Error(errorMessage);
+            }
+
+            return response.json();
+        } catch (error) {
+            console.error(`💥 Fetch error for ${fullUrl}:`, error);
+            throw error;
+        }
+    }
+
 }
