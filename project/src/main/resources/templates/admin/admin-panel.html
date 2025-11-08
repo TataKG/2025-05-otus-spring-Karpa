@@ -1,142 +1,93 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html th:replace="~{admin/admin-layout :: layout(
+    pageTitle='admin.panel.title',
+    pageSubtitle='admin.panel.subtitle'
+)}" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Админ-панель - Кулинарная книга</title>
-    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
-    <style>
-        .admin-card {
-            transition: all 0.3s ease;
-            border: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .admin-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        .stats-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .nav-pills .nav-link.active {
-            background-color: #0d6efd;
-            font-weight: 600;
-        }
-    </style>
+    <title th:text="#{admin.panel.title} + ' - ' + #{page.title}">Админ-панель - Кулинарная книга</title>
 </head>
 <body>
-<!-- Навигационная панель -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container">
-        <a class="navbar-brand" href="/">
-            🍳 Кулинарная книга
-        </a>
+<!-- Контент страницы -->
+<div th:fragment="content">
+    <!-- Карточки управления -->
+    <div class="row g-4">
+        <!-- Управление категориями -->
+        <div class="col-md-4">
+            <div class="card admin-card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <span class="display-4">📂</span>
+                    </div>
+                    <h5 class="card-title" th:text="#{admin.nav.categories}">Категории</h5>
+                    <p class="card-text text-muted" th:text="#{admin.categories.description}">
+                        Управление категориями рецептов: создание, редактирование, удаление
+                    </p>
+                    <a href="/admin/categories" class="btn btn-primary">
+                        📊 <span th:text="#{admin.nav.categories}">Управление категориями</span>
+                    </a>
+                </div>
+            </div>
+        </div>
 
-        <div class="navbar-nav ms-auto">
-            <a class="nav-link" href="/">🏠 На главную</a>
-            <form th:action="@{/logout}" method="post" class="d-inline">
-                <button type="submit" class="btn btn-link nav-link p-0 border-0">
-                    🚪 Выйти (<span sec:authentication="name"></span>)
-                </button>
-            </form>
+        <!-- Управление ингредиентами -->
+        <div class="col-md-4">
+            <div class="card admin-card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <span class="display-4">🧰</span>
+                    </div>
+                    <h5 class="card-title" th:text="#{admin.nav.inventory}">Инвентарь</h5>
+                    <p class="card-text text-muted" th:text="#{admin.inventory.description}">
+                        Управление инвентарем: создание, редактирование описания, удаление неиспользуемых
+                    </p>
+                    <a href="/admin/inventory" class="btn btn-primary">
+                        🧰 <span th:text="#{admin.nav.inventory}">Управление инвентарем</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Управление авторами -->
+        <div class="col-md-4">
+            <div class="card admin-card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <span class="display-4">👨‍🍳</span>
+                    </div>
+                    <h5 class="card-title" th:text="#{admin.nav.authors}">Авторы</h5>
+                    <p class="card-text text-muted" th:text="#{admin.authors.description}">
+                        Просмотр и управление авторами рецептов
+                    </p>
+                    <a href="/admin/authors" class="btn btn-primary">
+                        📝 <span th:text="#{admin.nav.authors}">Управление авторами</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
-</nav>
 
-<!-- Основной контент -->
-<div class="container mt-4">
-    <div class="row">
+    <!-- Статистика -->
+    <div class="row mt-5">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="text-primary">⚙️ Админ-панель</h1>
-                <div class="text-muted">
-                    Роли: <span sec:authentication="authorities"></span>
-                </div>
-            </div>
-
-            <!-- Карточки управления -->
-            <div class="row g-4">
-                <!-- Управление категориями -->
-                <div class="col-md-4">
-                    <div class="card admin-card h-100">
-                        <div class="card-body text-center">
-                            <div class="mb-3">
-                                <span class="display-4">📂</span>
-                            </div>
-                            <h5 class="card-title">Категории</h5>
-                            <p class="card-text text-muted">
-                                Управление категориями рецептов: создание, редактирование, удаление
-                            </p>
-                            <a href="/admin/categories" class="btn btn-primary">
-                                📊 Управление категориями
-                            </a>
+            <div class="card stats-card">
+                <div class="card-body">
+                    <h5 class="card-title text-white">📈 <span th:text="#{admin.stats.title}">Быстрая статистика</span></h5>
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h3 id="categoriesCount">-</h3>
+                            <p class="mb-0" th:text="#{admin.stats.categories}">Категорий</p>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Управление ингредиентами -->
-                <div class="col-md-4">
-                    <div class="card admin-card h-100">
-                        <div class="card-body text-center">
-                            <div class="mb-3">
-                                <span class="display-4">🧰</span>
-                            </div>
-                            <h5 class="card-title">Инвентарь</h5>
-                            <p class="card-text text-muted">
-                                Управление инвентарем: создание, редактирование описания, удаление неиспользуемых
-                            </p>
-                            <a href="/admin/inventory" class="btn btn-primary">
-                                🧰 Управление инвентарем
-                            </a>
+                        <div class="col-md-3">
+                            <h3 id="inventoryCount">-</h3>
+                            <p class="mb-0" th:text="#{admin.stats.inventory}">Инвентарь</p>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Управление авторами -->
-                <div class="col-md-4">
-                    <div class="card admin-card h-100">
-                        <div class="card-body text-center">
-                            <div class="mb-3">
-                                <span class="display-4">👨‍🍳</span>
-                            </div>
-                            <h5 class="card-title">Авторы</h5>
-                            <p class="card-text text-muted">
-                                Просмотр и управление авторами рецептов
-                            </p>
-                            <a href="/admin/authors" class="btn btn-primary">
-                                📝 Управление авторами
-                            </a>
+                        <div class="col-md-3">
+                            <h3 id="authorsCount">-</h3>
+                            <p class="mb-0" th:text="#{admin.stats.authors}">Авторов</p>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Статистика -->
-            <div class="row mt-5">
-                <div class="col-12">
-                    <div class="card stats-card">
-                        <div class="card-body">
-                            <h5 class="card-title text-white">📈 Быстрая статистика</h5>
-                            <div class="row text-center">
-                                <div class="col-md-3">
-                                    <h3 id="categoriesCount">-</h3>
-                                    <p class="mb-0">Категорий</p>
-                                </div>
-                                <div class="col-md-3">
-                                    <h3 id="inventoryCount">-</h3>
-                                    <p class="mb-0">Инвентарь</p>
-                                </div>
-                                <div class="col-md-3">
-                                    <h3 id="authorsCount">-</h3>
-                                    <p class="mb-0">Авторов</p>
-                                </div>
-                                <div class="col-md-3">
-                                    <h3 id="recipesCount">-</h3>
-                                    <p class="mb-0">Рецептов</p>
-                                </div>
-                            </div>
+                        <div class="col-md-3">
+                            <h3 id="recipesCount">-</h3>
+                            <p class="mb-0" th:text="#{admin.stats.recipes}">Рецептов</p>
                         </div>
                     </div>
                 </div>
@@ -145,50 +96,53 @@
     </div>
 </div>
 
-<!-- Bootstrap JS -->
-<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
-<script th:src="@{/js/common.js}"></script>
+<!-- Модальные окна (пустые для панели управления) -->
+<div th:fragment="modals">
+</div>
 
-<script>
-    class AdminPanel {
-        constructor() {
-            this.loadStats();
-        }
+<!-- Скрипты для панели управления -->
+<div th:fragment="scripts">
+    <script>
+        class AdminPanel {
+            constructor() {
+                this.loadStats();
+            }
 
-        async loadStats() {
-            try {
-                // Загружаем базовую статистику
-                const categoriesResponse = await fetch('/api/categories');
-                const inventoryResponse = await fetch('/api/inventories');
-                const recipesResponse = await fetch('/api/recipes');
+            async loadStats() {
+                try {
+                    // Загружаем базовую статистику
+                    const categoriesResponse = await fetch('/api/categories');
+                    const inventoryResponse = await fetch('/api/inventories');
+                    const recipesResponse = await fetch('/api/recipes');
 
-                if (categoriesResponse.ok) {
-                    const categoriesData = await categoriesResponse.json();
-                    document.getElementById('categoriesCount').textContent = categoriesData.data.length;
+                    if (categoriesResponse.ok) {
+                        const categoriesData = await categoriesResponse.json();
+                        document.getElementById('categoriesCount').textContent = categoriesData.data.length;
+                    }
+
+                    if (inventoryResponse.ok) {
+                        const inventoryData = await inventoryResponse.json();
+                        document.getElementById('inventoryCount').textContent = inventoryData.data.length;
+                    }
+
+                    if (recipesResponse.ok) {
+                        const recipesData = await recipesResponse.json();
+                        document.getElementById('recipesCount').textContent = recipesData.data.length;
+                    }
+
+                    // Авторов грузим отдельно
+                    document.getElementById('authorsCount').textContent = '3'; // Временное значение
+
+                } catch (error) {
+                    console.error('Error loading stats:', error);
                 }
-
-                if (inventoryResponse.ok) {
-                    const inventoryData = await inventoryResponse.json();
-                    document.getElementById('inventoryCount').textContent = inventoryData.data.length;
-                }
-
-                if (recipesResponse.ok) {
-                    const recipesData = await recipesResponse.json();
-                    document.getElementById('recipesCount').textContent = recipesData.data.length;
-                }
-
-                // Авторов грузим отдельно
-                document.getElementById('authorsCount').textContent = '3'; // Временное значение
-
-            } catch (error) {
-                console.error('Error loading stats:', error);
             }
         }
-    }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        new AdminPanel();
-    });
-</script>
+        document.addEventListener('DOMContentLoaded', () => {
+            new AdminPanel();
+        });
+    </script>
+</div>
 </body>
 </html>

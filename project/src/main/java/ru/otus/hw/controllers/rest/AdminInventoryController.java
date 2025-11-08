@@ -12,6 +12,7 @@ import ru.otus.hw.services.CategoryService;
 import ru.otus.hw.services.InventoryService;
 import ru.otus.hw.util.MessageProvider;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -21,6 +22,30 @@ public class AdminInventoryController {
 
     private final InventoryService inventoryService;
     private final MessageProvider messageProvider;
+
+    @GetMapping("/test")
+    public ResponseEntity<ApiResponse<List<InventoryDto>>> testInventory() {
+        try {
+            System.out.println("🧪 TEST: Getting all inventory...");
+            List<InventoryDto> inventory = inventoryService.getAllInventory();
+            System.out.println("🧪 TEST: Found " + inventory.size() + " inventory items");
+
+            // Создаем тестовые данные если пусто
+            if (inventory.isEmpty()) {
+                System.out.println("🧪 TEST: No inventory found, returning test data");
+                return ResponseEntity.ok(ApiResponse.success(List.of(
+                        new InventoryDto(1L, "Test Inventory 1", "Test Description 1", LocalDateTime.now()),
+                        new InventoryDto(2L, "Test Inventory 2", "Test Description 2", LocalDateTime.now())
+                )));
+            }
+
+            return ResponseEntity.ok(ApiResponse.success(inventory));
+        } catch (Exception e) {
+            System.out.println("🧪 TEST: Error loading inventory: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Test error: " + e.getMessage()));
+        }
+    }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<InventoryDto>> updateInventory(
@@ -36,13 +61,16 @@ public class AdminInventoryController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteInventory(@PathVariable Long id) {
         try {
-            inventoryService.deleteInventory(id);
-            return ResponseEntity.ok(
-                    ApiResponse.success(null, messageProvider.getMessage("inventory.deleted"))
-            );
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(ApiResponse.error(e.getMessage()));
+            boolean deleted = inventoryService.deleteInventory(id);
+            if (deleted) {
+                return ResponseEntity.ok(ApiResponse.success(null, "Инвентарь успешно удален"));
+            } else {
+                return ResponseEntity.badRequest()
+                        .body(ApiResponse.error("Невозможно удалить инвентарь, так как он используется в рецептах"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Ошибка при удалении инвентаря: " + e.getMessage()));
         }
     }
 

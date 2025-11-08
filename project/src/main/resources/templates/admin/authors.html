@@ -1,35 +1,42 @@
 <!DOCTYPE html>
-text-primary<html xmlns:th="http://www.thymeleaf.org">
+<html th:replace="~{admin/admin-layout :: layout(
+    pageTitle='admin.authors.title',
+    pageSubtitle='admin.authors.subtitle'
+)}" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Управление авторами - Админ-панель</title>
-    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <title th:text="#{admin.authors.title} + ' - ' + #{page.title}">Управление авторами - Кулинарная книга</title>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container">
-        <a class="navbar-brand" href="/admin">🍳 Админ-панель</a>
-        <div class="navbar-nav">
-            <a class="nav-link" href="/admin">📊 Панель управления</a>
-            <a class="nav-link" href="/admin/categories">📂 Категории</a>
-            <a class="nav-link" href="/admin/ingredients">🥕 Ингредиенты</a>
-            <a class="nav-link active" href="/admin/authors">👨‍🍳 Авторы</a>
-            <a class="nav-link" href="/">🏠 На сайт</a>
+<!-- Контент страницы -->
+<div th:fragment="content">
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <div class="fs-1 mb-3">👥</div>
+                    <h3 class="text-primary mb-3" th:text="#{admin.authors.title}">Управление авторами</h3>
+                    <p class="text-muted mb-4" th:text="#{admin.authors.development_message}">
+                        Функциональность управления авторами находится в разработке.<br>
+                        Скоро здесь появится возможность просматривать и управлять авторами рецептов.
+                    </p>
+                    <div class="alert alert-info">
+                        <strong th:text="#{common.info}">Информация:</strong>
+                        <span th:text="#{admin.authors.features}">Просмотр авторов, редактирование биографий, управление правами.</span>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-</nav>
-
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="text-primary">👨‍🍳 Управление авторами</h1>
-    </div>
-
-    <div class="alert alert-info">
-        <strong>Внимание!</strong> Функциональность управления авторами находится в разработке.
     </div>
 </div>
 
-<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+<!-- Модальные окна (пока пустые) -->
+<div th:fragment="modals">
+    <!-- Модальные окна для авторов будут добавлены позже -->
+</div>
+
+<!-- Скрипты (пока пустые) -->
+<div th:fragment="scripts">
+    <!-- Скрипты для авторов будут добавлены позже -->
+</div>
 </body>
 </html>

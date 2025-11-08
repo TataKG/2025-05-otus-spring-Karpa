@@ -1,5 +1,6 @@
 package ru.otus.hw.controllers.pages;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -13,22 +14,26 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class AdminController {
 
     @GetMapping
-    public String adminPanel() {
-        return "admin/admin-panel";  // должен вести на admin-panel.html
+    public String adminPanel(HttpServletRequest request, Model model) {
+        model.addAttribute("currentUrl", request.getRequestURI());
+        return "admin/admin-panel";
     }
 
     @GetMapping("/categories")
-    public String categoriesManagement() {
-        return "admin/categories";   // должен вести на categories.html
+    public String categoriesManagement(HttpServletRequest request, Model model) {
+        model.addAttribute("currentUrl", request.getRequestURI());
+        return "admin/categories";
     }
 
     @GetMapping("/inventory")
-    public String inventoryManagement() {
-        return "admin/inventory"; // должен вести на inventory.html
+    public String inventoryManagement(HttpServletRequest request, Model model) {
+        model.addAttribute("currentUrl", request.getRequestURI());
+        return "admin/inventory";
     }
 
     @GetMapping("/authors")
-    public String authorsManagement() {
-        return "admin/authors";      // должен вести на authors.html
+    public String authorsManagement(HttpServletRequest request, Model model) {
+        model.addAttribute("currentUrl", request.getRequestURI());
+        return "admin/authors";
     }
 }

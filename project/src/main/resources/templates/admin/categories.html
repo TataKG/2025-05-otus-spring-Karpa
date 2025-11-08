@@ -1,83 +1,48 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html th:replace="~{admin/admin-layout :: layout(
+    pageTitle='admin.categories.title',
+    pageSubtitle='admin.categories.subtitle'
+)}" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Управление категориями - Админ-панель</title>
-    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
-    <style>
-        .admin-nav {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 1rem;
-        }
-        .table-actions {
-            white-space: nowrap;
-        }
-    </style>
+    <title th:text="#{admin.categories.title} + ' - ' + #{page.title}">Управление категориями - Кулинарная книга</title>
 </head>
 <body>
-<!-- Навигационная панель -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container">
-        <a class="navbar-brand" href="/admin" th:text="#{navbar.admin_panel}">🍳 Админ-панель</a>
-        <div class="navbar-nav">
-            <a class="nav-link" href="/admin">📊 Панель управления</a>
-            <a class="nav-link active" href="/admin/categories">📂 Категории</a>
-            <a class="nav-link" href="/admin/inventory">🧰 Инвентарь</a>
-            <a class="nav-link" href="/admin/authors">👨‍🍳 Авторы</a>
-            <a class="nav-link" href="/">🏠 На сайт</a>
-        </div>
-    </div>
-</nav>
-
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="text-primary">📂 Управление категориями</h1>
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
-            ➕ Создать категорию
-        </button>
-    </div>
-
-    <!-- Навигация по админке -->
-    <div class="admin-nav mb-4">
-        <div class="row g-2">
-            <div class="col-auto">
-                <a href="/admin" class="btn btn-outline-primary btn-sm">📊 Панель управления</a>
-            </div>
-            <div class="col-auto">
-                <a href="/admin/categories" class="btn btn-primary btn-sm">📂 Категории</a>
-            </div>
-            <div class="col-auto">
-                <a href="/admin/inventory" class="btn btn-outline-primary btn-sm">🧰 Инвентарь</a>
-            </div>
-            <div class="col-auto">
-                <a href="/admin/authors" class="btn btn-outline-primary btn-sm">👨‍🍳 Авторы</a>
-            </div>
+<!-- Контент страницы -->
+<div th:fragment="content">
+    <!-- Кнопка добавления и таблица -->
+    <div class="row mb-4">
+        <div class="col">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+                <span th:text="#{admin.button.add}">➕ Добавить</span>
+            </button>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-body">
+    <!-- Таблица категорий -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">📋 <span th:text="#{admin.categories.list}">Список категорий</span></h5>
+        </div>
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-light">
                     <tr>
-                        <th>ID</th>
-                        <th>Название</th>
-                        <th>Описание</th>
-                        <th>Дата создания</th>
-                        <th>Использование</th>
-                        <th>Действия</th>
+                        <th width="10%" th:text="#{admin.table.id}">ID</th>
+                        <th width="20%" th:text="#{admin.table.name}">Название</th>
+                        <th width="30%" th:text="#{admin.table.description}">Описание</th>
+                        <th width="15%" th:text="#{admin.table.created_date}">Дата создания</th>
+                        <th width="15%" th:text="#{admin.table.usage}">Использование</th>
+                        <th width="10%" th:text="#{admin.table.actions}">Действия</th>
                     </tr>
                     </thead>
                     <tbody id="categoriesTableBody">
                     <tr>
-                        <td colspan="6" class="text-center">
-                            <div class="spinner-border" role="status">
-                                <span class="visually-hidden">Загрузка...</span>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden" th:text="#{common.loading}">Загрузка...</span>
                             </div>
-                            <p class="mt-2 text-muted">Загрузка категорий...</p>
+                            <p class="mt-2 text-muted" th:text="#{admin.error.load}">Загрузка категорий...</p>
                         </td>
                     </tr>
                     </tbody>
@@ -87,303 +52,105 @@
     </div>
 </div>
 
-<!-- Модальное окно создания категории -->
-<div class="modal fade" id="createCategoryModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Создать категорию</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="createCategoryForm" onsubmit="return false;">
-                    <div class="mb-3">
-                        <label for="categoryName" class="form-label">Название категории *</label>
-                        <input type="text" class="form-control" id="categoryName" required
-                               placeholder="Введите название категории">
-                        <div class="invalid-feedback">Пожалуйста, введите название категории</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="categoryDescription" class="form-label">Описание</label>
-                        <textarea class="form-control" id="categoryDescription" rows="3"
-                                  placeholder="Введите описание категории (необязательно)"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="createCategoryBtn"
-                        onclick="categoriesApp.createCategory()">
-                    Создать
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно редактирования категории -->
-<div class="modal fade" id="editCategoryModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Редактировать категорию</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="editCategoryForm">
-                    <input type="hidden" id="editCategoryId">
-                    <div class="mb-3">
-                        <label for="editCategoryName" class="form-label">Название категории *</label>
-                        <input type="text" class="form-control" id="editCategoryName" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="editCategoryDescription" class="form-label">Описание</label>
-                        <textarea class="form-control" id="editCategoryDescription" rows="3"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" onclick="categoriesApp.updateCategory()">Сохранить</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно удаления категории -->
-<div class="modal fade" id="deleteCategoryModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Удалить категорию</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Вы уверены, что хотите удалить категорию "<span id="deleteCategoryName"></span>"?</p>
-                <div class="alert alert-warning" id="deleteWarning" style="display: none;">
-                    ⚠️ Эта категория используется в <strong id="recipeCount"></strong> рецептах.
-                    Удаление невозможно!
+<!-- Модальные окна для категорий -->
+<div th:fragment="modals">
+    <!-- Модальное окно создания категории -->
+    <div class="modal fade" id="createCategoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" th:text="#{admin.modal.create} + ' ' + #{admin.nav.categories}">Создать категорию</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="alert alert-success" id="deleteSuccess" style="display: none;">
-                    ✅ Категория не используется в рецептах и может быть удалена.
+                <div class="modal-body">
+                    <form id="createCategoryForm" onsubmit="return false;">
+                        <div class="mb-3">
+                            <label for="categoryName" class="form-label" th:text="#{admin.table.name} + ' *'">Название категории *</label>
+                            <input type="text" class="form-control" id="categoryName" required
+                                   th:placeholder="#{admin.table.name.placeholder}">
+                            <div class="invalid-feedback" th:text="#{validation.required}">Пожалуйста, введите название категории</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryDescription" class="form-label" th:text="#{admin.table.description}">Описание</label>
+                            <textarea class="form-control" id="categoryDescription" rows="3"
+                                      th:placeholder="#{admin.table.description.placeholder}"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.cancel}">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="createCategoryBtn"
+                            onclick="categoriesApp.createCategory()" th:text="#{admin.button.create}">
+                        Создать
+                    </button>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-danger" onclick="categoriesApp.deleteCategory()"
-                        id="deleteCategoryButton">
-                    Удалить
-                </button>
+        </div>
+    </div>
+
+    <!-- Модальное окно редактирования категории -->
+    <div class="modal fade" id="editCategoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" th:text="#{admin.modal.edit} + ' ' + #{admin.nav.categories}">Редактировать категорию</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editCategoryForm" onsubmit="return false;">
+                        <input type="hidden" id="editCategoryId">
+                        <div class="mb-3">
+                            <label for="editCategoryName" class="form-label" th:text="#{admin.table.name} + ' *'">Название категории *</label>
+                            <input type="text" class="form-control" id="editCategoryName" required>
+                            <div class="invalid-feedback" th:text="#{validation.required}">Пожалуйста, введите название категории</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editCategoryDescription" class="form-label" th:text="#{admin.table.description}">Описание</label>
+                            <textarea class="form-control" id="editCategoryDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.cancel}">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="updateCategoryBtn"
+                            onclick="categoriesApp.updateCategory()" th:text="#{common.save}">
+                        Сохранить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно удаления категории -->
+    <div class="modal fade" id="deleteCategoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" th:text="#{admin.modal.confirm_delete}">Подтверждение удаления</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p th:text="#{admin.modal.delete_message}">Вы уверены, что хотите удалить категорию <strong id="deleteCategoryName"></strong>?</p>
+                    <div id="deleteWarning" style="display: none;">
+                        <div class="alert alert-warning">
+                            <span th:text="#{admin.modal.delete_warning}">⚠️ Эта категория используется в <span id="recipeCount">0</span> рецептах и не может быть удалена.</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.cancel}">Отмена</button>
+                    <button type="button" class="btn btn-danger" onclick="categoriesApp.deleteCategory()" th:text="#{common.delete}">
+                        Удалить
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
-<script th:src="@{/js/common.js}"></script>
-<script>
-    // Временная реализация до создания отдельного JS файла
-    class CategoriesAdminApp extends BaseApiClient {
-        constructor() {
-            super('/api/admin');
-            this.categories = [];
-            this.init();
-        }
-
-        async init() {
-            await this.loadCategories();
-        }
-
-        async loadCategories() {
-            try {
-                const response = await this.get('/categories');
-                if (response.success) {
-                    this.categories = response.data;
-                    this.displayCategories();
-                }
-            } catch (error) {
-                console.error('Error loading categories:', error);
-                this.showError('Ошибка загрузки категорий');
-            }
-        }
-
-        displayCategories() {
-            const tbody = document.getElementById('categoriesTableBody');
-
-            if (this.categories.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
-                            Категории не найдены
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            tbody.innerHTML = this.categories.map(category => `
-                <tr>
-                    <td>${category.id}</td>
-                    <td class="fw-bold">${CommonUtils.escapeHtml(category.name)}</td>
-                    <td>${CommonUtils.escapeHtml(category.description || '—')}</td>
-                    <td class="small">${CommonUtils.formatDateShort(category.createdAt)}</td>
-                    <td>
-                        <span class="badge bg-secondary" style="cursor: pointer;"
-                              onclick="categoriesApp.checkUsage(${category.id})">
-                            Проверить использование
-                        </span>
-                    </td>
-                    <td class="table-actions">
-                        <button class="btn btn-sm btn-outline-primary me-1"
-                                onclick="categoriesApp.openEditModal(${category.id})">
-                            ✏️
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger"
-                                onclick="categoriesApp.openDeleteModal(${category.id}, '${CommonUtils.escapeHtml(category.name)}')">
-                            🗑️
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        async createCategory() {
-            const name = document.getElementById('categoryName').value.trim();
-            const description = document.getElementById('categoryDescription').value.trim();
-
-            if (!name) {
-                this.showError('Введите название категории');
-                return;
-            }
-
-            try {
-                const response = await this.post('/categories', { name, description });
-                if (response.success) {
-                    this.showSuccess('Категория создана успешно');
-                    bootstrap.Modal.getInstance(document.getElementById('createCategoryModal')).hide();
-                    document.getElementById('createCategoryForm').reset();
-                    await this.loadCategories();
-                }
-            } catch (error) {
-                console.error('Error creating category:', error);
-                this.showError('Ошибка создания категории');
-            }
-        }
-
-        openEditModal(categoryId) {
-            const category = this.categories.find(c => c.id == categoryId);
-            if (!category) return;
-
-            document.getElementById('editCategoryId').value = category.id;
-            document.getElementById('editCategoryName').value = category.name;
-            document.getElementById('editCategoryDescription').value = category.description || '';
-
-            new bootstrap.Modal(document.getElementById('editCategoryModal')).show();
-        }
-
-        async updateCategory() {
-            const id = document.getElementById('editCategoryId').value;
-            const name = document.getElementById('editCategoryName').value.trim();
-            const description = document.getElementById('editCategoryDescription').value.trim();
-
-            if (!name) {
-                this.showError('Введите название категории');
-                return;
-            }
-
-            try {
-                const response = await this.put(`/categories/${id}`, { name, description });
-                if (response.success) {
-                    this.showSuccess('Категория обновлена успешно');
-                    bootstrap.Modal.getInstance(document.getElementById('editCategoryModal')).hide();
-                    await this.loadCategories();
-                }
-            } catch (error) {
-                console.error('Error updating category:', error);
-                this.showError('Ошибка обновления категории');
-            }
-        }
-
-        async openDeleteModal(categoryId, categoryName) {
-            document.getElementById('deleteCategoryName').textContent = categoryName;
-
-            try {
-                const response = await this.get(`/categories/${categoryId}/usage`);
-                if (response.success) {
-                    const usage = response.data;
-                    const warningDiv = document.getElementById('deleteWarning');
-                    const successDiv = document.getElementById('deleteSuccess');
-                    const deleteButton = document.getElementById('deleteCategoryButton');
-
-                    if (usage.isUsed) {
-                        document.getElementById('recipeCount').textContent = usage.recipeCount;
-                        warningDiv.style.display = 'block';
-                        successDiv.style.display = 'none';
-                        deleteButton.disabled = true;
-                        deleteButton.innerHTML = '❌ Нельзя удалить';
-                    } else {
-                        warningDiv.style.display = 'none';
-                        successDiv.style.display = 'block';
-                        deleteButton.disabled = false;
-                        deleteButton.innerHTML = 'Удалить';
-                    }
-                }
-            } catch (error) {
-                console.error('Error checking usage:', error);
-            }
-
-            document.getElementById('deleteCategoryModal').dataset.categoryId = categoryId;
-            new bootstrap.Modal(document.getElementById('deleteCategoryModal')).show();
-        }
-
-        async deleteCategory() {
-            const categoryId = document.getElementById('deleteCategoryModal').dataset.categoryId;
-
-            try {
-                await this.delete(`/categories/${categoryId}`);
-                this.showSuccess('Категория удалена успешно');
-                bootstrap.Modal.getInstance(document.getElementById('deleteCategoryModal')).hide();
-                await this.loadCategories();
-            } catch (error) {
-                console.error('Error deleting category:', error);
-                this.showError('Ошибка удаления категории');
-            }
-        }
-
-        async checkUsage(categoryId) {
-            try {
-                const response = await this.get(`/categories/${categoryId}/usage`);
-                if (response.success) {
-                    const usage = response.data;
-                    const message = usage.isUsed ?
-                        `Используется в ${usage.recipeCount} рецептах` :
-                        'Не используется в рецептах';
-
-                    this.showInfo(message);
-                }
-            } catch (error) {
-                console.error('Error checking usage:', error);
-                this.showError('Ошибка проверки использования');
-            }
-        }
-
-        showError(message) {
-            alert('❌ ' + message);
-        }
-
-        showSuccess(message) {
-            alert('✅ ' + message);
-        }
-
-        showInfo(message) {
-            alert('ℹ️ ' + message);
-        }
-    }
-
-    let categoriesApp;
-    document.addEventListener('DOMContentLoaded', () => {
-        categoriesApp = new CategoriesAdminApp();
-    });
-</script>
+<!-- Скрипты для категорий -->
+<div th:fragment="scripts">
+    <script th:src="@{/js/admin-categories.js}"></script>
+</div>
 </body>
 </html>

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<html th:replace="~{admin/admin-layout :: layout(
+    pageTitle='admin.inventory.title',
+    pageSubtitle='admin.inventory.subtitle'
+)}" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Управление инвентарем - Кулинарная книга</title>
-    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <title th:text="#{admin.inventory.title} + ' - ' + #{page.title}">Управление инвентарем - Кулинарная книга</title>
     <style>
         .usage-badge {
             cursor: pointer;
@@ -16,54 +16,15 @@
     </style>
 </head>
 <body>
-<!-- Навигационная панель -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container">
-        <a class="navbar-brand" href="/">🍳 Кулинарная книга</a>
-
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="/">🏠 Главная</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/admin">⚙️ Админ-панель</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/admin/categories">📂 Категории</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link active" href="/admin/inventory">🔧 Инвентарь</a>
-                </li>
-            </ul>
-
-            <ul class="navbar-nav">
-                <li class="nav-item">
-                    <form th:action="@{/logout}" method="post" class="d-inline">
-                        <button type="submit" class="btn btn-link nav-link p-0 border-0">
-                            🚪 Выйти (<span sec:authentication="name"></span>)
-                        </button>
-                    </form>
-                </li>
-            </ul>
-        </div>
-    </div>
-</nav>
-
-<!-- Основной контент -->
-<div class="container mt-4">
+<!-- Контент страницы -->
+<div th:fragment="content">
     <div class="row mb-4">
         <div class="col">
-            <h1 class="text-primary">🔧 Управление инвентарем</h1>
-            <p class="lead text-muted">Добавляйте и управляйте кухонным инвентарем</p>
+            <!-- УБРАН ЗАГОЛОВОК H1 Т.К. ОН УЖЕ ЕСТЬ В ШАБЛОНЕ -->
         </div>
         <div class="col-auto">
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createInventoryModal">
-                ➕ Добавить инвентарь
+                ➕ <span th:text="#{admin.button.add}">Добавить инвентарь</span>
             </button>
         </div>
     </div>
@@ -71,28 +32,28 @@
     <!-- Таблица инвентаря -->
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-primary text-white">
-            <h5 class="card-title mb-0">📋 Список инвентаря</h5>
+            <h5 class="card-title mb-0">📋 <span th:text="#{admin.inventory.list}">Список инвентаря</span></h5>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-striped table-hover mb-0">
                     <thead class="table-light">
                     <tr>
-                        <th width="10%">ID</th>
-                        <th width="20%">Название</th>
-                        <th width="30%">Описание</th>
-                        <th width="15%">Дата создания</th>
-                        <th width="15%">Использование</th>
-                        <th width="10%">Действия</th>
+                        <th width="10%" th:text="#{admin.table.id}">ID</th>
+                        <th width="20%" th:text="#{admin.table.name}">Название</th>
+                        <th width="30%" th:text="#{admin.table.description}">Описание</th>
+                        <th width="15%" th:text="#{admin.table.created_date}">Дата создания</th>
+                        <th width="15%" th:text="#{admin.table.usage}">Использование</th>
+                        <th width="10%" th:text="#{admin.table.actions}">Действия</th>
                     </tr>
                     </thead>
                     <tbody id="inventoriesTableBody">
                     <tr>
                         <td colspan="6" class="text-center py-4">
                             <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Загрузка...</span>
+                                <span class="visually-hidden" th:text="#{common.loading}">Загрузка...</span>
                             </div>
-                            <p class="mt-2 text-muted">Загрузка инвентаря...</p>
+                            <p class="mt-2 text-muted" th:text="#{admin.error.load}">Загрузка инвентаря...</p>
                         </td>
                     </tr>
                     </tbody>
@@ -100,119 +61,104 @@
             </div>
         </div>
     </div>
-</div>
 
-<!-- Модальное окно создания инвентаря -->
-<div class="modal fade" id="createInventoryModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Добавить инвентарь</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="createInventoryForm" onsubmit="return false;">
-                    <div class="mb-3">
-                        <label for="inventoryName" class="form-label">Название инвентаря *</label>
-                        <input type="text" class="form-control" id="inventoryName" required
-                               placeholder="Введите название инвентаря">
-                        <div class="invalid-feedback">Пожалуйста, введите название инвентаря</div>
+    <!-- Модальные окна для инвентаря -->
+    <div th:fragment="modals">
+        <!-- Модальное окно создания инвентаря -->
+        <div class="modal fade" id="createInventoryModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" th:text="#{admin.modal.create} + ' ' + #{admin.nav.inventory}">Добавить инвентарь</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="mb-3">
-                        <label for="inventoryDescription" class="form-label">Описание</label>
-                        <textarea class="form-control" id="inventoryDescription" rows="3"
-                                  placeholder="Введите описание инвентаря (необязательно)"></textarea>
+                    <div class="modal-body">
+                        <form id="createInventoryForm" onsubmit="return false;">
+                            <div class="mb-3">
+                                <label for="inventoryName" class="form-label" th:text="#{admin.table.name} + ' *'">Название инвентаря *</label>
+                                <input type="text" class="form-control" id="inventoryName" required
+                                       th:placeholder="#{admin.table.name.placeholder}">
+                                <div class="invalid-feedback" th:text="#{validation.required}">Пожалуйста, введите название инвентаря</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="inventoryDescription" class="form-label" th:text="#{admin.table.description}">Описание</label>
+                                <textarea class="form-control" id="inventoryDescription" rows="3"
+                                          th:placeholder="#{admin.table.description.placeholder}"></textarea>
+                            </div>
+                        </form>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="createInventoryBtn"
-                        onclick="inventoryApp.createInventory()">
-                    Создать
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно редактирования инвентаря -->
-<div class="modal fade" id="editInventoryModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Редактировать инвентарь</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="editInventoryForm" onsubmit="return false;">
-                    <input type="hidden" id="editInventoryId">
-                    <div class="mb-3">
-                        <label for="editInventoryName" class="form-label">Название инвентаря</label>
-                        <input type="text" class="form-control" id="editInventoryName" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label for="editInventoryDescription" class="form-label">Описание</label>
-                        <textarea class="form-control" id="editInventoryDescription" rows="3"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" id="updateInventoryBtn"
-                        onclick="inventoryApp.updateInventory()">
-                    Сохранить
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно удаления инвентаря -->
-<div class="modal fade" id="deleteInventoryModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Подтверждение удаления</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Вы уверены, что хотите удалить инвентарь <strong id="deleteInventoryName"></strong>?</p>
-                <div id="deleteWarning" style="display: none;">
-                    <div class="alert alert-warning">
-                        ⚠️ Этот инвентарь используется в <span id="recipeCount">0</span> рецептах и не может быть удален.
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.cancel}">Отмена</button>
+                        <button type="button" class="btn btn-primary" id="createInventoryBtn">
+                            <span th:text="#{admin.button.create}">Создать</span>
+                        </button>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-danger" onclick="inventoryApp.deleteInventory()">
-                    Удалить
-                </button>
+        </div>
+
+        <!-- Модальное окно редактирования инвентаря -->
+        <div class="modal fade" id="editInventoryModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" th:text="#{admin.modal.edit} + ' ' + #{admin.nav.inventory}">Редактировать инвентарь</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editInventoryForm" onsubmit="return false;">
+                            <input type="hidden" id="editInventoryId">
+                            <div class="mb-3">
+                                <label for="editInventoryName" class="form-label" th:text="#{admin.table.name}">Название инвентаря</label>
+                                <input type="text" class="form-control" id="editInventoryName" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editInventoryDescription" class="form-label" th:text="#{admin.table.description}">Описание</label>
+                                <textarea class="form-control" id="editInventoryDescription" rows="3"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.cancel}">Отмена</button>
+                        <button type="button" class="btn btn-primary" id="updateInventoryBtn">
+                            <span th:text="#{common.save}">Сохранить</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно удаления инвентаря -->
+        <div class="modal fade" id="deleteInventoryModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" th:text="#{admin.modal.confirm_delete}">Подтверждение удаления</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><span th:text="#{admin.modal.delete_message}">Вы уверены, что хотите удалить инвентарь</span> <strong id="deleteInventoryName"></strong>?</p>
+                        <div id="deleteWarning" style="display: none;">
+                            <div class="alert alert-warning">
+                                <span th:text="#{admin.modal.delete_warning}">⚠️ Этот инвентарь используется в <span id="recipeCount">0</span> рецептах и не может быть удален.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.cancel}">Отмена</button>
+                        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                            <span th:text="#{common.delete}">Удалить</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Toast уведомления -->
-<div class="toast-container position-fixed top-0 end-0 p-3">
-    <div id="successToast" class="toast align-items-center text-bg-success border-0" role="alert">
-        <div class="d-flex">
-            <div class="toast-body" id="successToastMessage"></div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    </div>
-    <div id="errorToast" class="toast align-items-center text-bg-danger border-0" role="alert">
-        <div class="d-flex">
-            <div class="toast-body" id="errorToastMessage"></div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
+    <!-- Скрипты для инвентаря -->
+    <div th:fragment="scripts">
+        <script th:src="@{/js/admin-inventory.js}"></script>
     </div>
 </div>
-
-<!-- Подключаем скрипты -->
-<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
-<script th:src="@{/js/common.js}"></script>
-<script th:src="@{/js/admin-inventory.js}"></script>
 </body>
 </html>

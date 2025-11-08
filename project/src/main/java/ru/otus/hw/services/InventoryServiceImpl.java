@@ -107,20 +107,21 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     @Transactional
-    public void deleteInventory(Long id) {
-        Inventory inventory = inventoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        messageProvider.getMessage("inventory.not_found", id)
-                ));
+    public boolean deleteInventory(Long id) {
+        Optional<Inventory> inventoryOpt = inventoryRepository.findById(id);
+        if (inventoryOpt.isEmpty()) {
+            throw new IllegalArgumentException("Инвентарь не найден");
+        }
 
-        // Проверяем, используется ли ингредиент в рецептах
-        if (inventoryRepository.isUsedInRecipes(id)) {
-            throw new IllegalStateException(
-                    messageProvider.getMessage("inventory.cannot_delete_used", id)
-            );
+        Inventory inventory = inventoryOpt.get();
+
+        // Проверяем, используется ли инвентарь в рецептах
+        if (!inventory.getRecipes().isEmpty()) {
+            return false; // Не удаляем, если используется
         }
 
         inventoryRepository.delete(inventory);
+        return true;
     }
 
     @Override

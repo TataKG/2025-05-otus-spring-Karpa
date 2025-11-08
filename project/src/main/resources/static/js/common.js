@@ -114,42 +114,69 @@ class CommonUtils {
 
 // Базовый класс для работы с API
 class BaseApiClient {
-    constructor(baseUrl = '/api') {
-        this.baseUrl = baseUrl;
-    }
+           constructor(baseUrl = '/api') {
+               this.baseUrl = baseUrl;
+           }
 
-    async get(url) {
-        console.log(`API GET: ${this.baseUrl}${url}`);
-        const response = await fetch(`${this.baseUrl}${url}`, {
-            credentials: 'include' // Важно для отправки cookies/session
-        });
-        console.log(`API Response status: ${response.status}`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        console.log(`API Response data:`, data);
-        return data;
-    }
+           async get(url) {
+               const fullUrl = `${this.baseUrl}${url}`;
+               console.log(`🔗 API GET: ${fullUrl}`);
 
-    async post(url, data) {
-        const response = await fetch(`${this.baseUrl}${url}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify(data)
-        });
+               try {
+                   const response = await fetch(fullUrl, {
+                       credentials: 'include',
+                       headers: {
+                           'Accept': 'application/json',
+                           'Content-Type': 'application/json'
+                       }
+                   });
 
-        if (!response.ok) {
-            const error = new Error(`HTTP error! status: ${response.status}`);
-            error.response = response;
-            throw error;
-        }
+                   console.log(`📨 API Response status: ${response.status} ${response.statusText}`);
 
-        return response.json();
-    }
+                   if (!response.ok) {
+                       const errorText = await response.text();
+                       console.error(`❌ HTTP error! status: ${response.status}, response:`, errorText);
+                       throw new Error(`HTTP error! status: ${response.status}`);
+                   }
+
+                   const data = await response.json();
+                   console.log(`✅ API Response data:`, data);
+                   return data;
+               } catch (error) {
+                   console.error(`💥 Fetch error for ${fullUrl}:`, error);
+                   throw error;
+               }
+           }
+
+           async post(url, data) {
+               const fullUrl = `${this.baseUrl}${url}`;
+               console.log(`🔗 API POST: ${fullUrl}`, data);
+
+               try {
+                   const response = await fetch(fullUrl, {
+                       method: 'POST',
+                       headers: {
+                           'Content-Type': 'application/json',
+                           'Accept': 'application/json'
+                       },
+                       credentials: 'include',
+                       body: JSON.stringify(data)
+                   });
+
+                   console.log(`📨 API Response status: ${response.status} ${response.statusText}`);
+
+                   if (!response.ok) {
+                       const error = new Error(`HTTP error! status: ${response.status}`);
+                       error.response = response;
+                       throw error;
+                   }
+
+                   return response.json();
+               } catch (error) {
+                   console.error(`💥 Fetch error for ${fullUrl}:`, error);
+                   throw error;
+               }
+           }
 
     async put(url, data) {
         const response = await fetch(`${this.baseUrl}${url}`, {

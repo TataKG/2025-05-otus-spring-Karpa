@@ -20,7 +20,7 @@ public interface InventoryService {
 
     InventoryDto updateInventory(Long id, String description);
 
-    void deleteInventory(Long id);
+    boolean deleteInventory(Long id);
 
     boolean isInventoryUsedInRecipes(Long inventoryId);
 

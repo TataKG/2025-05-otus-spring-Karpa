@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:fragment="layout(pageTitle, pageSubtitle)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{${pageTitle}} + ' - ' + #{page.title}">Админ-панель - Кулинарная книга</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <style>
+        .table th {
+            border-top: none;
+            font-weight: 600;
+        }
+        .admin-nav {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            padding: 0.5rem;
+            margin-bottom: 2rem;
+        }
+        .nav-card {
+            transition: transform 0.2s;
+            border: none;
+            border-radius: 8px;
+            height: 100%;
+        }
+        .nav-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .nav-card .card-body {
+            padding: 1rem 0.5rem;
+        }
+        .nav-card .fs-1 {
+            font-size: 1.8rem !important;
+        }
+        .nav-card .card-title {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        .nav-card .card-text {
+            font-size: 0.75rem;
+        }
+        .admin-card {
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .admin-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<!-- Навигационная панель -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/" th:text="#{navbar.brand}">🍳 Кулинарная книга</a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/" th:text="#{navbar.home}">🏠 Главная</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin" th:text="#{navbar.admin_panel}">⚙️ Админ-панель</a>
+                </li>
+            </ul>
+
+            <ul class="navbar-nav">
+                <!-- Language Switcher -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        🌐 <span th:text="#{navbar.language}">Язык</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item language-switch" href="#" data-lang="ru" th:text="#{language.russian}">Русский</a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item language-switch" href="#" data-lang="en" th:text="#{language.english}">English</a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <form th:action="@{/logout}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-link nav-link p-0 border-0">
+                            🚪 <span th:text="#{navbar.logout}">Выйти</span> (<span sec:authentication="name"></span>)
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Основной контент -->
+<div class="container mt-4">
+    <!-- Заголовок страницы -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="text-primary mb-2" th:text="#{${pageTitle}}">Заголовок страницы</h1>
+            <p class="lead text-muted" th:text="#{${pageSubtitle}}">Описание страницы</p>
+        </div>
+    </div>
+
+    <!-- Навигация по админ-панели -->
+    <div class="admin-nav">
+        <div class="row g-2">
+            <div class="col-md-3">
+                <a th:href="@{/admin/categories}" class="text-decoration-none">
+                    <div class="card nav-card text-center">
+                        <div class="card-body">
+                            <div class="fs-1 mb-1">📂</div>
+                            <h6 class="card-title" th:text="#{admin.nav.categories}">Категории</h6>
+                            <p class="card-text text-muted small" th:text="#{admin.nav.categories.help}">Управление категориями</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a th:href="@{/admin/inventory}" class="text-decoration-none">
+                    <div class="card nav-card text-center">
+                        <div class="card-body">
+                            <div class="fs-1 mb-1">🧰</div>
+                            <h6 class="card-title" th:text="#{admin.nav.inventory}">Инвентарь</h6>
+                            <p class="card-text text-muted small" th:text="#{admin.nav.inventory.help}">Управление инвентарем</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a th:href="@{/admin/authors}" class="text-decoration-none">
+                    <div class="card nav-card text-center">
+                        <div class="card-body">
+                            <div class="fs-1 mb-1">👥</div>
+                            <h6 class="card-title" th:text="#{admin.nav.authors}">Авторы</h6>
+                            <p class="card-text text-muted small" th:text="#{admin.nav.authors.help}">Управление авторами</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a th:href="@{/admin}" class="text-decoration-none">
+                    <div class="card nav-card text-center">
+                        <div class="card-body">
+                            <div class="fs-1 mb-1">⚙️</div>
+                            <h6 class="card-title" th:text="#{admin.nav.dashboard}">Панель управления</h6>
+                            <p class="card-text text-muted small" th:text="#{admin.nav.dashboard.help}">Обзор системы</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Контент конкретной страницы -->
+    <div th:insert="~{::content}"></div>
+</div>
+
+<!-- Общие модальные окна и скрипты -->
+<div th:insert="~{::modals}"></div>
+
+<!-- Toast уведомления -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="successToast" class="toast align-items-center text-bg-success border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body" id="successToastMessage"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+    <div id="errorToast" class="toast align-items-center text-bg-danger border-0" role="alert">
+        <div class="d-flex">
+            <div class="toast-body" id="errorToastMessage"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Подключаем скрипты -->
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/js/common.js}"></script>
+
+<!-- Языковой переключатель -->
+<script>
+    // Переключение языка с сохранением текущей страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.language-switch').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const lang = this.getAttribute('data-lang');
+                const currentUrl = window.location.href;
+
+                // Удаляем существующий параметр lang и добавляем новый
+                const url = new URL(currentUrl);
+                url.searchParams.set('lang', lang);
+
+                // Переходим на ту же страницу с новым языком
+                window.location.href = url.toString();
+            });
+        });
+    });
+</script>
+
+<!-- Скрипты конкретной страницы -->
+<div th:insert="~{::scripts}"></div>
+</body>
+</html>
