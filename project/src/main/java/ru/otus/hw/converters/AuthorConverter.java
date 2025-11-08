@@ -15,6 +15,7 @@ public class AuthorConverter {
     public AuthorConverter(UserConverter userConverter) {
         this.userConverter = userConverter;
     }
+
     public AuthorDto toDto(Author author) {
         if (author == null) {
             return null;
