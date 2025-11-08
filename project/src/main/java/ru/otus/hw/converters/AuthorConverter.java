@@ -5,9 +5,7 @@ import ru.otus.hw.dto.AuthorDto;
 import ru.otus.hw.models.Author;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Component
 public class AuthorConverter {
@@ -23,7 +21,6 @@ public class AuthorConverter {
             return null;
         }
 
-        // Получаем роли пользователя напрямую из User
         Set<String> roles = author.getUser().getRoles();
 
         return new AuthorDto(
@@ -31,7 +28,7 @@ public class AuthorConverter {
                 userConverter.toDto(author.getUser()),
                 author.getBio(),
                 author.getCreatedAt(),
-                author.getRecipes().size(), // Добавить подсчет рецептов
+                author.getRecipes().size(),
                 new ArrayList<>(roles)
         );
     }
@@ -41,7 +38,6 @@ public class AuthorConverter {
             return null;
         }
 
-        // Получаем роли пользователя напрямую из User
         Set<String> roles = author.getUser().getRoles();
 
         return new AuthorDto(
@@ -50,7 +46,7 @@ public class AuthorConverter {
                 author.getBio(),
                 author.getCreatedAt(),
                 recipeCount,
-                new ArrayList<>(roles) // Конвертируем Set в List для DTO
+                new ArrayList<>(roles)
         );
     }
 }
