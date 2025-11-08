@@ -108,20 +108,30 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     @Transactional
     public boolean deleteInventory(Long id) {
-        Optional<Inventory> inventoryOpt = inventoryRepository.findById(id);
-        if (inventoryOpt.isEmpty()) {
-            throw new IllegalArgumentException("Инвентарь не найден");
+        try {
+            // Временно: простое удаление для тестирования
+            System.out.println("🔍 Attempting to delete inventory ID: " + id);
+
+            // Проверяем использование через репозиторий
+            boolean isUsed = isInventoryUsedInRecipes(id);
+            long recipeCount = getRecipeCountByInventory(id);
+
+            System.out.println("📊 Inventory " + id + " usage - isUsed: " + isUsed + ", recipeCount: " + recipeCount);
+
+            if (isUsed) {
+                System.out.println("❌ Cannot delete inventory " + id + " - it's used in recipes");
+                return false;
+            }
+
+            inventoryRepository.deleteById(id);
+            System.out.println("✅ Successfully deleted inventory " + id);
+            return true;
+
+        } catch (Exception e) {
+            System.out.println("❌ Error deleting inventory " + id + ": " + e.getMessage());
+            e.printStackTrace();
+            return false;
         }
-
-        Inventory inventory = inventoryOpt.get();
-
-        // Проверяем, используется ли инвентарь в рецептах
-        if (!inventory.getRecipes().isEmpty()) {
-            return false; // Не удаляем, если используется
-        }
-
-        inventoryRepository.delete(inventory);
-        return true;
     }
 
     @Override

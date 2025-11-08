@@ -1,8 +1,7 @@
-// admin-inventory.js - исправленная версия
+// admin-inventory.js - гибридная версия (лучшее из обеих)
 (function() {
     'use strict';
 
-    // Проверяем, что базовые классы загружены
     if (typeof BaseApiClient === 'undefined') {
         console.error('BaseApiClient не загружен. Проверьте common.js');
         return;
@@ -10,13 +9,12 @@
 
     class InventoryAdminApp extends BaseApiClient {
         constructor() {
-            super('/api/admin/inventory');
+            super('/api/admin/inventory'); // Правильный базовый URL
             this.inventories = [];
             this.translations = this.getTranslations();
             this.init();
         }
 
-        // Получение переводов из data-атрибутов или использование значений по умолчанию
         getTranslations() {
             return {
                 loading: 'Загрузка...',
@@ -116,7 +114,6 @@
         }
 
         addEventListeners() {
-            // Редактирование
             document.querySelectorAll('.edit-inventory').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const inventoryId = e.target.closest('.edit-inventory').dataset.inventoryId;
@@ -124,7 +121,6 @@
                 });
             });
 
-            // Удаление
             document.querySelectorAll('.delete-inventory').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const inventoryId = e.target.closest('.delete-inventory').dataset.inventoryId;
@@ -133,7 +129,6 @@
                 });
             });
 
-            // Проверка использования
             document.querySelectorAll('.usage-badge').forEach(badge => {
                 badge.addEventListener('click', (e) => {
                     const inventoryId = e.target.dataset.inventoryId;
@@ -143,7 +138,6 @@
         }
 
         setupEventListeners() {
-            // Очистка формы при закрытии модального окна создания
             const createModal = document.getElementById('createInventoryModal');
             if (createModal) {
                 createModal.addEventListener('hidden.bs.modal', () => {
@@ -151,7 +145,7 @@
                 });
             }
 
-            // Обработчики для кнопок модальных окон
+            // Обработчики для кнопок модальных окон (как в CURRENT)
             const createBtn = document.getElementById('createInventoryBtn');
             if (createBtn) {
                 createBtn.addEventListener('click', () => {
@@ -178,14 +172,12 @@
             const createForm = document.getElementById('createInventoryForm');
 
             if (createForm) {
-                // Обработка ввода для сброса состояния валидации
                 createForm.addEventListener('input', (e) => {
                     if (e.target.id === 'inventoryName') {
                         e.target.classList.remove('is-invalid');
                     }
                 });
 
-                // Обработка отправки формы по Enter
                 createForm.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
@@ -194,7 +186,6 @@
                 });
             }
 
-            // Очистка формы при открытии модального окна
             const createModal = document.getElementById('createInventoryModal');
             if (createModal) {
                 createModal.addEventListener('show.bs.modal', () => {
@@ -207,7 +198,6 @@
             const form = document.getElementById('createInventoryForm');
             if (form) {
                 form.reset();
-                // Сбрасываем состояния валидации
                 const nameInput = document.getElementById('inventoryName');
                 if (nameInput) {
                     nameInput.classList.remove('is-invalid');
@@ -223,7 +213,6 @@
             const name = nameInput.value.trim();
             const description = descriptionInput.value.trim();
 
-            // Валидация на фронтенде
             if (!name) {
                 nameInput.classList.add('is-invalid');
                 nameInput.focus();
@@ -231,11 +220,9 @@
                 return;
             }
 
-            // Блокируем кнопку во время запроса
             if (createBtn) {
                 createBtn.disabled = true;
-                createBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> ' +
-                                     this.translations.loading;
+                createBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> ' + this.translations.loading;
             }
 
             try {
@@ -247,13 +234,11 @@
                     CommonUtils.showToast(response.message || this.translations.successCreated);
                     this.resetCreateForm();
 
-                    // Закрываем модальное окно
                     const modal = bootstrap.Modal.getInstance(document.getElementById('createInventoryModal'));
                     if (modal) {
                         modal.hide();
                     }
 
-                    // Перезагружаем список инвентаря
                     await this.loadInventories();
                 } else {
                     CommonUtils.showToast(response.message || this.translations.errorCreate, 'error');
@@ -275,7 +260,6 @@
 
                 CommonUtils.showToast(errorMessage, 'error');
             } finally {
-                // Разблокируем кнопку
                 if (createBtn) {
                     createBtn.disabled = false;
                     createBtn.innerHTML = this.translations.create;
@@ -304,11 +288,9 @@
                 return;
             }
 
-            // Блокируем кнопку во время запроса
             if (updateBtn) {
                 updateBtn.disabled = true;
-                updateBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> ' +
-                                     this.translations.loading;
+                updateBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> ' + this.translations.loading;
             }
 
             try {
@@ -336,7 +318,6 @@
 
                 CommonUtils.showToast(errorMessage, 'error');
             } finally {
-                // Разблокируем кнопку
                 if (updateBtn) {
                     updateBtn.disabled = false;
                     updateBtn.innerHTML = this.translations.save;
@@ -346,54 +327,68 @@
 
         async openDeleteModal(inventoryId, inventoryName) {
             document.getElementById('deleteInventoryName').textContent = inventoryName;
+            document.getElementById('deleteInventoryModal').dataset.inventoryId = inventoryId;
 
             const warningDiv = document.getElementById('deleteWarning');
-            const recipeCountSpan = document.getElementById('recipeCount');
+            const usageInfoDiv = document.getElementById('usageInfo'); // Новый элемент
+            const recipeCountSpan = document.getElementById('recipeCount'); // Теперь этот элемент существует
             const deleteBtn = document.getElementById('confirmDeleteBtn');
 
-            // Показываем состояние загрузки
+            // Начальное состояние: скрываем предупреждение, блокируем кнопку до завершения проверки
             warningDiv.style.display = 'none';
+            usageInfoDiv.style.display = 'none'; // Скрываем блок использования
             deleteBtn.disabled = true;
-            deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> ' + this.translations.loading;
+            deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Проверка использования...';
 
             const modal = new bootstrap.Modal(document.getElementById('deleteInventoryModal'));
             modal.show();
 
-            document.getElementById('deleteInventoryModal').dataset.inventoryId = inventoryId;
-
             try {
+                console.log('Checking usage for inventory ID:', inventoryId);
                 const response = await this.get(`/${inventoryId}/usage`);
+                console.log('Usage check response:', response);
+
                 if (response.success) {
                     const usage = response.data;
+                    console.log('Usage data:', usage);
 
                     if (usage.isUsed) {
-                        recipeCountSpan.textContent = usage.recipeCount;
-                        warningDiv.style.display = 'block';
+                        // Инвентарь используется - показываем информацию и блокируем удаление
+                        recipeCountSpan.textContent = `${this.translations.usedIn} ${usage.recipeCount}`;
+                        usageInfoDiv.style.display = 'block';
+
                         deleteBtn.disabled = true;
                         deleteBtn.innerHTML = '❌ ' + this.translations.cannotDelete;
-
-                        // Добавляем информацию о связях
-                        const usageInfo = document.createElement('div');
-                        usageInfo.className = 'alert alert-info mt-2';
-                        usageInfo.innerHTML = `<strong>${this.translations.usedIn} ${usage.recipeCount} ${this.translations.recipes}</strong>`;
-                        warningDiv.appendChild(usageInfo);
                     } else {
+                        // Инвентарь не используется - разрешаем удаление
                         warningDiv.style.display = 'none';
+                        usageInfoDiv.style.display = 'none';
                         deleteBtn.disabled = false;
                         deleteBtn.innerHTML = this.translations.delete;
                     }
+                } else {
+                    // Ошибка от сервера при проверке использования
+                    console.error('Server returned error during usage check:', response.message);
+                    warningDiv.style.display = 'block';
+                    warningDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            ❌ Ошибка при проверке использования: ${response.message || 'Неизвестная ошибка'}
+                        </div>
+                    `;
+                    deleteBtn.disabled = true;
+                    deleteBtn.innerHTML = '❌ Ошибка проверки';
                 }
             } catch (error) {
-                console.error('Error checking inventory usage:', error);
-                // В случае ошибки разрешаем удаление, но предупреждаем
+                // Ошибка сети или другая ошибка при запросе
+                console.error('Network error during usage check:', error);
                 warningDiv.style.display = 'block';
                 warningDiv.innerHTML = `
-                    <div class="alert alert-warning">
-                        ⚠️ ${this.translations.errorUsageCheck}
+                    <div class="alert alert-danger">
+                        ❌ Ошибка соединения при проверке использования. Удаление невозможно.
                     </div>
                 `;
-                deleteBtn.disabled = false;
-                deleteBtn.innerHTML = this.translations.delete;
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = '❌ Ошибка сети';
             }
         }
 
@@ -401,11 +396,15 @@
             const inventoryId = document.getElementById('deleteInventoryModal').dataset.inventoryId;
             const deleteBtn = document.getElementById('confirmDeleteBtn');
 
-            console.log('Attempting to delete inventory with ID:', inventoryId);
-
             if (!inventoryId) {
                 console.error('No inventory ID found for deletion');
                 CommonUtils.showToast('Ошибка: ID инвентаря не найден', 'error');
+                return;
+            }
+
+            // Дополнительная проверка - не пытаемся удалить, если кнопка заблокирована
+            if (deleteBtn.disabled) {
+                console.log('Delete button is disabled, skipping deletion');
                 return;
             }
 
@@ -414,8 +413,7 @@
             deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> ' + this.translations.delete + '...';
 
             try {
-                console.log('Sending DELETE request to:', `/api/admin/inventory/${inventoryId}`);
-
+                console.log('Sending DELETE request for inventory ID:', inventoryId);
                 const response = await this.delete(`/${inventoryId}`);
                 console.log('Delete response:', response);
 
@@ -447,12 +445,9 @@
                     try {
                         const errorData = await error.response.json();
                         errorMessage = errorData.message || errorMessage;
-                        console.error('Server error response:', errorData);
                     } catch (e) {
                         errorMessage = error.message || errorMessage;
                     }
-                } else if (error.message) {
-                    errorMessage = error.message;
                 }
 
                 CommonUtils.showToast(errorMessage, 'error');

@@ -52,18 +52,17 @@ public interface InventoryRepository extends CrudRepository<Inventory, Long> {
         return findPopularInventory(PageRequest.of(0, limit));
     }
 
-    // Методы для подсчета
-    @Query("SELECT COUNT(i) FROM Inventory i " +
-            "JOIN i.recipes r " +
-            "WHERE r.published = true AND i.id = :inventoryId")
-    long countPublishedRecipesByInventoryId(@Param("inventoryId") Long inventoryId);
-
     long countByNameContainingIgnoreCase(String name);
 
-    // Методы для проверки использования
     @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END " +
-            "FROM Recipe r JOIN r.inventoryItems i WHERE i.id = :inventoryId")
+            "FROM Recipe r JOIN r.inventoryItems i " +
+            "WHERE i.id = :inventoryId")
     boolean isUsedInRecipes(@Param("inventoryId") Long inventoryId);
+
+    // ИСПРАВЛЕННЫЙ метод для подсчета рецептов
+    @Query("SELECT COUNT(r) FROM Recipe r JOIN r.inventoryItems i " +
+            "WHERE i.id = :inventoryId")
+    long countPublishedRecipesByInventoryId(@Param("inventoryId") Long inventoryId);
 
     @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END " +
             "FROM Recipe r JOIN r.inventoryItems i " +
