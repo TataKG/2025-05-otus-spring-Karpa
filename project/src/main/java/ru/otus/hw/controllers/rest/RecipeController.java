@@ -29,8 +29,8 @@ public class RecipeController {
 
     @GetMapping("/my-recipes")
     public ResponseEntity<ApiResponse<List<RecipeSummaryDto>>> getMyRecipes(Authentication authentication) {
-        System.out.println("=== MY RECIPES ENDPOINT ===");
-        System.out.println("Authentication: " + authentication);
+//        System.out.println("=== MY RECIPES ENDPOINT ===");
+//        System.out.println("Authentication: " + authentication);
 
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
@@ -39,41 +39,41 @@ public class RecipeController {
             }
 
             String username = authentication.getName();
-            System.out.println("Loading recipes for authenticated user: " + username);
+//            System.out.println("Loading recipes for authenticated user: " + username);
 
-            // ПРАВИЛЬНАЯ проверка ролей
-            boolean isAdmin = authentication.getAuthorities().stream()
-                    .anyMatch(auth -> {
-                        String authority = auth.getAuthority();
-                        return authority.equals("ROLE_ADMIN") || authority.equals("ADMIN");
-                    });
-
-            System.out.println("User is ADMIN: " + isAdmin);
-            System.out.println("Authorities: " + authentication.getAuthorities());
+//            // ПРАВИЛЬНАЯ проверка ролей
+//            boolean isAdmin = authentication.getAuthorities().stream()
+//                    .anyMatch(auth -> {
+//                        String authority = auth.getAuthority();
+//                        return authority.equals("ROLE_ADMIN") || authority.equals("ADMIN");
+//                    });
+//
+//            System.out.println("User is ADMIN: " + isAdmin);
+//            System.out.println("Authorities: " + authentication.getAuthorities());
 
             List<RecipeSummaryDto> recipes;
 
-            if (isAdmin) {
-                System.out.println("User is ADMIN, loading ALL recipes");
-                recipes = recipeService.getAllRecipes(); // Все рецепты для админа
-            } else {
+//            if (isAdmin) {
+//                System.out.println("User is ADMIN, loading ALL recipes");
+//                recipes = recipeService.getAllRecipes(); // Все рецепты для админа
+//            } else {
                 // Для обычных пользователей загружаем только их рецепты
                 Optional<AuthorDto> authorOpt = authorService.getAuthorByUsername(username);
                 if (authorOpt.isEmpty()) {
-                    System.out.println("No author found for user: " + username);
+//                    System.out.println("No author found for user: " + username);
                     return ResponseEntity.ok(ApiResponse.success(List.of()));
                 }
 
                 AuthorDto author = authorOpt.get();
-                System.out.println("Found author: " + author.id() + " for user: " + username);
+//                System.out.println("Found author: " + author.id() + " for user: " + username);
                 recipes = recipeService.getRecipesByAuthor(author.id());
-            }
+//            }
 
-            System.out.println("Found " + recipes.size() + " recipes");
+//            System.out.println("Found " + recipes.size() + " recipes");
             return ResponseEntity.ok(ApiResponse.success(recipes));
 
         } catch (Exception e) {
-            System.err.println("Error loading my recipes: " + e.getMessage());
+//            System.err.println("Error loading my recipes: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error("Failed to load your recipes: " + e.getMessage()));
@@ -87,7 +87,6 @@ public class RecipeController {
             AuthorDto author = authorService.getAuthorByUsername(username)
                     .orElseThrow(() -> new EntityNotFoundException("Author not found for user: " + username));
 
-            // Проверяем, что пользователь создает рецепт от своего имени
             if (!request.authorId().equals(author.id())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(ApiResponse.error("You can only create recipes for yourself"));
