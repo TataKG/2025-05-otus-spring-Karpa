@@ -6,6 +6,8 @@ class RecipeEditApp extends BaseApiClient {
         this.authorId = null;
         this.categories = [];
         this.inventoryItems = [];
+        this.selectedInventory = []; // Храним выбранные объекты инвентаря
+        this.availableInventory = []; // Доступный для выбора инвентарь
         this.init();
     }
 
@@ -16,6 +18,7 @@ class RecipeEditApp extends BaseApiClient {
         try {
             await this.loadFormData();
             this.setupIngredientHandlers();
+            this.setupInventoryHandlers();
             this.setupFormHandlers();
             this.setupValidation();
         } catch (error) {
@@ -91,6 +94,7 @@ class RecipeEditApp extends BaseApiClient {
         // Сохраняем данные для использования
         this.categories = categories || [];
         this.inventoryItems = inventoryItems || [];
+        this.availableInventory = [...this.inventoryItems]; // Копируем для доступного инвентаря
 
         // Безопасное получение authorId
         if (recipe && recipe.author && recipe.author.id) {
@@ -156,34 +160,167 @@ class RecipeEditApp extends BaseApiClient {
     }
 
     populateInventory(selectedInventory) {
-        const container = document.getElementById('inventoryContainer');
-        container.innerHTML = '';
+        // Очищаем выбранный инвентарь
+        this.selectedInventory = [];
 
-        if (!this.inventoryItems || this.inventoryItems.length === 0) {
-            container.innerHTML = '<div class="col-12"><p class="text-muted">Инвентарь не найден</p></div>';
+        // Заполняем выбранный инвентарь
+        if (selectedInventory && selectedInventory.length > 0) {
+            selectedInventory.forEach(item => {
+                // Находим полный объект инвентаря по ID
+                const fullInventoryItem = this.inventoryItems.find(inv => inv.id === item.id);
+                if (fullInventoryItem) {
+                    this.selectedInventory.push(fullInventoryItem);
+                }
+            });
+        }
+
+        // Обновляем доступный инвентарь (исключаем уже выбранные)
+        this.updateAvailableInventory();
+
+        // Отображаем выбранный инвентарь
+        this.renderSelectedInventory();
+    }
+
+    updateAvailableInventory() {
+        const selectedIds = this.selectedInventory.map(item => item.id);
+        this.availableInventory = this.inventoryItems.filter(item => !selectedIds.includes(item.id));
+
+        // Заполняем выпадающий список
+        this.renderInventorySelect();
+    }
+
+    renderInventorySelect() {
+        const select = document.getElementById('inventorySelect');
+        select.innerHTML = '<option value="">-- Выберите инвентарь --</option>';
+
+        this.availableInventory.forEach(inventory => {
+            const option = document.createElement('option');
+            option.value = inventory.id;
+            option.textContent = inventory.name;
+            if (inventory.description) {
+                option.setAttribute('data-description', inventory.description);
+            }
+            select.appendChild(option);
+        });
+
+        // Если доступного инвентаря нет, показываем сообщение
+        if (this.availableInventory.length === 0) {
+            const option = document.createElement('option');
+            option.value = "";
+            option.textContent = "Весь инвентарь уже выбран";
+            option.disabled = true;
+            select.appendChild(option);
+            document.getElementById('addInventoryBtn').disabled = true;
+        } else {
+            document.getElementById('addInventoryBtn').disabled = false;
+        }
+    }
+
+    renderSelectedInventory() {
+        const container = document.getElementById('inventoryContainer');
+        const noSelectionText = document.getElementById('noInventorySelected');
+
+        if (this.selectedInventory.length === 0) {
+            container.innerHTML = '<div class="text-muted" id="noInventorySelected">Инвентарь не выбран</div>';
             return;
         }
 
-        this.inventoryItems.forEach(inventory => {
-            const isChecked = selectedInventory && selectedInventory.some(item => item.id === inventory.id);
+        // Скрываем сообщение "нет инвентаря"
+        if (noSelectionText) {
+            noSelectionText.style.display = 'none';
+        }
 
-            const col = document.createElement('div');
-            col.className = 'col-md-6 mb-2';
-            col.innerHTML = `
-                <div class="form-check">
-                    <input class="form-check-input inventory-checkbox"
-                           type="checkbox"
-                           value="${inventory.id}"
-                           id="inventory_${inventory.id}"
-                           ${isChecked ? 'checked' : ''}>
-                    <label class="form-check-label" for="inventory_${inventory.id}">
-                        <span>${CommonUtils.escapeHtml(inventory.name)}</span>
-                        <small class="text-muted d-block">${CommonUtils.escapeHtml(inventory.description || '')}</small>
-                    </label>
-                </div>
-            `;
-            container.appendChild(col);
+        let html = '';
+        this.selectedInventory.forEach((inventory, index) => {
+            html += this.createInventoryRow(inventory, index === 0);
         });
+
+        container.innerHTML = html;
+
+        // Добавляем обработчики для кнопок удаления
+        container.querySelectorAll('.remove-inventory').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const inventoryId = parseInt(e.target.closest('.remove-inventory').dataset.inventoryId);
+                this.removeInventory(inventoryId);
+            });
+        });
+    }
+
+    createInventoryRow(inventory, isFirst = false) {
+        return `
+            <div class="inventory-row d-flex justify-content-between align-items-center">
+                <div class="flex-grow-1">
+                    <div class="inventory-name">${CommonUtils.escapeHtml(inventory.name)}</div>
+                    ${inventory.description ? `<div class="inventory-description">${CommonUtils.escapeHtml(inventory.description)}</div>` : ''}
+                </div>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-inventory"
+                        data-inventory-id="${inventory.id}"
+                        ${isFirst && this.selectedInventory.length === 1 ? 'style="display: none;"' : ''}>
+                    🗑️
+                </button>
+            </div>
+        `;
+    }
+
+    setupInventoryHandlers() {
+        // Кнопка добавления инвентаря
+        document.getElementById('addInventoryBtn').addEventListener('click', () => {
+            this.addInventory();
+        });
+
+        // Добавление по Enter в селекте
+        document.getElementById('inventorySelect').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.addInventory();
+            }
+        });
+    }
+
+    addInventory() {
+        const select = document.getElementById('inventorySelect');
+        const selectedId = parseInt(select.value);
+
+        if (!selectedId) {
+            this.showError('Пожалуйста, выберите инвентарь из списка');
+            return;
+        }
+
+        // Находим выбранный инвентарь
+        const selectedInventory = this.inventoryItems.find(item => item.id === selectedId);
+        if (!selectedInventory) {
+            this.showError('Выбранный инвентарь не найден');
+            return;
+        }
+
+        // Проверяем, не добавлен ли уже этот инвентарь
+        if (this.selectedInventory.some(item => item.id === selectedId)) {
+            this.showError('Этот инвентарь уже добавлен');
+            return;
+        }
+
+        // Добавляем в выбранные
+        this.selectedInventory.push(selectedInventory);
+
+        // Обновляем интерфейс
+        this.updateAvailableInventory();
+        this.renderSelectedInventory();
+
+        // Сбрасываем выбор
+        select.value = '';
+
+        this.showSuccess(`Инвентарь "${selectedInventory.name}" добавлен`);
+    }
+
+    removeInventory(inventoryId) {
+        // Удаляем из выбранных
+        this.selectedInventory = this.selectedInventory.filter(item => item.id !== inventoryId);
+
+        // Обновляем интерфейс
+        this.updateAvailableInventory();
+        this.renderSelectedInventory();
+
+        this.showSuccess('Инвентарь удален');
     }
 
     createIngredientRow(value = '', isFirst = false) {
@@ -198,7 +335,7 @@ class RecipeEditApp extends BaseApiClient {
                    value="${escapedValue}"
                    placeholder="Например: Мука - 200г">
             <button type="button" class="btn btn-outline-danger remove-ingredient"
-                    style="${isFirst ? 'display: none;' : ''}">🗑️</button>
+                    ${isFirst ? 'style="display: none;"' : ''}>🗑️</button>
         `;
         return row;
     }
@@ -247,11 +384,24 @@ class RecipeEditApp extends BaseApiClient {
 
     updateRemoveButtons() {
         const rows = document.querySelectorAll('.ingredient-row');
-        const removeButtons = document.querySelectorAll('.remove-ingredient');
+        const ingredientRemoveButtons = document.querySelectorAll('.remove-ingredient');
+        const inventoryRemoveButtons = document.querySelectorAll('.remove-inventory');
 
-        removeButtons.forEach(btn => {
+        // Обновляем кнопки удаления ингредиентов
+        ingredientRemoveButtons.forEach(btn => {
             btn.style.display = rows.length > 1 ? 'block' : 'none';
         });
+
+        // Обновляем кнопки удаления инвентаря (скрываем для последнего элемента если он один)
+        if (inventoryRemoveButtons.length > 0) {
+            inventoryRemoveButtons.forEach((btn, index) => {
+                if (this.selectedInventory.length === 1) {
+                    btn.style.display = 'none';
+                } else {
+                    btn.style.display = 'block';
+                }
+            });
+        }
     }
 
     setupFormHandlers() {
@@ -320,8 +470,7 @@ class RecipeEditApp extends BaseApiClient {
     }
 
     getSelectedInventory() {
-        const checkboxes = document.querySelectorAll('.inventory-checkbox:checked');
-        return Array.from(checkboxes).map(checkbox => parseInt(checkbox.value));
+        return this.selectedInventory.map(item => item.id);
     }
 
     async saveRecipe(publish) {
