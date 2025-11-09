@@ -4,60 +4,112 @@
 <div th:fragment="navbar">
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="/" th:text="#{navbar.brand}">
+            <!-- Бренд -->
+            <a class="navbar-brand fw-bold" href="/" th:text="#{navbar.brand}">
                 🍳 Кулинарная книга
             </a>
 
+            <!-- Кнопка для мобильных -->
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
+            <!-- Основное меню -->
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
+                    <!-- Домой -->
                     <li class="nav-item">
                         <a class="nav-link" href="/" th:text="#{navbar.home}">
                             🏠 Домой
                         </a>
                     </li>
-                    <li class="nav-item" id="myRecipesLink" style="display: none;">
+
+                    <!-- Мои рецепты (только для авторизованных) -->
+                    <li class="nav-item" sec:authorize="isAuthenticated()">
                         <a class="nav-link" href="/my-recipes" th:text="#{navbar.my_recipes}">
                             📖 Мои рецепты
                         </a>
                     </li>
-                    <li class="nav-item admin-panel-link">
-                        <a class="nav-link text-warning" href="/admin" th:text="#{navbar.admin_panel}">
+
+                    <!-- Админ-панель (только для ADMIN) -->
+                    <li class="nav-item" sec:authorize="hasAuthority('ROLE_ADMIN')">
+                        <a class="nav-link text-warning fw-semibold" href="/admin" th:text="#{navbar.admin_panel}">
                             ⚙️ Админ-панель
                         </a>
                     </li>
                 </ul>
 
-                <ul class="navbar-nav">
+                <!-- Правая часть навигации -->
+                <ul class="navbar-nav ms-auto">
                     <!-- Смена языка -->
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle language-switcher" href="#" id="languageDropdown"
-                           role="button" data-bs-toggle="dropdown" th:text="#{navbar.language}">
+                        <a class="nav-link dropdown-toggle" href="#" id="languageDropdown"
+                           role="button" data-bs-toggle="dropdown" aria-expanded="false"
+                           th:text="#{navbar.language}">
                             🌐 Язык
                         </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="?lang=ru" th:text="#{language.russian}">Русский</a></li>
-                            <li><a class="dropdown-item" href="?lang=en" th:text="#{language.english}">English</a></li>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="?lang=ru" th:text="#{language.russian}">
+                                    Русский
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="?lang=en" th:text="#{language.english}">
+                                    English
+                                </a>
+                            </li>
                         </ul>
                     </li>
 
-                    <!-- Авторизация -->
-                    <li class="nav-item" id="loginLink">
+                    <!-- Меню авторизации -->
+                    <li class="nav-item" sec:authorize="!isAuthenticated()">
+                        <!-- Регистрация -->
+                        <a class="nav-link me-2" href="/register" th:text="#{navbar.register}">
+                            📝 Регистрация
+                        </a>
+                    </li>
+                    <li class="nav-item" sec:authorize="!isAuthenticated()">
+                        <!-- Вход -->
                         <a class="nav-link" href="/login" th:text="#{navbar.login}">
                             🔑 Войти
                         </a>
                     </li>
-                    <li class="nav-item" id="logoutLink" style="display: none;">
-                        <form th:action="@{/logout}" method="post" class="d-inline">
-                            <button type="submit" class="btn btn-link nav-link p-0 border-0">
-                                🚪 <span th:text="#{navbar.logout}">Выйти</span>
-                                (<span id="usernameDisplay"></span>)
-                                <small class="text-warning" id="adminBadge" style="display: none;">[ADMIN]</small>
-                            </button>
-                        </form>
+
+                    <!-- Информация о пользователе и выход -->
+                    <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown"
+                           role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            👤 <span sec:authentication="name"></span>
+                            <small class="text-warning" sec:authorize="hasAuthority('ROLE_ADMIN')">[ADMIN]</small>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <span class="dropdown-item-text small text-muted">
+                                    <span th:text="#{navbar.signed_in_as}">Вы вошли как:</span>
+                                    <strong sec:authentication="name"></strong>
+                                </span>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="/my-recipes" th:text="#{navbar.my_recipes}">
+                                    📖 Мои рецепты
+                                </a>
+                            </li>
+                            <li sec:authorize="hasAuthority('ROLE_ADMIN')">
+                                <a class="dropdown-item text-warning" href="/admin" th:text="#{navbar.admin_panel}">
+                                    ⚙️ Админ-панель
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form th:action="@{/logout}" method="post" class="d-inline">
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        🚪 <span th:text="#{navbar.logout}">Выйти</span>
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             </div>

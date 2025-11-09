@@ -25,7 +25,12 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<UserDto>> createUser(@RequestBody CreateUserRequest request) {
-        UserDto userDto = userService.createUser(request.username(), request.email(), request.password());
+        UserDto userDto = userService.createUser(
+                request.username(),
+                request.email(),
+                request.password(),
+                request.bio()
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 ApiResponse.success(userDto, messageProvider.getMessage("user.created"))
         );
@@ -67,5 +72,11 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(exists));
     }
 
-    public record CreateUserRequest(String username, String email, String password) {}
+    // Обновляем DTO для поддержки bio
+    public record CreateUserRequest(
+            String username,
+            String email,
+            String password,
+            String bio  // Добавляем поле bio
+    ) {}
 }

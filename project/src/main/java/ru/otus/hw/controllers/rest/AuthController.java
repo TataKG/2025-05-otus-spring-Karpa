@@ -28,7 +28,8 @@ public class AuthController {
         UserDto userDto = userService.createUser(
                 request.username(),
                 request.email(),
-                request.password()
+                request.password(),
+                request.bio()  // Добавляем bio
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 ApiResponse.success(userDto, messageProvider.getMessage("user.created"))
@@ -47,7 +48,7 @@ public class AuthController {
 
         if (authentication == null || !authentication.isAuthenticated()) {
             System.out.println("User not authenticated");
-            return ResponseEntity.ok(ApiResponse.success(new AuthUserResponse(false, null, null)));
+            return ResponseEntity.ok(ApiResponse.success(new AuthUserResponse(false, null, null, null)));
         }
 
         String username = authentication.getName();
@@ -63,19 +64,30 @@ public class AuthController {
                 .collect(Collectors.toList());
 
         System.out.println("User authorities: " + authorities);
-        System.out.println("Returning user data: " + new AuthUserResponse(true, userDto.username(), authorities));
+
+        // Получаем информацию об авторе (биографию)
+        String bio = userService.getUserBio(username);
+
+        System.out.println("Returning user data: " + new AuthUserResponse(true, userDto.username(), authorities, bio));
 
         return ResponseEntity.ok(ApiResponse.success(
-                new AuthUserResponse(true, userDto.username(), authorities)
+                new AuthUserResponse(true, userDto.username(), authorities, bio)
         ));
     }
 
-    public record RegisterRequest(String username, String email, String password) {
-    }
+    public record RegisterRequest(
+            String username,
+            String email,
+            String password,
+            String bio  // Добавляем поле bio
+    ) {}
 
-    public record LoginRequest(String username, String password) {
-    }
+    public record LoginRequest(String username, String password) {}
 
-    public record AuthUserResponse(boolean authenticated, String name, List<String> authorities) {
-    }
+    public record AuthUserResponse(
+            boolean authenticated,
+            String name,
+            List<String> authorities,
+            String bio  // Добавляем bio в ответ
+    ) {}
 }

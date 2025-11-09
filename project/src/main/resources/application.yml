@@ -5,8 +5,26 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password:
-    # Явная инициализация данных
-    initialization-mode: always
+    initialization-mode: true
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+  sql:
+    init:
+      mode: always
+      platform: h2
+      schema-locations: classpath:schema.sql  # Только структура БД
+      data-locations: classpath:test-data.sql
+      continue-on-error: true
 
   # H2 Console
   h2:
@@ -15,29 +33,6 @@ spring:
       path: /h2-console
       settings:
         web-allow-others: true
-
-  # JPA настройки - ВАЖНЫЕ ИЗМЕНЕНИЯ
-  jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
-    hibernate:
-      ddl-auto: none  # Отключаем автоматическое создание DDL
-    show-sql: true
-    defer-datasource-initialization: true  # Критически важно!
-    properties:
-      hibernate:
-        format_sql: true
-        use_sql_comments: true
-
-  # Инициализация БД
-  sql:
-    init:
-      mode: always
-      platform: h2
-      schema-locations:
-        - classpath:schema.sql
-      data-locations:
-        - classpath:data.sql
-      continue-on-error: true
 
   # Thymeleaf настройки
   thymeleaf:

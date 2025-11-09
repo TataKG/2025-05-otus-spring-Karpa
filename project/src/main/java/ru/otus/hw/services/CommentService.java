@@ -18,5 +18,11 @@ public interface CommentService {
 
     int getCommentCountForRecipe(Long recipeId);
 
-    void deleteComment(Long commentId);
+    Optional<CommentDto> getCommentById(Long id, Long currentUserId);
+
+    List<CommentDto> getCommentsByRecipe(Long recipeId, Long currentUserId);
+
+    CommentDto updateComment(Long commentId, String content, Long currentUserId);
+
+    void deleteComment(Long commentId, Long currentUserId);
 }

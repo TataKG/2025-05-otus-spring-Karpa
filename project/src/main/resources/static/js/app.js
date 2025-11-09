@@ -12,6 +12,8 @@ class CookbookApp extends BaseApiClient {
             author: '',
             search: ''
         };
+        this.currentUserId = null;
+        this.currentRecipeId = null;
         this.init();
     }
 
@@ -22,6 +24,15 @@ class CookbookApp extends BaseApiClient {
             view: 'Просмотр',
             retry: 'Повторить',
             cancel: 'Отмена',
+            save: 'Сохранить',
+            delete: 'Удалить',
+            edit: 'Редактировать',
+            confirm: 'Подтвердить',
+            'common-saving': 'Сохранение...',
+            'common-adding': 'Добавление...',
+            'common-deleting': 'Удаление...',
+            'common-confirm-delete': 'Подтвердить удаление',
+            'common-action-irreversible': 'Это действие нельзя отменить.',
             'recipe-details': 'Детали рецепта',
             'recipes-loading': 'Загрузка рецептов...',
             'no-recipes': 'Рецепты не найдены',
@@ -37,7 +48,7 @@ class CookbookApp extends BaseApiClient {
             inventory: 'Необходимый инвентарь',
             'comments-title': 'Комментарии к рецепту',
             'no-comments': 'Комментариев пока нет',
-            'comment-author': 'Автор',
+            'comment-author': 'Автор комментария',
             'comment-date': 'Дата',
             'comment-content': 'Комментарий',
             'comments-loading': 'Загрузка комментариев...',
@@ -46,15 +57,54 @@ class CookbookApp extends BaseApiClient {
             'recipe-details-ingredients': '🛒 Ингредиенты',
             'recipe-details-description': '📝 Описание',
             'recipe-details-inventory': '🔧 Необходимый инвентарь',
-            'recipe-details-comments': '💬 Комментарии'
+            'recipe-details-comments': '💬 Комментарии',
+            'comment-edit': 'Редактировать комментарий',
+            'comment-edit-title': 'Редактирование комментария',
+            'comment-delete-confirm-title': 'Подтверждение удаления',
+            'comment-delete-confirm-message': 'Вы уверены, что хотите удалить этот комментарий?',
+            'comment-delete-confirm-warning': 'Это действие нельзя отменить.',
+            'comment-validation-empty': 'Комментарий не может быть пустым',
+            'comment-placeholder': 'Введите ваш комментарий...',
+            'comment-add': 'Добавить комментарий',
+            'comment-add-button': 'Добавить комментарий',
+            'comment-save': 'Сохранить комментарий',
+            'comment-cancel-edit': 'Отменить редактирование',
+            'comment-saving': 'Сохранение...',
+            'comment-adding': 'Добавление...',
+            'comment-deleting': 'Удаление...',
+            'comment-login-required': 'Войдите, чтобы оставить комментарий',
+            'comment-updated': 'Комментарий успешно обновлен',
+            'comment-edit-success': 'Комментарий успешно обновлен',
+            'comment-delete-success': 'Комментарий успешно удален',
+            'comment-add-success': 'Комментарий успешно добавлен'
         };
     }
 
     async init() {
+        await this.loadCurrentUser();
         await this.loadCategories();
         await this.loadAuthors();
         await this.loadRecipes();
         this.setupEventListeners();
+    }
+
+    async loadCurrentUser() {
+        try {
+            const response = await fetch('/api/auth/user', {
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.data && result.data.authenticated) {
+                    this.currentUserId = result.data.id;
+                    console.log('Current user ID:', this.currentUserId);
+                }
+            }
+        } catch (error) {
+            console.log('Cannot determine current user:', error);
+            this.currentUserId = null;
+        }
     }
 
     async loadCategories() {
@@ -71,10 +121,8 @@ class CookbookApp extends BaseApiClient {
 
     async loadAuthors() {
         try {
-            // Загружаем авторов из рецептов
             const response = await this.get('/recipes');
             if (response.success) {
-                // Извлекаем уникальных авторов из рецептов
                 const authorsMap = new Map();
                 response.data.forEach(recipe => {
                     if (recipe.authorName && !authorsMap.has(recipe.authorName)) {
@@ -92,7 +140,7 @@ class CookbookApp extends BaseApiClient {
     populateCategoryFilter() {
         const categoryFilter = document.getElementById('categoryFilter');
         if (categoryFilter) {
-            categoryFilter.innerHTML = '<option value="">Все категории</option>' +
+            categoryFilter.innerHTML = '<option value="">' + this.messages['filter.all_categories'] + '</option>' +
                 this.categories.map(cat =>
                     `<option value="${CommonUtils.escapeHtml(cat.name)}">${CommonUtils.escapeHtml(cat.name)}</option>`
                 ).join('');
@@ -102,7 +150,7 @@ class CookbookApp extends BaseApiClient {
     populateAuthorFilter() {
         const authorFilter = document.getElementById('authorFilter');
         if (authorFilter) {
-            authorFilter.innerHTML = '<option value="">Все авторы</option>' +
+            authorFilter.innerHTML = '<option value="">' + this.messages['filter.all_authors'] + '</option>' +
                 this.authors.map(author =>
                     `<option value="${CommonUtils.escapeHtml(author)}">${CommonUtils.escapeHtml(author)}</option>`
                 ).join('');
@@ -148,9 +196,19 @@ class CookbookApp extends BaseApiClient {
             const total = this.allRecipes.length;
             const filtered = this.filteredRecipes.length;
             const countText = filtered === total ?
-                `${total} рецептов` :
-                `${filtered} из ${total} рецептов`;
+                `${total} ${this.getRecipeCountText(total)}` :
+                `${filtered} ${this.getRecipeCountText(filtered)} ${this.messages['common.from'] || 'из'} ${total}`;
             countElement.textContent = countText;
+        }
+    }
+
+    getRecipeCountText(count) {
+        if (count % 10 === 1 && count % 100 !== 11) {
+            return this.messages['recipe.count.one'] || 'рецепт';
+        } else if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) {
+            return this.messages['recipe.count.few'] || 'рецепта';
+        } else {
+            return this.messages['recipe.count.many'] || 'рецептов';
         }
     }
 
@@ -237,15 +295,34 @@ class CookbookApp extends BaseApiClient {
 
     async loadRecipeComments(recipeId) {
         try {
-            const response = await fetch(`${this.baseUrl}/recipes/${recipeId}/comments`);
+            console.log(`🔗 Loading comments for recipe ${recipeId}`);
+
+            const response = await fetch(`${this.baseUrl}/recipes/${recipeId}/comments`, {
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log(`📨 Comments response status: ${response.status}`);
+
             if (!response.ok) {
+                if (response.status === 404 || response.status === 403) {
+                    console.log('Comments not available for this recipe');
+                    return [];
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
+
             const result = await response.json();
+            console.log(`✅ Comments loaded:`, result);
+
             if (result.success) {
-                return result.data;
+                return result.data || [];
             } else {
-                throw new Error(result.message || 'Failed to load comments');
+                console.warn('API returned error for comments:', result.message);
+                return [];
             }
         } catch (error) {
             console.error('Error loading recipe comments:', error);
@@ -333,6 +410,8 @@ class CookbookApp extends BaseApiClient {
     }
 
     async showCommentsModal(recipeId, recipeTitle) {
+        this.currentRecipeId = recipeId;
+
         const modalTitle = document.getElementById('commentsModalTitle');
         const modalBody = document.getElementById('commentsModalBody');
 
@@ -352,55 +431,386 @@ class CookbookApp extends BaseApiClient {
 
         try {
             const comments = await this.loadRecipeComments(recipeId);
-            this.displayComments(comments, modalBody);
+            this.displayComments(comments, modalBody, recipeId);
         } catch (error) {
+            console.error('Failed to load comments:', error);
             modalBody.innerHTML = `
-                <div class="alert alert-danger">
+                <div class="alert alert-warning">
                     <p>${this.messages['error-loading-comments']}</p>
-                    <button class="btn btn-sm btn-outline-primary" onclick="app.showCommentsModal('${recipeId}', '${CommonUtils.escapeHtml(recipeTitle)}')">
-                        ${this.messages.retry}
-                    </button>
+                    <small class="text-muted">${this.messages['common.retry'] || 'Попробуйте обновить страницу или зайти позже'}</small>
                 </div>
             `;
         }
     }
 
-    displayComments(comments, modalBody) {
+    displayComments(comments, modalBody, recipeId) {
+        const isAuthenticated = this.currentUserId !== null;
+
         if (!comments || comments.length === 0) {
             modalBody.innerHTML = `
                 <div class="text-center py-4">
                     <div class="text-muted mb-2">💬</div>
                     <p class="text-muted">${this.messages['no-comments']}</p>
                 </div>
+                ${isAuthenticated ? `
+                    <div class="mt-4">
+                        <h6>${this.messages['comment-add']}</h6>
+                        <div class="comment-form">
+                            <textarea class="form-control" id="newCommentContent" rows="3"
+                                      placeholder="${this.messages['comment-placeholder']}"></textarea>
+                            <button class="btn btn-primary mt-2" id="addCommentBtn">
+                                <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                                ${this.messages['comment-add-button']}
+                            </button>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="text-center mt-4">
+                        <p class="text-muted">${this.messages['comment-login-required']}</p>
+                    </div>
+                `}
             `;
+
+            if (isAuthenticated) {
+                this.setupCommentActions(recipeId);
+            }
             return;
         }
 
         modalBody.innerHTML = `
             <div class="comments-list">
                 ${comments.map(comment => `
-                    <div class="card mb-3">
+                    <div class="card mb-3" data-comment-id="${comment.id}">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <div>
                                     <h6 class="card-title mb-1">
-                                        👤 ${CommonUtils.escapeHtml(comment.userName || comment.author || this.messages['comment-author'])}
+                                        👤 ${CommonUtils.escapeHtml(comment.user.username)}
+                                        ${comment.user.isAuthor ? '<span class="badge bg-success ms-1">' + (this.messages['author'] || 'Автор') + '</span>' : ''}
+                                        ${comment.user.roles && comment.user.roles.includes('ADMIN') ?
+                                          '<span class="badge bg-danger ms-1">Admin</span>' : ''}
                                     </h6>
                                     <small class="text-muted">
                                         📅 ${new Date(comment.createdAt).toLocaleString()}
+                                        ${comment.updatedAt && comment.updatedAt !== comment.createdAt ?
+                                            ` (${this.messages['common.edit'] || 'изменен'} ${new Date(comment.updatedAt).toLocaleString()})` : ''}
                                     </small>
                                 </div>
+                                ${comment.canEdit || comment.canDelete ? `
+                                    <div class="btn-group btn-group-sm">
+                                        ${comment.canEdit ? `
+                                            <button class="btn btn-outline-primary edit-comment-btn"
+                                                    data-comment-id="${comment.id}">
+                                                ✏️ ${this.messages['comment-edit']}
+                                            </button>
+                                        ` : ''}
+                                        ${comment.canDelete ? `
+                                            <button class="btn btn-outline-danger delete-comment-btn"
+                                                    data-comment-id="${comment.id}">
+                                                🗑️ ${this.messages['common.delete']}
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                ` : ''}
                             </div>
-                            <p class="card-text mt-3">${CommonUtils.escapeHtml(comment.content)}</p>
+                            <div class="comment-content-view">
+                                <p class="card-text mt-3">${CommonUtils.escapeHtml(comment.content)}</p>
+                            </div>
+                            <div class="comment-edit-form d-none mt-3">
+                                <textarea class="form-control edit-comment-textarea" rows="3" placeholder="${this.messages['comment-placeholder']}">${CommonUtils.escapeHtml(comment.content)}</textarea>
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-success save-edit-btn">${this.messages['common.save']}</button>
+                                    <button class="btn btn-sm btn-secondary cancel-edit-btn">${this.messages['common.cancel']}</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `).join('')}
             </div>
+            ${isAuthenticated ? `
+                <div class="mt-4">
+                    <h6>${this.messages['comment-add']}</h6>
+                    <div class="comment-form">
+                        <textarea class="form-control" id="newCommentContent" rows="3"
+                                  placeholder="${this.messages['comment-placeholder']}"></textarea>
+                        <button class="btn btn-primary mt-2" id="addCommentBtn">
+                            <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                            ${this.messages['comment-add-button']}
+                        </button>
+                    </div>
+                </div>
+            ` : `
+                <div class="text-center mt-4">
+                    <p class="text-muted">${this.messages['comment-login-required']}</p>
+                </div>
+            `}
         `;
+
+        if (isAuthenticated) {
+            this.setupCommentActions(recipeId);
+        }
+
+        this.setupEditCommentHandlers(recipeId);
+    }
+
+    setupCommentActions(recipeId) {
+        const addCommentBtn = document.getElementById('addCommentBtn');
+        if (addCommentBtn) {
+            addCommentBtn.addEventListener('click', () => {
+                this.addNewComment(recipeId);
+            });
+        }
+    }
+
+    setupEditCommentHandlers(recipeId) {
+        document.querySelectorAll('.edit-comment-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const commentId = e.target.closest('.edit-comment-btn').dataset.commentId;
+                this.enableEditMode(commentId);
+            });
+        });
+
+        document.querySelectorAll('.delete-comment-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const commentId = e.target.closest('.delete-comment-btn').dataset.commentId;
+                this.showDeleteConfirmation(commentId);
+            });
+        });
+
+        document.querySelectorAll('.save-edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const commentCard = e.target.closest('.card');
+                const commentId = commentCard.dataset.commentId;
+                this.saveEditedComment(commentId, recipeId);
+            });
+        });
+
+        document.querySelectorAll('.cancel-edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const commentCard = e.target.closest('.card');
+                const commentId = commentCard.dataset.commentId;
+                this.cancelEditMode(commentId);
+            });
+        });
+    }
+
+    enableEditMode(commentId) {
+        const commentCard = document.querySelector(`[data-comment-id="${commentId}"]`);
+        if (commentCard) {
+            const contentView = commentCard.querySelector('.comment-content-view');
+            const editForm = commentCard.querySelector('.comment-edit-form');
+
+            contentView.classList.add('d-none');
+            editForm.classList.remove('d-none');
+        }
+    }
+
+    cancelEditMode(commentId) {
+        const commentCard = document.querySelector(`[data-comment-id="${commentId}"]`);
+        if (commentCard) {
+            const contentView = commentCard.querySelector('.comment-content-view');
+            const editForm = commentCard.querySelector('.comment-edit-form');
+
+            contentView.classList.remove('d-none');
+            editForm.classList.add('d-none');
+        }
+    }
+
+    async saveEditedComment(commentId, recipeId) {
+        const commentCard = document.querySelector(`[data-comment-id="${commentId}"]`);
+        if (!commentCard) return;
+
+        const textarea = commentCard.querySelector('.edit-comment-textarea');
+        const newContent = textarea.value.trim();
+
+        if (!newContent) {
+            CommonUtils.showToast(this.messages['comment-validation-empty'], 'error');
+            return;
+        }
+
+        const saveBtn = commentCard.querySelector('.save-edit-btn');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span> ${this.messages['common-saving']}`;
+        saveBtn.disabled = true;
+
+        try {
+            await this.updateComment(recipeId, commentId, newContent);
+
+            const contentView = commentCard.querySelector('.comment-content-view p');
+            contentView.textContent = newContent;
+
+            this.cancelEditMode(commentId);
+
+            CommonUtils.showToast(this.messages['comment-edit-success'], 'success');
+        } catch (error) {
+            // Ошибка уже обработана в updateComment
+        } finally {
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }
+    }
+
+    async showDeleteConfirmation(commentId) {
+        const confirmationModal = `
+            <div class="modal fade" id="deleteConfirmationModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">${this.messages['comment-delete-confirm-title']}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>${this.messages['comment-delete-confirm-message']}</p>
+                            <p class="text-muted small">${this.messages['common-action-irreversible']}</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${this.messages['common.cancel']}</button>
+                            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                                <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                                ${this.messages['common-confirm-delete']}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if (!document.getElementById('deleteConfirmationModal')) {
+            document.body.insertAdjacentHTML('beforeend', confirmationModal);
+        }
+
+        const modalElement = document.getElementById('deleteConfirmationModal');
+        const modal = new bootstrap.Modal(modalElement);
+
+        modalElement.querySelector('.modal-footer').innerHTML = `
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${this.messages['common.cancel']}</button>
+            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                ${this.messages['common-confirm-delete']}
+            </button>
+        `;
+
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+        confirmBtn.addEventListener('click', async () => {
+            const spinner = confirmBtn.querySelector('.spinner-border');
+            spinner.classList.remove('d-none');
+            confirmBtn.disabled = true;
+
+            try {
+                await this.deleteComment(this.currentRecipeId, commentId);
+
+                const commentCard = document.querySelector(`[data-comment-id="${commentId}"]`);
+                if (commentCard) {
+                    commentCard.style.opacity = '0';
+                    setTimeout(() => {
+                        commentCard.remove();
+                        this.updateCommentsCount();
+                    }, 300);
+                }
+
+                modal.hide();
+                CommonUtils.showToast(this.messages['comment-delete-success'], 'success');
+            } catch (error) {
+                // Ошибка уже обработана в deleteComment
+            } finally {
+                spinner.classList.add('d-none');
+                confirmBtn.disabled = false;
+            }
+        });
+
+        modal.show();
+    }
+
+    updateCommentsCount() {
+        const commentsCount = document.querySelectorAll('.comments-list .card').length;
+        const countBadge = document.querySelector(`.comments-badge[data-recipe-id="${this.currentRecipeId}"]`);
+        if (countBadge) {
+            countBadge.textContent = `💬 ${commentsCount}`;
+        }
+    }
+
+    async addNewComment(recipeId) {
+        const content = document.getElementById('newCommentContent').value.trim();
+        if (!content) {
+            CommonUtils.showToast(this.messages['comment-validation-empty'], 'error');
+            return;
+        }
+
+        const addBtn = document.getElementById('addCommentBtn');
+        const originalText = addBtn.innerHTML;
+        addBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span> ${this.messages['common-adding']}`;
+        addBtn.disabled = true;
+
+        try {
+            await this.createComment(recipeId, content);
+            document.getElementById('newCommentContent').value = '';
+
+            await this.refreshCommentsSilently(recipeId);
+
+            CommonUtils.showToast(this.messages['comment-add-success'], 'success');
+        } catch (error) {
+            // Ошибка уже обработана в createComment
+        } finally {
+            addBtn.innerHTML = originalText;
+            addBtn.disabled = false;
+        }
+    }
+
+    async refreshCommentsSilently(recipeId) {
+        try {
+            const comments = await this.loadRecipeComments(recipeId);
+            const modalBody = document.getElementById('commentsModalBody');
+            this.displayComments(comments, modalBody, recipeId);
+        } catch (error) {
+            console.error('Failed to refresh comments:', error);
+        }
+    }
+
+    async createComment(recipeId, content) {
+        try {
+            const response = await this.post(`/recipes/${recipeId}/comments`, {
+                content: content
+            });
+
+            if (response.success) {
+                return response.data;
+            }
+        } catch (error) {
+            CommonUtils.handleApiError(error, this.messages['error.adding_comment'] || 'Ошибка при добавлении комментария');
+            throw error;
+        }
+    }
+
+    async updateComment(recipeId, commentId, content) {
+        try {
+            const response = await this.put(`/recipes/${recipeId}/comments/${commentId}`, {
+                content: content
+            });
+
+            if (response.success) {
+                return response.data;
+            }
+        } catch (error) {
+            CommonUtils.handleApiError(error, this.messages['error.updating_comment'] || 'Ошибка при обновлении комментария');
+            throw error;
+        }
+    }
+
+    async deleteComment(recipeId, commentId) {
+        try {
+            const response = await this.delete(`/recipes/${recipeId}/comments/${commentId}`);
+
+            if (response.success) {
+                return true;
+            }
+        } catch (error) {
+            CommonUtils.handleApiError(error, this.messages['error.deleting_comment'] || 'Ошибка при удалении комментария');
+            throw error;
+        }
+        return false;
     }
 
     setupEventListeners() {
-        // Фильтр по категории
         const categoryFilter = document.getElementById('categoryFilter');
         if (categoryFilter) {
             categoryFilter.addEventListener('change', (e) => {
@@ -409,7 +819,6 @@ class CookbookApp extends BaseApiClient {
             });
         }
 
-        // Фильтр по автору
         const authorFilter = document.getElementById('authorFilter');
         if (authorFilter) {
             authorFilter.addEventListener('change', (e) => {
@@ -418,7 +827,6 @@ class CookbookApp extends BaseApiClient {
             });
         }
 
-        // Поиск по названию
         const searchInput = document.getElementById('searchInput');
         if (searchInput) {
             let searchTimeout;
@@ -431,7 +839,6 @@ class CookbookApp extends BaseApiClient {
             });
         }
 
-        // Очистка фильтров
         const clearFilters = document.getElementById('clearFilters');
         if (clearFilters) {
             clearFilters.addEventListener('click', () => {

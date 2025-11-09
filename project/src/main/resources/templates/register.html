@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{registration.title}">Регистрация - Кулинарная книга</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .register-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .card-header {
+            border-radius: 15px 15px 0 0 !important;
+            border: none;
+        }
+        .password-strength {
+            height: 5px;
+            margin-top: 5px;
+            border-radius: 3px;
+        }
+        .strength-weak { background-color: #dc3545; }
+        .strength-medium { background-color: #ffc107; }
+        .strength-strong { background-color: #28a745; }
+        .bio-counter {
+            font-size: 0.875rem;
+            text-align: right;
+        }
+        .test-users {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .field-status {
+            font-size: 0.875rem;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card register-card">
+                <div class="card-header bg-success text-white text-center py-4">
+                    <h4 class="mb-0" th:text="#{registration.title}">👋 Регистрация</h4>
+                </div>
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h5 th:text="#{registration.welcome}">Добро пожаловать!</h5>
+                        <p class="text-muted" th:text="#{registration.subtitle}">
+                            Создайте аккаунт для доступа ко всем функциям
+                        </p>
+                    </div>
+
+                    <form id="registerForm" th:action="@{/register}" method="post">
+                        <!-- Сообщение об успешной регистрации -->
+                        <div th:if="${param.registered}" class="alert alert-success alert-dismissible fade show">
+                            ✅ <span th:text="#{registration.success}">Регистрация прошла успешно! Теперь вы можете войти в систему.</span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+
+                        <!-- Имя пользователя -->
+                        <div class="mb-3">
+                            <label for="username" class="form-label fw-semibold" th:text="#{registration.username}">
+                                👤 Имя пользователя
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="username" name="username"
+                                   required minlength="3" maxlength="50" pattern="[a-zA-Z0-9_]+"
+                                   th:placeholder="#{registration.username.placeholder}">
+                            <div class="form-text">
+                                <small th:text="#{validation.username.pattern}">
+                                    Только буквы, цифры и подчеркивания
+                                </small>
+                            </div>
+                            <div class="invalid-feedback" th:text="#{validation.username.required}"></div>
+                            <div class="field-status text-success" id="usernameStatus" style="display: none;"></div>
+                            <div class="field-status text-danger" id="usernameError" style="display: none;"></div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-semibold" th:text="#{registration.email}">
+                                📧 Email адрес
+                            </label>
+                            <input type="email" class="form-control form-control-lg" id="email" name="email"
+                                   required th:placeholder="#{registration.email.placeholder}">
+                            <div class="invalid-feedback" th:text="#{validation.email.required}"></div>
+                            <div class="field-status text-success" id="emailStatus" style="display: none;"></div>
+                            <div class="field-status text-danger" id="emailError" style="display: none;"></div>
+                        </div>
+
+                        <!-- Биография -->
+                        <div class="mb-3">
+                            <label for="bio" class="form-label fw-semibold" th:text="#{registration.bio}">
+                                📝 О себе (биография)
+                            </label>
+                            <textarea class="form-control" id="bio" name="bio" rows="3" maxlength="500"
+                                      th:placeholder="#{registration.bio.placeholder}"></textarea>
+                            <div class="bio-counter">
+                                <span id="bioCounter">0</span>/500 <span th:text="#{registration.bio.characters}">символов</span>
+                            </div>
+                            <div class="form-text">
+                                <small th:text="#{registration.bio.help}">
+                                    Расскажите немного о себе и ваших кулинарных предпочтениях (необязательно)
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Пароль -->
+                        <div class="mb-3">
+                            <label for="password" class="form-label fw-semibold" th:text="#{registration.password}">
+                                🔒 Пароль
+                            </label>
+                            <input type="password" class="form-control form-control-lg" id="password" name="password"
+                                   required minlength="6" th:placeholder="#{registration.password.placeholder}">
+                            <div class="password-strength" id="passwordStrength"></div>
+                            <div class="form-text">
+                                <small th:text="#{validation.password.min_length}">
+                                    Минимум 6 символов
+                                </small>
+                            </div>
+                            <div class="invalid-feedback" th:text="#{validation.password.required}"></div>
+                        </div>
+
+                        <!-- Подтверждение пароля -->
+                        <div class="mb-4">
+                            <label for="confirmPassword" class="form-label fw-semibold" th:text="#{registration.confirm_password}">
+                                🔒 Подтвердите пароль
+                            </label>
+                            <input type="password" class="form-control form-control-lg" id="confirmPassword" name="confirmPassword"
+                                   required th:placeholder="#{registration.confirm_password.placeholder}">
+                            <div class="invalid-feedback" th:text="#{validation.confirm_password.required}"></div>
+                            <div id="passwordMatch" class="form-text"></div>
+                        </div>
+
+                        <!-- Кнопка регистрации -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success btn-lg fw-semibold" id="registerButton">
+                                🚀 <span th:text="#{registration.register_button}">Зарегистрироваться</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Ссылка на вход -->
+                    <div class="mt-4 pt-3 border-top text-center">
+                        <p class="text-muted mb-0">
+                            <span th:text="#{registration.login_link}">Уже есть аккаунт?</span>
+                            <a th:href="@{/login}" class="text-decoration-none fw-semibold ms-1">
+                                <span th:text="#{registration.login_button}">Войти</span>
+                            </a>
+                        </p>
+                    </div>
+
+                    <!-- Тестовые пользователи (только для разработки) -->
+                    <div class="test-users">
+                        <p class="text-center mb-2 text-muted small" th:text="#{registration.test_users}">
+                            Тестовые пользователи:
+                        </p>
+                        <div class="text-center">
+                            <small class="text-muted">
+                                <strong>admin</strong> / admin123 (первый пользователь станет администратором)<br>
+                                <strong>user1</strong> / user123
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast уведомления -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="registerToast" class="toast" role="alert">
+        <div class="toast-header">
+            <strong class="me-auto" id="toastTitle">Уведомление</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toastMessage"></div>
+    </div>
+</div>
+
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('registerForm');
+        const username = document.getElementById('username');
+        const email = document.getElementById('email');
+        const bio = document.getElementById('bio');
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirmPassword');
+        const passwordMatch = document.getElementById('passwordMatch');
+        const passwordStrength = document.getElementById('passwordStrength');
+        const bioCounter = document.getElementById('bioCounter');
+        const registerButton = document.getElementById('registerButton');
+
+        // Элементы для статусов
+        const usernameStatus = document.getElementById('usernameStatus');
+        const usernameError = document.getElementById('usernameError');
+        const emailStatus = document.getElementById('emailStatus');
+        const emailError = document.getElementById('emailError');
+
+        let usernameValid = false;
+        let emailValid = false;
+
+        // Счетчик символов для биографии
+        bio.addEventListener('input', function() {
+            const count = this.value.length;
+            bioCounter.textContent = count;
+
+            if (count > 500) {
+                bioCounter.classList.add('text-danger');
+                this.classList.add('is-invalid');
+            } else {
+                bioCounter.classList.remove('text-danger');
+                this.classList.remove('is-invalid');
+            }
+        });
+
+        // Валидация пароля
+        password.addEventListener('input', function() {
+            checkPasswordStrength(this.value);
+            checkPasswordMatch();
+        });
+
+        confirmPassword.addEventListener('input', checkPasswordMatch);
+
+        function checkPasswordStrength(password) {
+            let strength = 0;
+            if (password.length >= 6) strength++;
+            if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+            if (password.match(/\d/)) strength++;
+            if (password.match(/[^a-zA-Z\d]/)) strength++;
+
+            passwordStrength.className = 'password-strength';
+            if (password.length > 0) {
+                if (strength < 2) {
+                    passwordStrength.classList.add('strength-weak');
+                } else if (strength < 4) {
+                    passwordStrength.classList.add('strength-medium');
+                } else {
+                    passwordStrength.classList.add('strength-strong');
+                }
+            }
+        }
+
+        function checkPasswordMatch() {
+            if (password.value && confirmPassword.value) {
+                if (password.value === confirmPassword.value) {
+                    passwordMatch.textContent = '✓ Пароли совпадают';
+                    passwordMatch.className = 'form-text text-success';
+                    confirmPassword.classList.remove('is-invalid');
+                    confirmPassword.classList.add('is-valid');
+                } else {
+                    passwordMatch.textContent = '✗ Пароли не совпадают';
+                    passwordMatch.className = 'form-text text-danger';
+                    confirmPassword.classList.remove('is-valid');
+                    confirmPassword.classList.add('is-invalid');
+                }
+            } else {
+                passwordMatch.textContent = '';
+            }
+        }
+
+        // Проверка уникальности имени пользователя
+        username.addEventListener('blur', function() {
+            const usernameValue = this.value.trim();
+            if (usernameValue.length >= 3 && username.checkValidity()) {
+                checkUsernameExists(usernameValue);
+            }
+        });
+
+        // Проверка уникальности email
+        email.addEventListener('blur', function() {
+            const emailValue = this.value.trim();
+            if (emailValue.includes('@') && email.checkValidity()) {
+                checkEmailExists(emailValue);
+            }
+        });
+
+        // Валидация в реальном времени
+        username.addEventListener('input', function() {
+            clearFieldStatus(usernameStatus, usernameError);
+            if (this.value.length >= 3 && this.checkValidity()) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                this.classList.remove('is-valid');
+            }
+        });
+
+        email.addEventListener('input', function() {
+            clearFieldStatus(emailStatus, emailError);
+            if (this.value.includes('@') && this.checkValidity()) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                this.classList.remove('is-valid');
+            }
+        });
+
+        function checkUsernameExists(username) {
+            fetch(`/api/users/exists/username/${encodeURIComponent(username)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.data) {
+                            showFieldError(username, usernameError, 'Пользователь с таким именем уже существует');
+                            usernameValid = false;
+                        } else {
+                            showFieldSuccess(username, usernameStatus, 'Имя пользователя доступно');
+                            usernameValid = true;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking username:', error);
+                    usernameValid = false;
+                });
+        }
+
+        function checkEmailExists(email) {
+            fetch(`/api/users/exists/email/${encodeURIComponent(email)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.data) {
+                            showFieldError(email, emailError, 'Пользователь с таким email уже существует');
+                            emailValid = false;
+                        } else {
+                            showFieldSuccess(email, emailStatus, 'Email доступен');
+                            emailValid = true;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking email:', error);
+                    emailValid = false;
+                });
+        }
+
+        function showFieldError(field, errorElement, message) {
+            field.classList.remove('is-valid');
+            field.classList.add('is-invalid');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        function showFieldSuccess(field, statusElement, message) {
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+            statusElement.textContent = message;
+            statusElement.style.display = 'block';
+        }
+
+        function clearFieldStatus(statusElement, errorElement) {
+            statusElement.style.display = 'none';
+            errorElement.style.display = 'none';
+        }
+
+        // Обработка формы
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            if (!form.checkValidity()) {
+                e.stopPropagation();
+                form.classList.add('was-validated');
+                return;
+            }
+
+            if (password.value !== confirmPassword.value) {
+                showToast('Ошибка', 'Пароли не совпадают', 'error');
+                return;
+            }
+
+            if (bio.value.length > 500) {
+                showToast('Ошибка', 'Биография не должна превышать 500 символов', 'error');
+                return;
+            }
+
+            const formData = {
+                username: username.value,
+                email: email.value,
+                password: password.value,
+                bio: bio.value || '' // Добавляем bio
+            };
+
+            try {
+                registerButton.disabled = true;
+                registerButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Регистрация...';
+
+                // Используем endpoint /api/auth/register
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('Успех', 'Регистрация прошла успешно! Теперь вы можете войти.', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/login?registered=true';
+                    }, 2000);
+                } else {
+                    showToast('Ошибка', result.message || 'Ошибка при регистрации', 'error');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                showToast('Ошибка', 'Ошибка при регистрации. Попробуйте позже.', 'error');
+            } finally {
+                registerButton.disabled = false;
+                registerButton.innerHTML = '🚀 Зарегистрироваться';
+            }
+        });
+
+        function showToast(title, message, type) {
+            const toast = new bootstrap.Toast(document.getElementById('registerToast'));
+            document.getElementById('toastTitle').textContent = title;
+            document.getElementById('toastMessage').textContent = message;
+
+            const toastHeader = document.querySelector('#registerToast .toast-header');
+            toastHeader.className = 'toast-header';
+            if (type === 'success') {
+                toastHeader.classList.add('bg-success', 'text-white');
+            } else if (type === 'error') {
+                toastHeader.classList.add('bg-danger', 'text-white');
+            } else if (type === 'warning') {
+                toastHeader.classList.add('bg-warning', 'text-dark');
+            }
+
+            toast.show();
+        }
+
+        // Инициализация счетчика биографии
+        bioCounter.textContent = bio.value.length;
+    });
+</script>
+</body>
+</html>

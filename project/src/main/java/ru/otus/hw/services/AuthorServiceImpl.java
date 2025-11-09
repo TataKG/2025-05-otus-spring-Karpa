@@ -1,5 +1,6 @@
 package ru.otus.hw.services;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.converters.AuthorConverter;
@@ -17,6 +18,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 @Transactional
 public class AuthorServiceImpl implements AuthorService {
 
@@ -25,15 +27,15 @@ public class AuthorServiceImpl implements AuthorService {
     private final AuthorConverter authorConverter;
     private final MessageProvider messageProvider;
 
-    public AuthorServiceImpl(AuthorRepository authorRepository,
-                             UserRepository userRepository,
-                             AuthorConverter authorConverter,
-                             MessageProvider messageProvider) {
-        this.authorRepository = authorRepository;
-        this.userRepository = userRepository;
-        this.authorConverter = authorConverter;
-        this.messageProvider = messageProvider;
-    }
+//    public AuthorServiceImpl(AuthorRepository authorRepository,
+//                             UserRepository userRepository,
+//                             AuthorConverter authorConverter,
+//                             MessageProvider messageProvider) {
+//        this.authorRepository = authorRepository;
+//        this.userRepository = userRepository;
+//        this.authorConverter = authorConverter;
+//        this.messageProvider = messageProvider;
+//    }
 
     @Override
     public AuthorDto createAuthor(Long userId, String bio) {
@@ -92,7 +94,8 @@ public class AuthorServiceImpl implements AuthorService {
 
     @Override
     public List<AuthorDto> getAllAuthors() {
-        return authorRepository.findAllWithUser().stream()
+        // Используем метод с загрузкой ролей
+        return authorRepository.findAllWithUserAndRoles().stream()
                 .map(authorConverter::toDto)
                 .collect(Collectors.toList());
     }

@@ -3,6 +3,7 @@ package ru.otus.hw.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
@@ -22,7 +23,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance();
+        return new BCryptPasswordEncoder();
     }
 
     @Bean
@@ -36,29 +37,41 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(authorize -> authorize
                         // Статические ресурсы и публичные страницы
-                        .requestMatchers("/", "/index.html", "/login", "/logout", "/error").permitAll()
+                        .requestMatchers("/", "/index.html", "/login", "/logout", "/register", "/error").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
 
-                        // API endpoints - разрешаем неаутентифицированный доступ к публичным данным
-                        .requestMatchers("/api/auth/**").permitAll()
+                        // API endpoints - разрешаем регистрацию и аутентификацию
+                        .requestMatchers("/api/auth/**").permitAll()  // Разрешаем всем доступ к аутентификации
+
+                        // API пользователей - GET доступен всем для проверки существования
+                        .requestMatchers(HttpMethod.GET, "/api/users/exists/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users").hasAuthority("ROLE_ADMIN") // Создание пользователей только для админов
+
+                        // Остальные API настройки...
                         .requestMatchers("/api/recipes", "/api/recipes/published", "/api/recipes/category/**").permitAll()
                         .requestMatchers("/api/recipes/{id}", "/api/recipes/{id}/detailed").permitAll()
                         .requestMatchers("/api/recipes/search/**", "/api/recipes/filter").permitAll()
                         .requestMatchers("/api/categories/**").permitAll()
-                        .requestMatchers("/api/recipes/*/comments", "/api/recipes/*/comments/**").permitAll()
+
+                        // Комментарии
+                        .requestMatchers(HttpMethod.GET, "/api/recipes/*/comments", "/api/recipes/*/comments/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/recipes/*/comments").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/recipes/*/comments/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/recipes/*/comments/**").authenticated()
 
                         // API endpoints требующие аутентификации
                         .requestMatchers("/api/recipes/my-recipes").authenticated()
                         .requestMatchers("/api/recipes/create-form-data", "/api/recipes/edit-form-data/**").authenticated()
-                        .requestMatchers("/api/recipes/**").authenticated() // все остальные API рецептов
+                        .requestMatchers("/api/recipes/**").authenticated()
                         .requestMatchers("/api/comments/**").authenticated()
 
                         // Админские endpoints
-                        .requestMatchers("/api/admin/**", "/api/authors/**", "/api/users/**", "/api/inventory/**").hasAuthority("ADMIN")
-                        .requestMatchers("/admin/**").hasAuthority("ADMIN")
+                         .requestMatchers("/api/admin/**", "/admin/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/authors/**", "/api/users/**", "/api/inventory/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
 
                         // H2 console - только для админов
-                        .requestMatchers("/h2-console/**").hasAuthority("ADMIN")
+                        .requestMatchers("/h2-console/**").hasAuthority("ROLE_ADMIN")
 
                         // Web страницы
                         .requestMatchers("/my-recipes").authenticated()
@@ -76,7 +89,7 @@ public class SecurityConfig {
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
-                        .logoutSuccessUrl("/?logout=true")
+                        .logoutSuccessUrl("/login?logout=true")
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
                         .permitAll()

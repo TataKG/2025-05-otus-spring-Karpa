@@ -10,21 +10,39 @@ DELETE FROM user_roles;
 DELETE FROM users;
 
 -- Вставка пользователей
-INSERT INTO users (username, email, password, enabled, created_at) VALUES
-('admin', 'admin@cookbook.ru', 'admin123', true, '2024-01-01 10:00:00'),
-('chef_ivan', 'ivan@cookbook.ru', 'ivan456', true, '2024-01-02 11:30:00'),
-('baker_maria', 'maria@cookbook.ru', 'maria', true, '2024-01-03 09:15:00'),
-('food_lover', 'alex@cookbook.ru', 'lover', true, '2024-01-04 14:20:00'),
-('test_user', 'test@cookbook.ru', 'user', true, '2024-01-05 16:45:00');
+--INSERT INTO users (username, email, password, enabled, created_at) VALUES
+--('admin', 'admin@cookbook.ru', 'admin123', true, '2024-01-01 10:00:00'),
+--('chef_ivan', 'ivan@cookbook.ru', 'ivan456', true, '2024-01-02 11:30:00'),
+--('baker_maria', 'maria@cookbook.ru', 'maria', true, '2024-01-03 09:15:00'),
+--('food_lover', 'alex@cookbook.ru', 'lover', true, '2024-01-04 14:20:00'),
+--('test_user', 'test@cookbook.ru', 'user', true, '2024-01-05 16:45:00');
 
--- Добавляем роли
+---- Добавляем роли
+--INSERT INTO user_roles (user_id, role) VALUES
+--(1, 'ADMIN'),
+--(1, 'USER'),
+--(2, 'USER'),
+--(3, 'USER'),
+--(4, 'USER'),
+--(5, 'USER');
+
+-- Вставка пользователей с BCrypt паролями
+INSERT INTO users (username, email, password, enabled, created_at) VALUES
+('admin', 'admin@cookbook.ru', '$2a$12$zpWBMeJPG5bwlHWVPwEgtue1WQdhNaXoJNFj3bfU7V.GUfOszPmFK', true, '2024-01-01 10:00:00'),
+('chef_ivan', 'ivan@cookbook.ru', '$2a$12$GBuesHpfJd13tTczH/wQJeNQLTNRuo8GennwBwXTMrlUOkboWLQwy', true, '2024-01-02 11:30:00'),
+('baker_maria', 'maria@cookbook.ru', '$2a$12$Uz.Zk85.YwOqu8wJ/zQQmewtee2a2BaxrNGOqoj5fItjvJlaQMHVi', true, '2024-01-03 09:15:00'),
+('food_lover', 'alex@cookbook.ru', '$2a$12$hCzVpdyo6J..NddQKWlTD.2o.Q6NWwhbC04eF//J3I.xXvCjDGpRi', true, '2024-01-04 14:20:00'),
+('test_user', 'test@cookbook.ru', '$2a$12$RCyZVWHxsQaH7rV/7GPIIux/ZByUb2/ejdMmtcTP61cVt83Ifa/3.', true, '2024-01-05 16:45:00');
+
+-- Назначение ролей пользователям
 INSERT INTO user_roles (user_id, role) VALUES
-(1, 'ADMIN'),
-(1, 'USER'),
-(2, 'USER'),
-(3, 'USER'),
-(4, 'USER'),
-(5, 'USER');
+(1, 'ROLE_ADMIN'),
+(1, 'ROLE_USER'),
+(2, 'ROLE_USER'),
+(3, 'ROLE_USER'),
+(4, 'ROLE_USER'),
+(5, 'ROLE_USER');
+
 
 -- Вставка авторов
 INSERT INTO authors (user_id, bio, created_at) VALUES

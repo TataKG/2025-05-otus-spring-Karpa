@@ -17,4 +17,5 @@ public interface AuthorService {
     List<AuthorDto> getAllAuthors();
 
     AuthorDto convertUserToAuthor(Long userId, String bio);
+
 }

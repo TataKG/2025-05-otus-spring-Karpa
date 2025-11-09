@@ -6,7 +6,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UserService {
-    UserDto createUser(String username, String email, String password);
+    UserDto createUser(String username, String email, String password, String bio);
+
+    default UserDto createUser(String username, String email, String password) {
+        return createUser(username, email, password, null);
+    }
 
     Optional<UserDto> getUserById(Long id);
 
@@ -17,4 +21,6 @@ public interface UserService {
     boolean userExists(String username);
 
     boolean emailExists(String email);
+
+    String getUserBio(String username);
 }

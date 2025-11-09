@@ -32,24 +32,58 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public CommentDto createComment(String content, Long userId, Long recipeId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        messageProvider.getMessage("user.not_found", userId)
-                ));
+                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
 
         Recipe recipe = recipeRepository.findById(recipeId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        messageProvider.getMessage("recipe.not_found", recipeId)
-                ));
+                .orElseThrow(() -> new EntityNotFoundException("Рецепт не найден"));
+
+        if (!recipe.isPublished()) {
+            throw new IllegalStateException("Нельзя комментировать неопубликованные рецепты");
+        }
 
         Comment comment = new Comment(content, user, recipe);
         Comment savedComment = commentRepository.save(comment);
-        return commentConverter.toDto(savedComment);
+
+        return commentConverter.toDto(savedComment, userId);
+    }
+
+    @Override
+    public CommentDto updateComment(Long commentId, String content, Long currentUserId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new EntityNotFoundException("Комментарий не найден"));
+
+        if (comment.getUser().getId() != currentUserId.longValue()) {
+            throw new SecurityException("Вы можете редактировать только свои комментарии");
+        }
+
+        comment.setContent(content);
+        Comment updatedComment = commentRepository.save(comment);
+
+        return commentConverter.toDto(updatedComment, currentUserId);
+    }
+
+    @Override
+    public void deleteComment(Long commentId, Long currentUserId) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new EntityNotFoundException("Комментарий не найден"));
+
+        if (comment.getUser().getId() != currentUserId.longValue()) {
+            throw new SecurityException("Вы можете удалять только свои комментарии");
+        }
+
+        commentRepository.delete(comment);
     }
 
     @Override
     public Optional<CommentDto> getCommentById(Long id) {
         return commentRepository.findByIdWithUserAndRecipe(id)
                 .map(commentConverter::toDto);
+    }
+
+    @Override
+    public Optional<CommentDto> getCommentById(Long id, Long currentUserId) {
+        return commentRepository.findByIdWithUserAndRecipe(id)
+                .map(comment -> commentConverter.toDto(comment, currentUserId));
     }
 
     @Override
@@ -60,8 +94,14 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    public List<CommentDto> getCommentsByRecipe(Long recipeId, Long currentUserId) {
+        return commentRepository.findByRecipeIdWithUser(recipeId).stream()
+                .map(comment -> commentConverter.toDto(comment, currentUserId)) // ✅ С правами
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<CommentDto> getCommentsByRecipeId(Long recipeId) {
-        // Делегируем существующему методу для консистентности
         return getCommentsByRecipe(recipeId);
     }
 
@@ -75,15 +115,5 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public int getCommentCountForRecipe(Long recipeId) {
         return commentRepository.countByRecipeId(recipeId);
-    }
-
-    @Override
-    public void deleteComment(Long commentId) {
-        if (!commentRepository.existsById(commentId)) {
-            throw new EntityNotFoundException(
-                    messageProvider.getMessage("comment.not_found", commentId)
-            );
-        }
-        commentRepository.deleteById(commentId);
     }
 }

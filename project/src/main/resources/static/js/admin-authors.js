@@ -1,190 +1,179 @@
-// admin-authors.js
-class AuthorsAdminApp extends BaseApiClient {
+class AdminAuthorsApp extends BaseApiClient {
     constructor() {
         super('/api/admin');
         this.authors = [];
         this.filteredAuthors = [];
         this.currentFilter = 'ALL';
-        this.translations = this.getTranslations();
         this.init();
     }
 
-    getTranslations() {
-        return {
-            loading: 'Загрузка авторов...',
-            noData: 'Авторы не найдены',
-            filterAll: 'Все',
-            roleAdmin: 'Администраторы',
-            roleUser: 'Пользователи',
-            total: 'Всего авторов',
-            details: 'Детали автора',
-            showingAll: 'Показаны все авторы',
-            showingAdmins: 'Показаны администраторы',
-            showingUsers: 'Показаны пользователи'
-        };
-    }
-
     async init() {
-        console.log('AuthorsAdminApp initialized');
         await this.loadAuthors();
         this.setupEventListeners();
+        this.updateStatistics();
     }
 
     async loadAuthors() {
         try {
-            console.log('Loading authors...');
-            CommonUtils.showLoadingState('authorsTableBody', this.translations.loading, 7);
-
+            CommonUtils.showLoadingState('authorsTableBody', 'Загрузка авторов...', 7);
             const response = await this.get('/authors');
-            console.log('Authors loaded:', response);
 
             if (response.success) {
                 this.authors = response.data;
-                console.log('Authors count:', this.authors.length);
-                this.updateStatistics();
                 this.applyFilter(this.currentFilter);
+                this.updateStatistics();
             } else {
-                CommonUtils.showError('authorsTableBody', 'Ошибка загрузки авторов', 7);
+                CommonUtils.showError('authorsTableBody', 'Ошибка при загрузке авторов', 7);
             }
         } catch (error) {
             console.error('Error loading authors:', error);
-            CommonUtils.showError('authorsTableBody', 'Ошибка загрузки авторов', 7);
+            CommonUtils.showError('authorsTableBody', 'Ошибка при загрузке авторов', 7);
         }
     }
 
-    updateStatistics() {
-        // Обновляем счетчики
-        const total = this.authors.length;
-        const adminCount = this.authors.filter(a => this.hasRole(a, 'ADMIN')).length;
-        const userCount = this.authors.filter(a => this.hasRole(a, 'USER')).length;
+    applyFilter(filter) {
+        this.currentFilter = filter;
 
-        document.getElementById('total-authors').textContent = total;
-        document.getElementById('count-all').textContent = total;
-        document.getElementById('count-admin').textContent = adminCount;
-        document.getElementById('count-user').textContent = userCount;
-    }
-
-    // Вспомогательный метод для проверки ролей
-    hasRole(author, role) {
-        return author.roles && author.roles.includes(role);
-    }
-
-    setupEventListeners() {
-        // Фильтры по ролям
-        document.querySelectorAll('.filter-badge').forEach(badge => {
-            badge.addEventListener('click', (e) => {
-                const role = e.target.closest('.filter-badge').dataset.role;
-                this.setFilter(role);
-            });
-        });
-
-        // Обработчики для строк таблицы
-        document.addEventListener('click', (e) => {
-            if (e.target.closest('.author-row')) {
-                const authorId = e.target.closest('.author-row').dataset.authorId;
-                this.showAuthorDetails(authorId);
-            }
-        });
-    }
-
-    setFilter(role) {
-        // Обновляем активный фильтр
-        document.querySelectorAll('.filter-badge').forEach(badge => {
-            badge.classList.remove('active');
-        });
-        document.querySelector(`[data-role="${role}"]`).classList.add('active');
-
-        this.currentFilter = role;
-        this.applyFilter(role);
-    }
-
-    applyFilter(role) {
-        if (role === 'ALL') {
-            this.filteredAuthors = this.authors;
-            document.getElementById('filter-status').textContent = this.translations.showingAll;
-        } else {
-            this.filteredAuthors = this.authors.filter(author =>
-                this.hasRole(author, role)
-            );
-
-            if (role === 'ADMIN') {
-                document.getElementById('filter-status').textContent = this.translations.showingAdmins;
-            } else if (role === 'USER') {
-                document.getElementById('filter-status').textContent = this.translations.showingUsers;
-            }
+        switch (filter) {
+            case 'ADMIN':
+                this.filteredAuthors = this.authors.filter(author =>
+                    author.roles && author.roles.includes('ROLE_ADMIN')
+                );
+                break;
+            case 'USER':
+                this.filteredAuthors = this.authors.filter(author =>
+                    !author.roles || !author.roles.includes('ROLE_ADMIN')
+                );
+                break;
+            default:
+                this.filteredAuthors = this.authors;
         }
 
-        this.displayAuthors();
+        this.displayAuthors(this.filteredAuthors);
+        this.updateFilterStatus();
     }
 
-    displayAuthors() {
+    displayAuthors(authors) {
         const tbody = document.getElementById('authorsTableBody');
 
-        if (this.filteredAuthors.length === 0) {
+        if (!authors || authors.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
-                        ${this.translations.noData}
+                    <td colspan="7" class="text-center py-4 text-muted">
+                        Авторы не найдены
                     </td>
                 </tr>
             `;
             return;
         }
 
-        tbody.innerHTML = this.filteredAuthors.map(author => `
-            <tr class="author-row" data-author-id="${author.id}" style="cursor: pointer;">
-                <td>${author.id}</td>
-                <td class="fw-bold">${CommonUtils.escapeHtml(author.user?.username || '')}</td>
-                <td>${CommonUtils.escapeHtml(author.user?.email || '')}</td>
+        tbody.innerHTML = authors.map(author => `
+            <tr class="author-row" style="cursor: pointer;" onclick="adminAuthors.showAuthorDetails(${author.id})">
+                <td class="fw-bold">${author.id}</td>
                 <td>
-                    <div class="d-flex flex-wrap gap-1">
-                        ${this.renderRoles(author.roles)}
-                    </div>
+                    <strong>${CommonUtils.escapeHtml(author.user.username)}</strong>
+                </td>
+                <td class="text-muted">${CommonUtils.escapeHtml(author.user.email || '')}</td>
+                <td>
+                    ${author.roles ? author.roles.map(role => `
+                        <span class="badge ${role === 'ROLE_ADMIN' ? 'bg-danger' : 'bg-secondary'} me-1 role-badge">
+                            ${role.replace('ROLE_', '')}
+                        </span>
+                    `).join('') : '<span class="badge bg-secondary role-badge">USER</span>'}
                 </td>
                 <td>
-                    <span class="text-truncate d-inline-block" style="max-width: 200px;"
-                          title="${CommonUtils.escapeHtml(author.bio || '')}">
-                        ${CommonUtils.escapeHtml(author.bio || '---')}
-                    </span>
+                    <small class="text-muted">${CommonUtils.escapeHtml(author.bio || 'Биография не указана')}</small>
                 </td>
                 <td>
-                    <span class="badge bg-primary">${author.recipeCount || 0}</span>
+                    <span class="badge bg-info">${author.recipeCount || 0}</span>
                 </td>
-                <td class="small">${CommonUtils.formatDateShort(author.createdAt)}</td>
+                <td class="text-muted small">
+                    ${CommonUtils.formatDateShort(author.createdAt)}
+                </td>
             </tr>
         `).join('');
     }
 
-    renderRoles(roles) {
-        if (!roles || roles.length === 0) return '<span class="text-muted">---</span>';
+    updateStatistics() {
+        // Общее количество
+        document.getElementById('total-authors').textContent = this.authors.length;
+        document.getElementById('count-all').textContent = this.authors.length;
 
-        return roles.map(role => {
-            const roleClass = role === 'ADMIN' ? 'bg-danger' : 'bg-secondary';
-            const roleText = role === 'ADMIN' ? 'ADMIN' : 'USER';
-            return `<span class="badge ${roleClass} role-badge">${roleText}</span>`;
-        }).join('');
+        // Количество администраторов
+        const adminCount = this.authors.filter(author =>
+            author.roles && author.roles.includes('ROLE_ADMIN')
+        ).length;
+        document.getElementById('count-admin').textContent = adminCount;
+
+        // Количество обычных пользователей
+        const userCount = this.authors.length - adminCount;
+        document.getElementById('count-user').textContent = userCount;
+    }
+
+    updateFilterStatus() {
+        const statusElement = document.getElementById('filter-status');
+        const count = this.filteredAuthors.length;
+        const total = this.authors.length;
+
+        switch (this.currentFilter) {
+            case 'ADMIN':
+                statusElement.textContent = `Показаны администраторы: ${count} из ${total}`;
+                break;
+            case 'USER':
+                statusElement.textContent = `Показаны пользователи: ${count} из ${total}`;
+                break;
+            default:
+                statusElement.textContent = `Показаны все авторы: ${count}`;
+        }
     }
 
     showAuthorDetails(authorId) {
-        const author = this.authors.find(a => a.id == authorId);
+        const author = this.authors.find(a => a.id === authorId);
         if (!author) return;
 
-        // Заполняем модальное окно данными
-        document.getElementById('detail-username').textContent = author.user?.username || '---';
-        document.getElementById('detail-email').textContent = author.user?.email || '---';
-        document.getElementById('detail-roles').innerHTML = this.renderRoles(author.roles);
-        document.getElementById('detail-bio').textContent = author.bio || '---';
+        // Заполняем модальное окно
+        document.getElementById('detail-username').textContent = author.user.username;
+        document.getElementById('detail-email').textContent = author.user.email || 'Не указан';
+        document.getElementById('detail-bio').textContent = author.bio || 'Биография не указана';
         document.getElementById('detail-recipe-count').textContent = author.recipeCount || 0;
-        document.getElementById('detail-created-at').textContent =
-            CommonUtils.formatDateShort(author.createdAt);
+        document.getElementById('detail-created-at').textContent = CommonUtils.formatDateLong(author.createdAt);
+
+        // Отображаем роли
+        const rolesContainer = document.getElementById('detail-roles');
+        rolesContainer.innerHTML = author.roles ?
+            author.roles.map(role => `
+                <span class="badge ${role === 'ROLE_ADMIN' ? 'bg-danger' : 'bg-secondary'} me-1">
+                    ${role.replace('ROLE_', '')}
+                </span>
+            `).join('') :
+            '<span class="badge bg-secondary">USER</span>';
 
         // Показываем модальное окно
-        new bootstrap.Modal(document.getElementById('authorDetailsModal')).show();
+        const modal = new bootstrap.Modal(document.getElementById('authorDetailsModal'));
+        modal.show();
+    }
+
+    setupEventListeners() {
+        // Обработчики для фильтров
+        document.querySelectorAll('.filter-badge').forEach(badge => {
+            badge.addEventListener('click', (e) => {
+                const role = e.currentTarget.dataset.role;
+
+                // Обновляем активный фильтр
+                document.querySelectorAll('.filter-badge').forEach(b => {
+                    b.classList.remove('active');
+                });
+                e.currentTarget.classList.add('active');
+
+                // Применяем фильтр
+                this.applyFilter(role);
+            });
+        });
     }
 }
 
-// Инициализация приложения
-let authorsApp;
+// Инициализация при загрузке страницы
+let adminAuthors;
 document.addEventListener('DOMContentLoaded', () => {
-    authorsApp = new AuthorsAdminApp();
+    adminAuthors = new AdminAuthorsApp();
 });

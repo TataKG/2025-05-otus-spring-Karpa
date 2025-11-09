@@ -99,11 +99,40 @@
 <script th:inline="javascript">
     // Глобальные переменные для i18n
     window.i18nMessages = {
+        // Общие сообщения
         loading: /*[[#{common.loading}]]*/ 'Загрузка...',
         close: /*[[#{common.close}]]*/ 'Закрыть',
         view: /*[[#{common.view}]]*/ 'Просмотр',
         retry: /*[[#{common.retry}]]*/ 'Повторить',
         cancel: /*[[#{common.cancel}]]*/ 'Отмена',
+        save: /*[[#{common.save}]]*/ 'Сохранить',
+        delete: /*[[#{common.delete}]]*/ 'Удалить',
+        edit: /*[[#{common.edit}]]*/ 'Редактировать',
+        confirm: /*[[#{common.confirm}]]*/ 'Подтвердить',
+        'common-saving': /*[[#{common.saving}]]*/ 'Сохранение...',
+        'common-adding': /*[[#{common.adding}]]*/ 'Добавление...',
+        'common-deleting': /*[[#{common.deleting}]]*/ 'Удаление...',
+        'common-confirm-delete': /*[[#{common.confirm_delete}]]*/ 'Подтвердить удаление',
+        'common-action-irreversible': /*[[#{common.action_irreversible}]]*/ 'Это действие нельзя отменить.',
+
+        // ДОБАВЬТЕ ЭТИ СТРОКИ:
+        'common.delete': /*[[#{common.delete}]]*/ 'Удалить',
+        'common.save': /*[[#{common.save}]]*/ 'Сохранить',
+        'common.cancel': /*[[#{common.cancel}]]*/ 'Отмена',
+        'common.edit': /*[[#{common.edit}]]*/ 'Редактировать',
+
+        'common-saving': /*[[#{common.saving}]]*/ 'Сохранение...',
+        'common-adding': /*[[#{common.adding}]]*/ 'Добавление...',
+        'common-deleting': /*[[#{common.deleting}]]*/ 'Удаление...',
+        'common-confirm-delete': /*[[#{common.confirm_delete}]]*/ 'Подтвердить удаление',
+        'common-action-irreversible': /*[[#{common.action_irreversible}]]*/ 'Это действие нельзя отменить.',
+
+        // Фильтры - ДОБАВЬТЕ ЭТИ СТРОКИ:
+        'filter.all_categories': /*[[#{filter.all_categories}]]*/ 'Все категории',
+        'filter.all_authors': /*[[#{filter.all_authors}]]*/ 'Все авторы',
+        'filter.clear': /*[[#{filter.clear}]]*/ 'Очистить',
+
+        // Рецепты
         'recipe-details': /*[[#{recipe.details.title}]]*/ 'Детали рецепта',
         'recipes-loading': /*[[#{recipes.loading}]]*/ 'Загрузка рецептов...',
         'no-recipes': /*[[#{recipes.no_recipes}]]*/ 'Рецепты не найдены',
@@ -117,6 +146,8 @@
         ingredients: /*[[#{recipe.ingredients}]]*/ 'Ингредиенты',
         description: /*[[#{recipe.description}]]*/ 'Описание',
         inventory: /*[[#{recipe.inventory}]]*/ 'Необходимый инвентарь',
+
+        // Комментарии
         'comments-title': /*[[#{comment.view_title}]]*/ 'Комментарии к рецепту',
         'no-comments': /*[[#{comment.no_comments}]]*/ 'Комментариев пока нет',
         'comment-author': /*[[#{comment.author}]]*/ 'Автор комментария',
@@ -128,7 +159,28 @@
         'recipe-details-ingredients': /*[[#{recipe.details.ingredients}]]*/ '🛒 Ингредиенты',
         'recipe-details-description': /*[[#{recipe.details.description}]]*/ '📝 Описание',
         'recipe-details-inventory': /*[[#{recipe.details.inventory}]]*/ '🔧 Необходимый инвентарь',
-        'recipe-details-comments': /*[[#{recipe.details.comments}]]*/ '💬 Комментарии'
+        'recipe-details-comments': /*[[#{recipe.details.comments}]]*/ '💬 Комментарии',
+
+        // Новые ключи для комментариев
+        'comment-edit': /*[[#{comment.edit}]]*/ 'Редактировать комментарий',
+        'comment-edit-title': /*[[#{comment.edit_title}]]*/ 'Редактирование комментария',
+        'comment-delete-confirm-title': /*[[#{comment.delete_confirm_title}]]*/ 'Подтверждение удаления',
+        'comment-delete-confirm-message': /*[[#{comment.delete_confirm_message}]]*/ 'Вы уверены, что хотите удалить этот комментарий?',
+        'comment-delete-confirm-warning': /*[[#{comment.delete_confirm_warning}]]*/ 'Это действие нельзя отменить.',
+        'comment-validation-empty': /*[[#{comment.validation.empty}]]*/ 'Комментарий не может быть пустым',
+        'comment-placeholder': /*[[#{comment.placeholder}]]*/ 'Введите ваш комментарий...',
+        'comment-add': /*[[#{comment.add}]]*/ 'Добавить комментарий',
+        'comment-add-button': /*[[#{comment.add_button}]]*/ 'Добавить комментарий',
+        'comment-save': /*[[#{comment.save}]]*/ 'Сохранить комментарий',
+        'comment-cancel-edit': /*[[#{comment.cancel_edit}]]*/ 'Отменить редактирование',
+        'comment-saving': /*[[#{comment.saving}]]*/ 'Сохранение...',
+        'comment-adding': /*[[#{comment.adding}]]*/ 'Добавление...',
+        'comment-deleting': /*[[#{comment.deleting}]]*/ 'Удаление...',
+        'comment-login-required': /*[[#{comment.login_required}]]*/ 'Войдите, чтобы оставить комментарий',
+        'comment-updated': /*[[#{comment.updated}]]*/ 'Комментарий успешно обновлен',
+        'comment-edit-success': /*[[#{comment.edit_success}]]*/ 'Комментарий успешно обновлен',
+        'comment-delete-success': /*[[#{comment.delete_success}]]*/ 'Комментарий успешно удален',
+        'comment-add-success': /*[[#{comment.add_success}]]*/ 'Комментарий успешно добавлен'
     };
 </script>
 </body>
