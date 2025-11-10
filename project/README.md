@@ -19,8 +19,9 @@
 10. Использование паттернов отказоустойчивости приветствуется (CircuitBreaker/Retry/Cache/ServiceRegistry/ConfigServer/ApiGateway/...)
 11. Docker приветствуется
 
-Пользователь	Исходный пароль	Закодированный пароль (BCrypt)
-admin	admin123	$2a$10$r.jy5.6PbLp2Q7k/8WqB.uE9q3W5c5b5c5b5c5b5c5b5c5b5c5b5c
-chef_ivan	ivan456	$2a$10$r.jy5.6PbLp2Q7k/8WqB.uE9q3W5c5b5c5b5c5b5c5b5c5b5c5b5d
-baker_maria	maria789	$2a$10$r.jy5.6PbLp2Q7k/8WqB.uE9q3W5c5b5c5b5c5b5c5b5c5b5c5b5e
-food_lover	alex000	$2a$10$r.jy5.6PbLp2Q7k/8WqB.uE9q3W5c5b5c5b5c5b5c5b5c5b5c5b5f
+Пользователь	Исходный пароль	
+admin	    admin123	
+chef_ivan	ivan456	
+baker_maria	maria789
+food_lover	alex000
+user1       user123
