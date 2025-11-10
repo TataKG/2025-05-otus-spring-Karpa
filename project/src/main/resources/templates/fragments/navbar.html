@@ -32,7 +32,7 @@
                     </li>
 
                     <!-- Админ-панель (только для ADMIN) -->
-                    <li class="nav-item" sec:authorize="hasAuthority('ROLE_ADMIN')">
+                    <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                         <a class="nav-link text-warning fw-semibold" href="/admin" th:text="#{navbar.admin_panel}">
                             ⚙️ Админ-панель
                         </a>
@@ -81,7 +81,7 @@
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown"
                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             👤 <span sec:authentication="name"></span>
-                            <small class="text-warning" sec:authorize="hasAuthority('ROLE_ADMIN')">[ADMIN]</small>
+                            <small class="text-warning" sec:authorize="hasRole('ADMIN')">[ADMIN]</small>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>
@@ -96,7 +96,7 @@
                                     📖 Мои рецепты
                                 </a>
                             </li>
-                            <li sec:authorize="hasAuthority('ROLE_ADMIN')">
+                            <li sec:authorize="hasRole('ADMIN')">
                                 <a class="dropdown-item text-warning" href="/admin" th:text="#{navbar.admin_panel}">
                                     ⚙️ Админ-панель
                                 </a>

@@ -35,14 +35,21 @@ INSERT INTO users (username, email, password, enabled, created_at) VALUES
 ('test_user', 'test@cookbook.ru', '$2a$12$RCyZVWHxsQaH7rV/7GPIIux/ZByUb2/ejdMmtcTP61cVt83Ifa/3.', true, '2024-01-05 16:45:00');
 
 -- Назначение ролей пользователям
+--INSERT INTO user_roles (user_id, role) VALUES
+--(1, 'ROLE_ADMIN'),
+--(1, 'ROLE_USER'),
+--(2, 'ROLE_USER'),
+--(3, 'ROLE_USER'),
+--(4, 'ROLE_USER'),
+--(5, 'ROLE_USER');
+-- Добавляем роли
 INSERT INTO user_roles (user_id, role) VALUES
-(1, 'ROLE_ADMIN'),
-(1, 'ROLE_USER'),
-(2, 'ROLE_USER'),
-(3, 'ROLE_USER'),
-(4, 'ROLE_USER'),
-(5, 'ROLE_USER');
-
+(1, 'ADMIN'),
+(1, 'USER'),
+(2, 'USER'),
+(3, 'USER'),
+(4, 'USER'),
+(5, 'USER');
 
 -- Вставка авторов
 INSERT INTO authors (user_id, bio, created_at) VALUES

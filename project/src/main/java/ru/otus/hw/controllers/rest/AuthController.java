@@ -48,7 +48,7 @@ public class AuthController {
 
         if (authentication == null || !authentication.isAuthenticated()) {
             System.out.println("User not authenticated");
-            return ResponseEntity.ok(ApiResponse.success(new AuthUserResponse(false, null, null, null)));
+            return ResponseEntity.ok(ApiResponse.success(new AuthUserResponse(false, null, null, null, false)));
         }
 
         String username = authentication.getName();
@@ -59,19 +59,27 @@ public class AuthController {
                         messageProvider.getMessage("user.not_found.username", username)
                 ));
 
-        List<String> authorities = authentication.getAuthorities().stream()
+        // Получаем роли БЕЗ префикса ROLE_ для фронтенда
+        List<String> roles = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
+                .map(authority -> authority.replace("ROLE_", "")) // Убираем ROLE_ для фронтенда
                 .collect(Collectors.toList());
 
-        System.out.println("User authorities: " + authorities);
+        System.out.println("User roles for frontend: " + roles);
+
+        // Проверяем, есть ли роль ADMIN на бэкенде (с префиксом ROLE_)
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+
+        System.out.println("Is admin (backend check): " + isAdmin);
 
         // Получаем информацию об авторе (биографию)
         String bio = userService.getUserBio(username);
 
-        System.out.println("Returning user data: " + new AuthUserResponse(true, userDto.username(), authorities, bio));
+        System.out.println("Returning user data: " + new AuthUserResponse(true, userDto.username(), roles, bio, isAdmin));
 
         return ResponseEntity.ok(ApiResponse.success(
-                new AuthUserResponse(true, userDto.username(), authorities, bio)
+                new AuthUserResponse(true, userDto.username(), roles, bio, isAdmin)
         ));
     }
 
@@ -79,7 +87,7 @@ public class AuthController {
             String username,
             String email,
             String password,
-            String bio  // Добавляем поле bio
+            String bio
     ) {}
 
     public record LoginRequest(String username, String password) {}
@@ -87,7 +95,8 @@ public class AuthController {
     public record AuthUserResponse(
             boolean authenticated,
             String name,
-            List<String> authorities,
-            String bio  // Добавляем bio в ответ
+            List<String> roles,
+            String bio,
+            boolean isAdmin
     ) {}
 }

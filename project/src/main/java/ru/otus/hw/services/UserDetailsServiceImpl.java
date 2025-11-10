@@ -34,19 +34,21 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         System.out.println("Username: " + username);
         System.out.println("User roles from DB: " + user.getRoles());
 
+        // ДОБАВЛЯЕМ ПРЕФИКС "ROLE_" для Spring Security
+        List<SimpleGrantedAuthority> authorities = user.getRoles().stream()
+                .map(role -> {
+                    String authority = "ROLE_" + role;
+                    System.out.println("Converting role: " + role + " -> " + authority);
+                    return new SimpleGrantedAuthority(authority);
+                })
+                .collect(Collectors.toList());
+
+        System.out.println("Granted authorities for Spring Security: " + authorities);
+
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
                 user.getPassword(),
-                getRoles(user)
+                authorities
         );
-    }
-
-    private List<SimpleGrantedAuthority> getRoles(User user) {
-        List<SimpleGrantedAuthority> authorities = user.getRoles().stream()
-                .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toList());
-
-        System.out.println("Granted authorities: " + authorities);
-        return authorities;
     }
 }

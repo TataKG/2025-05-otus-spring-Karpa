@@ -81,6 +81,6 @@ public class User {
     }
 
     public boolean isAuthor() {
-        return this.roles.contains("ROLE_AUTHOR") || this.author != null;
+        return this.roles.contains("AUTHOR") || this.author != null;
     }
 }

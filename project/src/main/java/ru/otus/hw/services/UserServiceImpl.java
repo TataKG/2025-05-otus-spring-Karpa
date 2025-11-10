@@ -57,11 +57,11 @@ public class UserServiceImpl implements UserService {
 
         // Определяем роли для пользователя
         if (isFirstUser) {
-            user.addRole("ROLE_ADMIN");
-            user.addRole("ROLE_USER");
+            user.addRole("ADMIN");
+            user.addRole("USER");
             System.out.println("🎉 Первый пользователь создан с ролями: ADMIN, USER");
         } else {
-            user.addRole("ROLE_USER");
+            user.addRole("USER");
             System.out.println("👤 Новый пользователь создан с ролью: USER");
         }
 
@@ -101,11 +101,11 @@ public class UserServiceImpl implements UserService {
         long userCount = userRepository.count();
 
         if (userCount == 0) {
-            user.addRole("ROLE_ADMIN");
-            user.addRole("ROLE_USER");
+            user.addRole("ADMIN");
+            user.addRole("USER");
             System.out.println("🎉 Первый пользователь создан с ролями: ADMIN, USER");
         } else {
-            user.addRole("ROLE_USER");
+            user.addRole("USER");
             System.out.println("👤 Новый пользователь создан с ролью: USER");
         }
     }

@@ -377,7 +377,7 @@ class AuthUtils {
         const adminPanelLink = document.querySelector('.admin-panel-link');
 
         if (userData.authorities &&
-            (userData.authorities.includes('ROLE_ADMIN') || userData.authorities.includes('ADMIN'))) {
+            (userData.authorities.includes('ADMIN') || userData.authorities.includes('ADMIN'))) {
             console.log("User has ADMIN role");
             if (adminBadge) adminBadge.style.display = 'inline';
             if (adminPanelLink) adminPanelLink.style.display = 'block';

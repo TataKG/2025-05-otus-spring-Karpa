@@ -27,16 +27,6 @@ public class AuthorServiceImpl implements AuthorService {
     private final AuthorConverter authorConverter;
     private final MessageProvider messageProvider;
 
-//    public AuthorServiceImpl(AuthorRepository authorRepository,
-//                             UserRepository userRepository,
-//                             AuthorConverter authorConverter,
-//                             MessageProvider messageProvider) {
-//        this.authorRepository = authorRepository;
-//        this.userRepository = userRepository;
-//        this.authorConverter = authorConverter;
-//        this.messageProvider = messageProvider;
-//    }
-
     @Override
     public AuthorDto createAuthor(Long userId, String bio) {
         User user = userRepository.findById(userId)

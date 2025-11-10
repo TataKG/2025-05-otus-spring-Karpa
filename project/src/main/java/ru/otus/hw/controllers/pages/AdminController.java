@@ -42,5 +42,4 @@ public class AdminController {
         model.addAttribute("currentUrl", request.getRequestURI());
         return "admin/recipes";
     }
-
 }

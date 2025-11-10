@@ -41,11 +41,11 @@ public class SecurityConfig {
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
 
                         // API endpoints - разрешаем регистрацию и аутентификацию
-                        .requestMatchers("/api/auth/**").permitAll()  // Разрешаем всем доступ к аутентификации
+                        .requestMatchers("/api/auth/**").permitAll()
 
                         // API пользователей - GET доступен всем для проверки существования
                         .requestMatchers(HttpMethod.GET, "/api/users/exists/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/users").hasAuthority("ROLE_ADMIN") // Создание пользователей только для админов
+                        .requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN")
 
                         // Остальные API настройки...
                         .requestMatchers("/api/recipes", "/api/recipes/published", "/api/recipes/category/**").permitAll()
@@ -65,13 +65,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/recipes/**").authenticated()
                         .requestMatchers("/api/comments/**").authenticated()
 
-                        // Админские endpoints
-                         .requestMatchers("/api/admin/**", "/admin/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers("/api/authors/**", "/api/users/**", "/api/inventory/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
+                        // Админские endpoints - бэкенд проверяет роль
+                        .requestMatchers("/api/admin/**", "/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/authors/**", "/api/users/**", "/api/inventory/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
 
                         // H2 console - только для админов
-                        .requestMatchers("/h2-console/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/h2-console/**").hasRole("ADMIN")
 
                         // Web страницы
                         .requestMatchers("/my-recipes").authenticated()
