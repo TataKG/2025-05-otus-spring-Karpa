@@ -48,19 +48,14 @@ public class RecipeController {
             }
 
             String username = authentication.getName();
-            System.out.println("Loading create form data for user: " + username); // Логирование
-
             Optional<AuthorDto> authorOpt = authorService.getAuthorByUsername(username);
 
             if (authorOpt.isEmpty()) {
-                System.err.println("Author not found for username: " + username); // Логирование
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("Автор не найден для пользователя: " + username));
+                        .body(ApiResponse.error(messageProvider.getMessage("author.not_found_for_user", username)));
             }
 
             AuthorDto author = authorOpt.get();
-            System.out.println("Found author: " + author.id() + " for user: " + username); // Логирование
-
             RecipeDto emptyRecipe = createEmptyRecipeDto(author);
 
             List<CategoryDto> categories = categoryService.getAllCategories();
@@ -70,11 +65,8 @@ public class RecipeController {
 
             return ResponseEntity.ok(ApiResponse.success(formData));
         } catch (Exception e) {
-            System.err.println("Error in getCreateFormData: " + e.getMessage());
-            e.printStackTrace();
-
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Ошибка при загрузке данных формы: " + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("recipe.form_data.load_failed")));
         }
     }
 
@@ -123,56 +115,37 @@ public class RecipeController {
 
     @PostMapping(value = {"", "/"})
     public ResponseEntity<ApiResponse<RecipeDto>> createRecipe(@RequestBody CreateRecipeRequest request, Authentication authentication) {
-        System.out.println("=== DEBUG BREAKPOINT ===");
-        new RuntimeException("DEBUG BREAKPOINT").printStackTrace();
-
         try {
-            System.out.println("=== CREATE RECIPE REQUEST ===");
-            System.out.println("Request data: " + request);
-            System.out.println("User: " + authentication.getName());
-
             String username = authentication.getName();
             AuthorDto author = authorService.getAuthorByUsername(username)
-                    .orElseThrow(() -> {
-                        System.err.println("Author not found for user: " + username);
-                        return new EntityNotFoundException(messageProvider.getMessage("author.not_found"));
-                    });
-
-            System.out.println("Author found: ID=" + author.id() + ", Request authorId: " + request.authorId());
+                    .orElseThrow(() -> new EntityNotFoundException(messageProvider.getMessage("author.not_found")));
 
             validateAuthorOwnership(request.authorId(), author.id());
 
-            // Детальная валидация с лучшими сообщениями об ошибках
             if (request.title() == null || request.title().trim().isEmpty()) {
-                throw new IllegalArgumentException("Название рецепта обязательно");
+                throw new IllegalArgumentException(messageProvider.getMessage("recipe.title.required"));
             }
             if (request.title().trim().length() < 2) {
-                throw new IllegalArgumentException("Название рецепта должно содержать минимум 2 символа");
+                throw new IllegalArgumentException(messageProvider.getMessage("recipe.title.min_length"));
             }
             if (request.categoryId() == null) {
-                throw new IllegalArgumentException("Категория обязательна");
+                throw new IllegalArgumentException(messageProvider.getMessage("recipe.category.required"));
             }
             if (request.description() == null || request.description().trim().isEmpty()) {
-                throw new IllegalArgumentException("Описание рецепта обязательно");
+                throw new IllegalArgumentException(messageProvider.getMessage("recipe.description.required"));
             }
             if (request.description().trim().length() < 10) {
-                throw new IllegalArgumentException("Описание рецепта должно содержать минимум 10 символов");
+                throw new IllegalArgumentException(messageProvider.getMessage("recipe.description.min_length"));
             }
             if (request.ingredients() == null || request.ingredients().isEmpty()) {
-                throw new IllegalArgumentException("Добавьте хотя бы один ингредиент");
+                throw new IllegalArgumentException(messageProvider.getMessage("recipe.ingredients.required"));
             }
 
-            // Проверяем, что есть хотя бы один непустой ингредиент
             boolean hasValidIngredients = request.ingredients().stream()
                     .anyMatch(ingredient -> ingredient != null && !ingredient.trim().isEmpty());
             if (!hasValidIngredients) {
-                throw new IllegalArgumentException("Добавьте хотя бы один непустой ингредиент");
+                throw new IllegalArgumentException(messageProvider.getMessage("recipe.ingredients.min_one"));
             }
-
-            System.out.println("Calling recipeService.createRecipeWithInventory...");
-            System.out.println("Ingredients: " + request.ingredients());
-            System.out.println("Inventory IDs: " + request.inventoryIds());
-            System.out.println("Inventory IDs size: " + (request.inventoryIds() != null ? request.inventoryIds().size() : 0));
 
             RecipeDto recipeDto = recipeService.createRecipeWithInventory(
                     request.title().trim(),
@@ -184,31 +157,21 @@ public class RecipeController {
                     request.published()
             );
 
-            System.out.println("Recipe created successfully: " + recipeDto.id());
-
             return ResponseEntity.status(HttpStatus.CREATED).body(
                     ApiResponse.success(recipeDto, messageProvider.getMessage("recipe.created"))
             );
         } catch (EntityNotFoundException e) {
-            System.err.println("EntityNotFoundException: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (SecurityException e) {
-            System.err.println("SecurityException: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (IllegalArgumentException e) {
-            System.err.println("IllegalArgumentException: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            System.err.println("Unexpected error in createRecipe: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Внутренняя ошибка сервера при создании рецепта: " + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("recipe.create.failed")));
         }
     }
 
@@ -344,7 +307,7 @@ public class RecipeController {
     public ResponseEntity<ApiResponse<RecipeDto>> publishRecipe(@PathVariable Long id, Authentication authentication) {
         try {
             String username = authentication.getName();
-            RecipeDto existingRecipe = getRecipeAndCheckOwnership(id, username);
+            getRecipeAndCheckOwnership(id, username);
 
             RecipeDto updatedRecipe = recipeService.publishRecipe(id);
 
@@ -367,7 +330,7 @@ public class RecipeController {
     public ResponseEntity<ApiResponse<RecipeDto>> unpublishRecipe(@PathVariable Long id, Authentication authentication) {
         try {
             String username = authentication.getName();
-            RecipeDto existingRecipe = getRecipeAndCheckOwnership(id, username);
+            getRecipeAndCheckOwnership(id, username);
 
             RecipeDto updatedRecipe = recipeService.unpublishRecipe(id);
 
@@ -444,38 +407,23 @@ public class RecipeController {
         return recipeService.getPublishedRecipesByAuthor(authorId);
     }
 
-    public record CreateRecipeRequest(
-            String title,
-            Long categoryId,
-            Long authorId,
-            List<String> ingredients,
-            List<Long> inventoryIds, // Убедитесь, что это List<Long>
-            String description,
-            boolean published
-    ) {
-        // Добавьте конструктор с проверками
-        public CreateRecipeRequest {
-            // Валидация обязательных полей
-            if (title == null || title.trim().isEmpty()) {
-                throw new IllegalArgumentException("Title cannot be null or empty");
-            }
-            if (categoryId == null) {
-                throw new IllegalArgumentException("CategoryId cannot be null");
-            }
-            if (authorId == null) {
-                throw new IllegalArgumentException("AuthorId cannot be null");
-            }
-            if (ingredients == null || ingredients.isEmpty()) {
-                throw new IllegalArgumentException("Ingredients cannot be null or empty");
-            }
-            if (description == null || description.trim().isEmpty()) {
-                throw new IllegalArgumentException("Description cannot be null or empty");
-            }
-
-            // Нормализация inventoryIds
-            inventoryIds = (inventoryIds != null) ? inventoryIds : new ArrayList<>();
-        }
-    }
+//    private void validateCreateRequest(CreateRecipeRequest request) {
+//        if (request.title() == null || request.title().trim().isEmpty()) {
+//            throw new IllegalArgumentException(messageProvider.getMessage("recipe.title.required"));
+//        }
+//        if (request.categoryId() == null) {
+//            throw new IllegalArgumentException(messageProvider.getMessage("recipe.category.required"));
+//        }
+//        if (request.authorId() == null) {
+//            throw new IllegalArgumentException(messageProvider.getMessage("recipe.author.required"));
+//        }
+//        if (request.ingredients() == null || request.ingredients().isEmpty()) {
+//            throw new IllegalArgumentException(messageProvider.getMessage("recipe.ingredients.required"));
+//        }
+//        if (request.description() == null || request.description().trim().isEmpty()) {
+//            throw new IllegalArgumentException(messageProvider.getMessage("recipe.description.required"));
+//        }
+//    }
 
     public record UpdateRecipeRequest(
             String title,

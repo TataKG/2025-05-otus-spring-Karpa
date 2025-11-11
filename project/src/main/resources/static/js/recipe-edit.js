@@ -23,8 +23,12 @@ class RecipeEditApp extends BaseApiClient {
             this.isInitialized = true;
         } catch (error) {
             console.error('Initialization error:', error);
-            this.showLoadError('Ошибка загрузки формы: ' + error.message);
+            this.showLoadError(this.getMessage('error.load_form') + error.message);
         }
+    }
+
+    getMessage(key) {
+        return window.i18nMessages?.[key] || key;
     }
 
     showLoadingState() {
@@ -53,75 +57,43 @@ class RecipeEditApp extends BaseApiClient {
                 url = '/create-form-data';
             }
 
-            console.log('Loading form data from:', url);
-
             const response = await this.get(url);
             if (!response) {
-                        throw new Error('Пустой ответ от сервера');
+                throw new Error(this.getMessage('error.empty_response'));
             }
 
             if (response.success) {
                 this.populateForm(response.data);
             } else {
-                throw new Error(response.message || 'Failed to load form data');
+                throw new Error(response.message || this.getMessage('error.load_form_data'));
             }
         } catch (error) {
             console.error('Error loading form data:', error);
-            throw new Error('Не удалось загрузить данные формы: ' + error.message);
+            throw new Error(this.getMessage('error.load_form') + error.message);
         }
     }
 
     populateForm(formData) {
-        console.log('FULL FORM DATA:', formData);
-
         if (!formData) {
-            throw new Error('Form data is empty');
+            throw new Error(this.getMessage('error.form_data_empty'));
         }
 
         const { recipe, categories, inventoryItems } = formData;
 
-        console.log('Detailed form data analysis:', {
-            hasRecipe: !!recipe,
-            recipeAuthor: recipe?.author,
-            recipeAuthorId: recipe?.author?.id,
-            categoriesCount: categories ? categories.length : 0,
-            inventoryCount: inventoryItems ? inventoryItems.length : 0,
-            formDataKeys: Object.keys(formData)
-        });
-
-        // Сохраняем данные
         this.categories = categories || [];
         this.inventoryItems = inventoryItems || [];
         this.availableInventory = [...this.inventoryItems];
 
-        // Получаем authorId - проверяем разные возможные места
         if (recipe && recipe.author && recipe.author.id) {
             this.authorId = recipe.author.id;
-            console.log('Author ID from recipe.author:', this.authorId);
         } else if (formData.authorId) {
             this.authorId = formData.authorId;
-            console.log('Author ID from formData.authorId:', this.authorId);
         } else if (formData.currentAuthorId) {
             this.authorId = formData.currentAuthorId;
-            console.log('Author ID from formData.currentAuthorId:', this.authorId);
         } else {
-            console.warn('Author ID not found in form data. Available keys:', Object.keys(formData));
-            throw new Error('Author not found. Please make sure you are logged in.');
+            throw new Error(this.getMessage('error.author_not_found'));
         }
 
-        console.log('Final Author ID:', this.authorId);
-
-        // Проверяем категории
-        if (!this.categories || this.categories.length === 0) {
-            console.warn('No categories available in form data');
-        }
-
-        // Проверяем инвентарь
-        if (!this.inventoryItems || this.inventoryItems.length === 0) {
-            console.warn('No inventory items available in form data');
-        }
-
-        // Заполняем основные поля
         if (recipe && recipe.title) {
             document.getElementById('title').value = recipe.title;
         }
@@ -130,16 +102,10 @@ class RecipeEditApp extends BaseApiClient {
             document.getElementById('description').value = recipe.description;
         }
 
-        // Заполняем категории
         this.populateCategories(recipe?.category);
-
-        // Заполняем ингредиенты
         this.populateIngredients(recipe?.ingredients || []);
-
-        // Заполняем инвентарь
         this.populateInventory(recipe?.inventoryItems || []);
 
-        // Показываем форму
         document.getElementById('loadingSpinner').style.display = 'none';
         document.getElementById('recipeFormContainer').style.display = 'block';
         document.getElementById('errorAlert').style.display = 'none';
@@ -149,7 +115,7 @@ class RecipeEditApp extends BaseApiClient {
         const categorySelect = document.getElementById('category');
         if (!categorySelect) return;
 
-        categorySelect.innerHTML = '<option value="">Выберите категорию</option>';
+        categorySelect.innerHTML = `<option value="">${this.getMessage('recipe.category.placeholder')}</option>`;
 
         this.categories.forEach(category => {
             const option = document.createElement('option');
@@ -245,7 +211,6 @@ class RecipeEditApp extends BaseApiClient {
         select.innerHTML = '';
 
         if (!searchTerm) {
-            // Показываем все доступные опции
             this.availableInventory.forEach(inventory => {
                 const option = document.createElement('option');
                 option.value = inventory.id;
@@ -256,7 +221,6 @@ class RecipeEditApp extends BaseApiClient {
                 select.appendChild(option);
             });
         } else {
-            // Фильтруем по поисковому запросу
             const filteredInventory = this.availableInventory.filter(inventory =>
                 inventory.name.toLowerCase().includes(searchLower) ||
                 (inventory.description && inventory.description.toLowerCase().includes(searchLower))
@@ -276,7 +240,7 @@ class RecipeEditApp extends BaseApiClient {
             } else {
                 const noResultsOption = document.createElement('option');
                 noResultsOption.value = "";
-                noResultsOption.textContent = `Ничего не найдено для "${searchTerm}"`;
+                noResultsOption.textContent = this.getMessage('inventory.search.no_results').replace('{searchTerm}', searchTerm);
                 noResultsOption.disabled = true;
                 select.appendChild(noResultsOption);
             }
@@ -290,7 +254,7 @@ class RecipeEditApp extends BaseApiClient {
         const searchInput = document.getElementById('inventorySearch');
 
         if (!select || !select.value) {
-            this.showError('Пожалуйста, выберите инвентарь из списка');
+            this.showError(this.getMessage('inventory.select_required'));
             return;
         }
 
@@ -299,12 +263,12 @@ class RecipeEditApp extends BaseApiClient {
 
         const selectedInventory = this.inventoryItems.find(item => item.id === selectedId);
         if (!selectedInventory) {
-            this.showError('Выбранный инвентарь не найден');
+            this.showError(this.getMessage('inventory.not_found'));
             return;
         }
 
         if (this.selectedInventory.some(item => item.id === selectedId)) {
-            this.showError('Этот инвентарь уже добавлен');
+            this.showError(this.getMessage('inventory.already_added'));
             return;
         }
 
@@ -317,7 +281,7 @@ class RecipeEditApp extends BaseApiClient {
             searchInput.value = '';
         }
 
-        this.showSuccess(`Инвентарь "${selectedInventory.name}" добавлен`);
+        this.showSuccess(this.getMessage('inventory.added').replace('{name}', selectedInventory.name));
     }
 
     updateAddButtonState() {
@@ -346,7 +310,7 @@ class RecipeEditApp extends BaseApiClient {
         if (!container) return;
 
         if (this.selectedInventory.length === 0) {
-            container.innerHTML = '<div class="text-muted">Инвентарь не выбран</div>';
+            container.innerHTML = `<div class="text-muted">${this.getMessage('recipe.inventory.none')}</div>`;
             return;
         }
 
@@ -360,7 +324,7 @@ class RecipeEditApp extends BaseApiClient {
                     </div>
                     <button type="button" class="btn btn-outline-danger btn-sm remove-inventory"
                             data-inventory-id="${inventory.id}"
-                            title="Удалить инвентарь">
+                            title="${this.getMessage('inventory.remove')}">
                         🗑️
                     </button>
                 </div>
@@ -382,7 +346,7 @@ class RecipeEditApp extends BaseApiClient {
         this.updateAvailableInventory();
         this.renderSelectedInventory();
         this.renderInventorySelect();
-        this.showSuccess('Инвентарь удален');
+        this.showSuccess(this.getMessage('inventory.removed'));
     }
 
     createIngredientRow(value = '', isFirst = false) {
@@ -394,7 +358,7 @@ class RecipeEditApp extends BaseApiClient {
         row.innerHTML = `
             <input type="text" class="form-control ingredient-input"
                    value="${escapedValue}"
-                   placeholder="Например: Мука - 200г">
+                   placeholder="${this.getMessage('recipe.ingredient.placeholder')}">
             <button type="button" class="btn btn-outline-danger remove-ingredient"
                     ${isFirst ? 'style="display: none;"' : ''}>🗑️</button>
         `;
@@ -448,7 +412,7 @@ class RecipeEditApp extends BaseApiClient {
         const lastInput = lastRow.querySelector('.ingredient-input');
 
         if (input === lastInput && input.value.trim() !== '') {
-                this.addIngredientField();
+            this.addIngredientField();
         }
     }
 
@@ -519,24 +483,24 @@ class RecipeEditApp extends BaseApiClient {
         const category = document.getElementById('category');
         const description = document.getElementById('description');
 
-        if (!title.value.trim() || title.value.trim().length < 2) {
-            errors.push('Название рецепта должно содержать минимум 2 символа');
+        if (!title.value.trim()) {
+            errors.push(this.getMessage('validation.title.required'));
             isValid = false;
         }
 
         if (!category.value) {
-            errors.push('Пожалуйста, выберите категорию');
+            errors.push(this.getMessage('validation.category.required'));
             isValid = false;
         }
 
         const ingredients = this.getIngredients();
         if (ingredients.length === 0) {
-            errors.push('Добавьте хотя бы один ингредиент');
+            errors.push(this.getMessage('validation.ingredients.required'));
             isValid = false;
         }
 
-        if (!description.value.trim() || description.value.trim().length < 10) {
-            errors.push('Описание рецепта должно содержать минимум 10 символов');
+        if (!description.value.trim()) {
+            errors.push(this.getMessage('validation.description.required'));
             isValid = false;
         }
 
@@ -563,50 +527,12 @@ class RecipeEditApp extends BaseApiClient {
             return;
         }
 
-        // Собираем данные с дополнительной проверкой
         const title = document.getElementById('title').value.trim();
         const categoryId = parseInt(document.getElementById('category').value);
         const description = document.getElementById('description').value.trim();
         const ingredients = this.getIngredients();
         const inventoryIds = this.getSelectedInventory();
 
-        console.log('Form data before validation:', {
-            title,
-            categoryId,
-            authorId: this.authorId,
-            ingredients,
-            description,
-            inventoryIds,
-            published: publish
-        });
-
-        // Детальная валидация
-        if (!title || title.length < 2) {
-            this.showError('Название рецепта должно содержать минимум 2 символа');
-            return;
-        }
-
-        if (!categoryId || isNaN(categoryId)) {
-            this.showError('Пожалуйста, выберите категорию');
-            return;
-        }
-
-        if (!this.authorId || isNaN(this.authorId)) {
-            this.showError('Ошибка авторизации. Пожалуйста, перезагрузите страницу');
-            return;
-        }
-
-        if (!ingredients || ingredients.length === 0) {
-            this.showError('Добавьте хотя бы один ингредиент');
-            return;
-        }
-
-        if (!description || description.length < 10) {
-            this.showError('Описание рецепта должно содержать минимум 10 символов');
-            return;
-        }
-
-        // Подготавливаем данные для отправки
         const recipeData = {
             title: title,
             categoryId: categoryId,
@@ -617,26 +543,20 @@ class RecipeEditApp extends BaseApiClient {
             published: publish
         };
 
-        console.log('Saving recipe data:', recipeData);
-
         try {
             this.showSavingState(true);
 
             let response;
             if (this.recipeId) {
-                console.log(`Updating recipe ${this.recipeId}`);
                 response = await this.put(`/${this.recipeId}`, recipeData);
             } else {
-                console.log('Creating new recipe');
                 response = await this.post('', recipeData);
             }
 
-            console.log('Save response:', response);
-
             if (response && response.success) {
                 const message = this.recipeId ?
-                    (publish ? 'Рецепт успешно обновлен и опубликован' : 'Рецепт успешно сохранен как черновик') :
-                    (publish ? 'Рецепт успешно создан и опубликован' : 'Рецепт успешно сохранен как черновик');
+                    (publish ? this.getMessage('recipe.updated_published') : this.getMessage('recipe.updated_draft')) :
+                    (publish ? this.getMessage('recipe.created_published') : this.getMessage('recipe.created_draft'));
 
                 this.showSuccess(message);
 
@@ -644,46 +564,12 @@ class RecipeEditApp extends BaseApiClient {
                     window.location.href = '/my-recipes';
                 }, 1500);
             } else {
-                const errorMessage = response?.message || response?.error || 'Неизвестная ошибка при сохранении рецепта';
-                console.error('Save failed with response:', response);
+                const errorMessage = response?.message || response?.error || this.getMessage('error.save_unknown');
                 throw new Error(errorMessage);
             }
         } catch (error) {
             console.error('Error saving recipe:', error);
-
-            // Детальный анализ ошибки
-            let errorMessage = 'Не удалось сохранить рецепт';
-
-            if (error.message.includes('401')) {
-                errorMessage = 'Требуется авторизация. Пожалуйста, войдите в систему.';
-            } else if (error.message.includes('403')) {
-                errorMessage = 'Доступ запрещен. У вас нет прав для сохранения рецептов.';
-            } else if (error.message.includes('404')) {
-                errorMessage = 'Ресурс не найден. Проверьте корректность данных категории.';
-            } else if (error.message.includes('500')) {
-                errorMessage = 'Ошибка сервера. Возможные причины:\n' +
-                              '- Неверный формат данных\n' +
-                              '- Проблема с базой данных\n' +
-                              '- Ошибка валидации на сервере\n\n' +
-                              'Проверьте консоль сервера для деталей.';
-            } else if (error.message.includes('Произошла непредвиденная ошибка')) {
-                errorMessage = 'Серверная ошибка. Пожалуйста:\n' +
-                              '1. Проверьте что все поля заполнены корректно\n' +
-                              '2. Убедитесь что категория выбрана\n' +
-                              '3. Проверьте консоль сервера для детальной информации';
-            } else {
-                errorMessage = error.message || 'Неизвестная ошибка';
-            }
-
-            this.showError(errorMessage);
-
-            // Показываем дополнительные детали для отладки
-            console.error('Detailed error analysis:', {
-                recipeData: recipeData,
-                authorId: this.authorId,
-                isEdit: !!this.recipeId,
-                error: error
-            });
+            this.showError(error.message || this.getMessage('error.save_failed'));
         } finally {
             this.showSavingState(false);
         }
@@ -696,15 +582,15 @@ class RecipeEditApp extends BaseApiClient {
         if (saveDraftBtn) {
             saveDraftBtn.disabled = show;
             saveDraftBtn.innerHTML = show ?
-                '<span class="spinner-border spinner-border-sm" role="status"></span> Сохранение...' :
-                '💾 Сохранить черновик';
+                `<span class="spinner-border spinner-border-sm" role="status"></span> ${this.getMessage('common.saving')}` :
+                `💾 ${this.getMessage('recipe.save_draft')}`;
         }
 
         if (publishBtn) {
             publishBtn.disabled = show;
             publishBtn.innerHTML = show ?
-                '<span class="spinner-border spinner-border-sm" role="status"></span> Публикация...' :
-                '🚀 Опубликовать';
+                `<span class="spinner-border spinner-border-sm" role="status"></span> ${this.getMessage('common.publishing')}` :
+                `🚀 ${this.getMessage('recipe.publish')}`;
         }
     }
 
@@ -717,7 +603,6 @@ class RecipeEditApp extends BaseApiClient {
     }
 }
 
-// Инициализация при загрузке DOM
 document.addEventListener('DOMContentLoaded', () => {
     try {
         new RecipeEditApp();
@@ -728,7 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const loadingSpinner = document.getElementById('loadingSpinner');
 
         if (errorAlert && errorMessage) {
-            errorMessage.textContent = 'Ошибка инициализации: ' + error.message;
+            errorMessage.textContent = this.getMessage('error.initialization') + error.message;
             errorAlert.style.display = 'block';
         }
 

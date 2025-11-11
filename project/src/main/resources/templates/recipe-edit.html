@@ -51,7 +51,6 @@
                         <label for="category" class="form-label fw-bold" th:text="#{recipe.category}">Категория *</label>
                         <select class="form-select" id="category" required>
                             <option value="" th:text="#{recipe.category.placeholder}">Выберите категорию</option>
-                            <!-- Опции будут заполнены через JavaScript -->
                         </select>
                         <div class="invalid-feedback" th:text="#{validation.required}">Пожалуйста, выберите категорию</div>
                     </div>
@@ -63,7 +62,6 @@
                     <p class="text-muted mb-3" th:text="#{recipe.ingredients.description}">Добавьте все необходимые ингредиенты для рецепта</p>
 
                     <div id="ingredientsContainer">
-                        <!-- Ингредиенты будут добавляться динамически -->
                         <div class="ingredient-row input-group mb-2">
                             <input type="text" class="form-control ingredient-input"
                                    th:placeholder="#{recipe.ingredient.placeholder}">
@@ -83,28 +81,27 @@
 
                     <!-- Поиск и добавление инвентаря -->
                     <div class="mb-3">
-                        <label for="inventorySearch" class="form-label fw-bold">🔍 Поиск инвентаря</label>
+                        <label for="inventorySearch" class="form-label fw-bold" th:text="#{recipe.inventory.search}">🔍 Поиск инвентаря</label>
                         <div class="input-group">
                             <input type="text" class="form-control" id="inventorySearch"
-                                   placeholder="Введите название инвентаря...">
+                                   th:placeholder="#{recipe.inventory.search.placeholder}">
                             <button type="button" class="btn btn-outline-success" id="addInventoryBtn">
                                 ➕ <span th:text="#{action.add}">Добавить</span>
                             </button>
                         </div>
                         <select class="form-select mt-2" id="inventorySelect" size="5" style="max-height: 200px; overflow-y: auto;">
-                            <option value="" disabled selected>Начните вводить для поиска инвентаря</option>
-                            <!-- Результаты поиска будут появляться здесь -->
+                            <option value="" disabled selected th:text="#{recipe.inventory.search.start}">Начните вводить для поиска инвентаря</option>
                         </select>
-                        <div class="form-text">
+                        <div class="form-text" th:text="#{recipe.inventory.search.help}">
                             Введите название инвентаря, выберите из списка и нажмите "Добавить"
                         </div>
                     </div>
 
                     <!-- Выбранный инвентарь -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold">✅ Выбранный инвентарь</label>
+                        <label class="form-label fw-bold" th:text="#{recipe.inventory.selected}">✅ Выбранный инвентарь</label>
                         <div id="inventoryContainer" class="border rounded p-3 bg-light">
-                            <div class="text-muted" id="noInventorySelected">Инвентарь не выбран</div>
+                            <div class="text-muted" id="noInventorySelected" th:text="#{recipe.inventory.none}">Инвентарь не выбран</div>
                         </div>
                     </div>
                 </div>
@@ -156,25 +153,48 @@
 <!-- Скрипты -->
 <div th:replace="fragments/scripts :: scripts"></div>
 
-<!-- JavaScript для страницы редактирования -->
 <script th:src="@{/js/recipe-edit.js}"></script>
 
 <script th:inline="javascript">
-    // Дополнительные сообщения для страницы редактирования
     window.i18nMessages = {
         ...window.i18nMessages,
-        'recipe.basic_info': /*[[#{recipe.basic_info}]]*/ 'Основная информация',
-        'recipe.title.placeholder': /*[[#{recipe.title.placeholder}]]*/ 'Введите название рецепта',
-        'recipe.category.placeholder': /*[[#{recipe.category.placeholder}]]*/ 'Выберите категорию',
-        'recipe.ingredients.description': /*[[#{recipe.ingredients.description}]]*/ 'Добавьте все необходимые ингредиенты для рецепта',
-        'recipe.ingredient.placeholder': /*[[#{recipe.ingredient.placeholder}]]*/ 'Например: Мука - 200г',
-        'recipe.ingredient.add': /*[[#{recipe.ingredient.add}]]*/ 'Добавить еще ингредиент',
-        'recipe.inventory.description': /*[[#{recipe.inventory.description}]]*/ 'Выберите кухонный инвентарь из справочника',
-        'recipe.description.placeholder': /*[[#{recipe.description.placeholder}]]*/ 'Опишите процесс приготовления по шагам...',
-        'recipe.save_draft': /*[[#{recipe.save_draft}]]*/ 'Сохранить черновик',
-        'recipe.publish': /*[[#{recipe.publish}]]*/ 'Опубликовать',
-        'myrecipes.edit_description': /*[[#{myrecipes.edit_description}]]*/ 'Внесите изменения в ваш рецепт',
-        'myrecipes.create_description': /*[[#{myrecipes.create_description}]]*/ 'Заполните информацию о новом рецепте'
+        // Error messages
+        'error.load_form': 'Ошибка загрузки формы: ',
+        'error.empty_response': 'Пустой ответ от сервера',
+        'error.load_form_data': 'Не удалось загрузить данные формы',
+        'error.form_data_empty': 'Данные формы пусты',
+        'error.author_not_found': 'Автор не найден. Пожалуйста, войдите в систему.',
+        'error.save_unknown': 'Неизвестная ошибка при сохранении рецепта',
+        'error.save_failed': 'Не удалось сохранить рецепт',
+        'error.initialization': 'Ошибка инициализации: ',
+
+        // Inventory messages
+        'inventory.select_required': 'Пожалуйста, выберите инвентарь из списка',
+        'inventory.not_found': 'Выбранный инвентарь не найден',
+        'inventory.already_added': 'Этот инвентарь уже добавлен',
+        'inventory.added': 'Инвентарь "{name}" добавлен',
+        'inventory.removed': 'Инвентарь удален',
+        'inventory.remove': 'Удалить инвентарь',
+        'inventory.search.no_results': 'Ничего не найдено для "{searchTerm}"',
+
+        // Validation messages
+        'validation.title.required': 'Название рецепта обязательно для заполнения',
+        'validation.category.required': 'Пожалуйста, выберите категорию',
+        'validation.ingredients.required': 'Добавьте хотя бы один ингредиент',
+        'validation.description.required': 'Описание рецепта обязательно для заполнения',
+
+        // Success messages
+        'recipe.updated_published': 'Рецепт успешно обновлен и опубликован',
+        'recipe.updated_draft': 'Рецепт успешно сохранен как черновик',
+        'recipe.created_published': 'Рецепт успешно создан и опубликован',
+        'recipe.created_draft': 'Рецепт успешно сохранен как черновик',
+        'recipe.inventory.none': 'Инвентарь не выбран',
+        'recipe.category.placeholder': 'Выберите категорию...',
+        'recipe.ingredient.placeholder': 'Например, Мука 200г...',
+
+        // Common
+        'common.saving': 'Сохранение...',
+        'common.publishing': 'Публикация...'
     };
 </script>
 

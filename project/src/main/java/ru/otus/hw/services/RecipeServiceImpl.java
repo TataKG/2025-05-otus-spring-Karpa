@@ -7,7 +7,8 @@ import ru.otus.hw.converters.RecipeConverter;
 import ru.otus.hw.dto.*;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.models.*;
-import ru.otus.hw.repositories.*;
+import ru.otus.hw.repositories.CommentRepository;
+import ru.otus.hw.repositories.RecipeRepository;
 import ru.otus.hw.util.MessageProvider;
 
 import java.util.ArrayList;
@@ -25,7 +26,6 @@ public class RecipeServiceImpl implements RecipeService {
     private final MessageProvider messageProvider;
     private final CommentRepository commentRepository;
     private final CommentService commentService;
-
     private final CategoryService categoryService;
     private final AuthorService authorService;
     private final InventoryService inventoryService;
@@ -61,163 +61,75 @@ public class RecipeServiceImpl implements RecipeService {
                                                List<String> ingredients, String description,
                                                List<Long> inventoryIds, boolean published) {
         try {
-            System.out.println("=== CREATING RECIPE ===");
-            System.out.println("Title: " + title);
-            System.out.println("Category ID: " + categoryId);
-            System.out.println("Author ID: " + authorId);
-            System.out.println("Ingredients: " + ingredients);
-            System.out.println("Description length: " + (description != null ? description.length() : "null"));
-            System.out.println("Inventory IDs: " + inventoryIds);
-            System.out.println("Published: " + published);
+            if (title == null || title.trim().isEmpty()) {
+                throw new IllegalArgumentException(messageProvider.getMessage("recipe.title.empty"));
+            }
+            if (categoryId == null) {
+                throw new IllegalArgumentException(messageProvider.getMessage("category.id.null"));
+            }
+            if (authorId == null) {
+                throw new IllegalArgumentException(messageProvider.getMessage("author.id.null"));
+            }
+            if (ingredients == null || ingredients.isEmpty()) {
+                throw new IllegalArgumentException(messageProvider.getMessage("recipe.ingredients.empty"));
+            }
+            if (description == null || description.trim().isEmpty()) {
+                throw new IllegalArgumentException(messageProvider.getMessage("recipe.description.empty"));
+            }
 
-            // ВАЖНО: Проверка и нормализация inventoryIds
             List<Long> processedInventoryIds = (inventoryIds != null) ?
                     inventoryIds.stream()
                             .filter(id -> id != null)
                             .collect(Collectors.toList()) :
                     new ArrayList<>();
 
-            System.out.println("Processed inventory IDs: " + processedInventoryIds);
-            System.out.println("Processed inventory IDs size: " + processedInventoryIds.size());
-
-            // Проверка входных данных
-            if (title == null || title.trim().isEmpty()) {
-                throw new IllegalArgumentException("Название рецепта не может быть пустым");
-            }
-            if (categoryId == null) {
-                throw new IllegalArgumentException("ID категории не может быть null");
-            }
-            if (authorId == null) {
-                throw new IllegalArgumentException("ID автора не может быть null");
-            }
-            if (ingredients == null || ingredients.isEmpty()) {
-                throw new IllegalArgumentException("Список ингредиентов не может быть пустым");
-            }
-            if (description == null || description.trim().isEmpty()) {
-                throw new IllegalArgumentException("Описание рецепта не может быть пустым");
-            }
-
-            // Проверка категории
             CategoryDto categoryDto = categoryService.getCategoryEntityForInternalUse(categoryId)
-                    .orElseThrow(() -> {
-                        System.err.println("Category not found: " + categoryId);
-                        return new EntityNotFoundException(
-                                messageProvider.getMessage("category.not_found", categoryId)
-                        );
-                    });
-            System.out.println("Category found: " + categoryDto.name());
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            messageProvider.getMessage("category.not_found", categoryId)
+                    ));
 
-            // Проверка автора
             AuthorDto authorDto = authorService.getAuthorForInternalUse(authorId)
-                    .orElseThrow(() -> {
-                        System.err.println("Author not found: " + authorId);
-                        return new EntityNotFoundException(
-                                messageProvider.getMessage("author.not_found", authorId)
-                        );
-                    });
-            System.out.println("Author found: " + authorDto.user().username());
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            messageProvider.getMessage("author.not_found", authorId)
+                    ));
 
             Category category = createCategoryEntityFromDto(categoryDto);
             Author author = createAuthorEntityFromDto(authorDto);
 
-            // Создаем рецепт
             Recipe recipe = new Recipe(title, category, author, description);
 
-            // Добавляем ингредиенты
             if (ingredients != null) {
-                // Фильтруем пустые ингредиенты
                 List<String> validIngredients = ingredients.stream()
                         .filter(ingredient -> ingredient != null && !ingredient.trim().isEmpty())
                         .collect(Collectors.toList());
 
                 if (validIngredients.isEmpty()) {
-                    throw new IllegalArgumentException("Добавьте хотя бы один непустой ингредиент");
+                    throw new IllegalArgumentException(messageProvider.getMessage("recipe.ingredients.empty"));
                 }
 
                 recipe.getIngredients().addAll(validIngredients);
-                System.out.println("Added " + validIngredients.size() + " valid ingredients");
             }
 
             recipe.setPublished(published);
 
-            // Обрабатываем инвентарь с улучшенной обработкой ошибок
             if (processedInventoryIds != null && !processedInventoryIds.isEmpty()) {
-                System.out.println("Processing inventory items: " + processedInventoryIds);
+                List<InventoryDto> inventoryDtos = inventoryService.getInventoryByIdsForInternalUse(processedInventoryIds);
 
-                try {
-                    List<InventoryDto> inventoryDtos = inventoryService.getInventoryByIdsForInternalUse(processedInventoryIds);
-                    System.out.println("Found " + inventoryDtos.size() + " inventory items");
-
-                    if (inventoryDtos.size() != processedInventoryIds.size()) {
-                        System.out.println("Warning: Some inventory items were not found. Expected: " +
-                                processedInventoryIds.size() + ", Found: " + inventoryDtos.size());
-
-                        // Найдем какие ID не были найдены
-                        List<Long> foundIds = inventoryDtos.stream()
-                                .map(InventoryDto::id)
-                                .collect(Collectors.toList());
-
-                        List<Long> missingIds = processedInventoryIds.stream()
-                                .filter(id -> !foundIds.contains(id))
-                                .collect(Collectors.toList());
-
-                        System.out.println("Missing inventory IDs: " + missingIds);
+                for (InventoryDto inventoryDto : inventoryDtos) {
+                    if (inventoryDto != null) {
+                        Inventory inventory = createInventoryEntityFromDto(inventoryDto);
+                        recipe.addInventoryItem(inventory);
                     }
-
-                    int addedCount = 0;
-                    for (InventoryDto inventoryDto : inventoryDtos) {
-                        if (inventoryDto != null) {
-                            try {
-                                Inventory inventory = createInventoryEntityFromDto(inventoryDto);
-                                recipe.addInventoryItem(inventory);
-                                addedCount++;
-                                System.out.println("Added inventory: " + inventory.getName() + " (ID: " + inventory.getId() + ")");
-                            } catch (Exception e) {
-                                System.err.println("Error adding inventory item " + inventoryDto.id() + ": " + e.getMessage());
-                                // Продолжаем с следующими элементами
-                            }
-                        }
-                    }
-                    System.out.println("Successfully added " + addedCount + " inventory items");
-
-                } catch (Exception e) {
-                    System.err.println("Error processing inventory items: " + e.getMessage());
-                    System.err.println("Continuing without inventory items");
-                    // Продолжаем создание рецепта без инвентаря
-                    // Можно выбросить исключение, если инвентарь обязателен:
-                    // throw new IllegalArgumentException("Ошибка при обработке инвентаря: " + e.getMessage());
                 }
-            } else {
-                System.out.println("No inventory items to add");
             }
 
-            System.out.println("Saving recipe to database...");
-            System.out.println("Recipe details before save:");
-            System.out.println("  - Title: " + recipe.getTitle());
-            System.out.println("  - Category: " + (recipe.getCategory() != null ? recipe.getCategory().getName() : "null"));
-            System.out.println("  - Author: " + (recipe.getAuthor() != null ? recipe.getAuthor().getUser().getUsername() : "null"));
-            System.out.println("  - Ingredients count: " + recipe.getIngredients().size());
-            System.out.println("  - Inventory items count: " + recipe.getInventoryItems().size());
-            System.out.println("  - Published: " + recipe.isPublished());
-
             Recipe savedRecipe = recipeRepository.save(recipe);
-            System.out.println("Recipe saved with ID: " + savedRecipe.getId());
-
-            System.out.println("Converting recipe to DTO...");
-            RecipeDto result = recipeConverter.toDto(savedRecipe);
-            System.out.println("Recipe conversion completed");
-            System.out.println("Final recipe DTO ID: " + result.id());
-
-            return result;
+            return recipeConverter.toDto(savedRecipe);
 
         } catch (IllegalArgumentException | EntityNotFoundException e) {
-            System.err.println("Validation error in createRecipeWithInventory: " + e.getMessage());
-            e.printStackTrace();
-            throw e; // Перебрасываем проверенные исключения
+            throw e;
         } catch (Exception e) {
-            System.err.println("Unexpected error in createRecipeWithInventory: " + e.getMessage());
-            e.printStackTrace();
-            throw new RuntimeException("Не удалось создать рецепт: " + e.getMessage(), e);
+            throw new RuntimeException(messageProvider.getMessage("recipe.create.error", e.getMessage()), e);
         }
     }
 
@@ -261,68 +173,53 @@ public class RecipeServiceImpl implements RecipeService {
     }
 
     private Category createCategoryEntityFromDto(CategoryDto categoryDto) {
-        try {
-            if (categoryDto == null) {
-                throw new IllegalArgumentException("CategoryDto cannot be null");
-            }
-
-            Category category = new Category();
-            category.setId(categoryDto.id());
-            category.setName(categoryDto.name());
-            category.setDescription(categoryDto.description());
-            return category;
-        } catch (Exception e) {
-            System.err.println("Error creating Category entity from DTO: " + e.getMessage());
-            throw new RuntimeException("Ошибка при создании категории", e);
+        if (categoryDto == null) {
+            throw new IllegalArgumentException(messageProvider.getMessage("category.dto.null"));
         }
+
+        Category category = new Category();
+        category.setId(categoryDto.id());
+        category.setName(categoryDto.name());
+        category.setDescription(categoryDto.description());
+        return category;
     }
 
     private Author createAuthorEntityFromDto(AuthorDto authorDto) {
-        try {
-            if (authorDto == null) {
-                throw new IllegalArgumentException("AuthorDto cannot be null");
-            }
-            if (authorDto.user() == null) {
-                throw new IllegalArgumentException("AuthorDto user cannot be null");
-            }
-
-            Author author = new Author();
-            author.setId(authorDto.id());
-
-            User user = new User();
-            user.setId(authorDto.user().id());
-            user.setUsername(authorDto.user().username());
-            user.setEmail(authorDto.user().email());
-            user.setEnabled(authorDto.user().enabled());
-
-            if (authorDto.user().roles() != null) {
-                user.setRoles(new HashSet<>(authorDto.user().roles()));
-            }
-
-            author.setUser(user);
-            author.setBio(authorDto.bio());
-            return author;
-        } catch (Exception e) {
-            System.err.println("Error creating Author entity from DTO: " + e.getMessage());
-            throw new RuntimeException("Ошибка при создании автора", e);
+        if (authorDto == null) {
+            throw new IllegalArgumentException(messageProvider.getMessage("author.dto.null"));
         }
+        if (authorDto.user() == null) {
+            throw new IllegalArgumentException(messageProvider.getMessage("author.user.null"));
+        }
+
+        Author author = new Author();
+        author.setId(authorDto.id());
+
+        User user = new User();
+        user.setId(authorDto.user().id());
+        user.setUsername(authorDto.user().username());
+        user.setEmail(authorDto.user().email());
+        user.setEnabled(authorDto.user().enabled());
+
+        if (authorDto.user().roles() != null) {
+            user.setRoles(new HashSet<>(authorDto.user().roles()));
+        }
+
+        author.setUser(user);
+        author.setBio(authorDto.bio());
+        return author;
     }
 
     private Inventory createInventoryEntityFromDto(InventoryDto inventoryDto) {
-        try {
-            if (inventoryDto == null) {
-                throw new IllegalArgumentException("InventoryDto cannot be null");
-            }
-
-            Inventory inventory = new Inventory();
-            inventory.setId(inventoryDto.id());
-            inventory.setName(inventoryDto.name());
-            inventory.setDescription(inventoryDto.description());
-            return inventory;
-        } catch (Exception e) {
-            System.err.println("Error creating Inventory entity from DTO: " + e.getMessage());
-            throw new RuntimeException("Ошибка при создании инвентаря", e);
+        if (inventoryDto == null) {
+            throw new IllegalArgumentException(messageProvider.getMessage("inventory.dto.null"));
         }
+
+        Inventory inventory = new Inventory();
+        inventory.setId(inventoryDto.id());
+        inventory.setName(inventoryDto.name());
+        inventory.setDescription(inventoryDto.description());
+        return inventory;
     }
 
     @Override
