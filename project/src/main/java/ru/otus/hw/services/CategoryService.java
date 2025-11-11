@@ -23,21 +23,18 @@ public interface CategoryService {
 
     boolean categoryExists(String name);
 
-    // Расширенные операции
     CategoryDto createCategoryWithDescription(String name, String description);
 
     CategoryDto updateCategory(Long id, String name, String description);
 
     void deleteCategory(Long id);
 
-    // Проверки использования
     boolean isCategoryUsedInRecipes(Long categoryId);
 
     long getRecipeCountByCategory(Long categoryId);
 
     long getPublishedRecipeCountByCategory(Long categoryId);
 
-    // Специальные запросы
     List<CategoryDto> getUnusedCategories();
 
     List<CategoryWithUsageDto> getCategoriesWithUsage();

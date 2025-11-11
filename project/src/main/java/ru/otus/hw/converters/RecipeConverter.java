@@ -102,12 +102,6 @@ public class RecipeConverter {
                 .collect(Collectors.toList());
     }
 
-    public List<RecipeDetailsDto> toDetailsDtoList(List<Recipe> recipes) {
-        return recipes.stream()
-                .map(this::toDetailsDto)
-                .collect(Collectors.toList());
-    }
-
     public RecipeDto toDtoFromDetails(RecipeWithDetailsDto details) {
         if (details == null || details.recipe() == null) return null;
 
@@ -137,7 +131,7 @@ public class RecipeConverter {
                 recipe.getCategory() != null ? recipe.getCategory().getName() : "Без категории",
                 recipe.getAuthor() != null && recipe.getAuthor().getUser() != null
                         ? recipe.getAuthor().getUser().getUsername() : "Неизвестный автор",
-                commentCount, // реальное количество из сервиса
+                commentCount,
                 recipe.isPublished(),
                 recipe.getCreatedAt(),
                 recipe.getUpdatedAt()

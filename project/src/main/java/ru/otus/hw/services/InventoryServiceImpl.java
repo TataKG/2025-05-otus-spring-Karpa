@@ -1,5 +1,6 @@
 package ru.otus.hw.services;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.converters.InventoryConverter;
@@ -18,41 +19,30 @@ import java.util.stream.StreamSupport;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class InventoryServiceImpl implements InventoryService {
 
     private final InventoryRepository inventoryRepository;
     private final InventoryConverter inventoryConverter;
     private final MessageProvider messageProvider;
 
-    public InventoryServiceImpl(InventoryRepository inventoryRepository,
-                                InventoryConverter inventoryConverter,
-                                MessageProvider messageProvider) {
-        this.inventoryRepository = inventoryRepository;
-        this.inventoryConverter = inventoryConverter;
-        this.messageProvider = messageProvider;
-    }
-
     @Override
     public InventoryDto createInventory(String name, String description) {
-        System.out.println("Creating inventory with name: '" + name + "', description: '" + description + "'");
-
         if (name == null || name.trim().isEmpty()) {
-            throw new ValidationException("Название инвентаря не может быть пустым");
+            throw new ValidationException(messageProvider.getMessage("inventory.name.required"));
         }
 
         String trimmedName = name.trim();
 
-        // Проверяем существование инвентаря
         Optional<Inventory> existingInventory = inventoryRepository.findByName(trimmedName);
-        System.out.println("Inventory exists check for '" + trimmedName + "': " + existingInventory.isPresent());
-
         if (existingInventory.isPresent()) {
-            throw new EntityAlreadyExistsException("Инвентарь с названием '" + trimmedName + "' уже существует");
+            throw new EntityAlreadyExistsException(
+                    messageProvider.getMessage("inventory.already.exists", trimmedName)
+            );
         }
 
         Inventory inventory = new Inventory(trimmedName, description != null ? description.trim() : null);
         Inventory savedInventory = inventoryRepository.save(inventory);
-        System.out.println("Inventory saved with ID: " + savedInventory.getId());
 
         return inventoryConverter.toDto(savedInventory);
     }
@@ -98,9 +88,7 @@ public class InventoryServiceImpl implements InventoryService {
                         messageProvider.getMessage("inventory.not_found", id)
                 ));
 
-        // Меняем только описание, название нельзя менять
         inventory.setDescription(description);
-
         Inventory updatedInventory = inventoryRepository.save(inventory);
         return inventoryConverter.toDto(updatedInventory);
     }
@@ -109,27 +97,15 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public boolean deleteInventory(Long id) {
         try {
-            // Временно: простое удаление для тестирования
-            System.out.println("🔍 Attempting to delete inventory ID: " + id);
-
-            // Проверяем использование через репозиторий
             boolean isUsed = isInventoryUsedInRecipes(id);
-            long recipeCount = getRecipeCountByInventory(id);
-
-            System.out.println("📊 Inventory " + id + " usage - isUsed: " + isUsed + ", recipeCount: " + recipeCount);
-
             if (isUsed) {
-                System.out.println("❌ Cannot delete inventory " + id + " - it's used in recipes");
                 return false;
             }
 
             inventoryRepository.deleteById(id);
-            System.out.println("✅ Successfully deleted inventory " + id);
             return true;
 
         } catch (Exception e) {
-            System.out.println("❌ Error deleting inventory " + id + ": " + e.getMessage());
-            e.printStackTrace();
             return false;
         }
     }
@@ -150,5 +126,4 @@ public class InventoryServiceImpl implements InventoryService {
                 .map(inventoryConverter::toDto)
                 .collect(Collectors.toList());
     }
-
 }

@@ -24,51 +24,67 @@ import java.util.stream.Collectors;
 public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
+
     private final UserRepository userRepository;
+
     private final RecipeRepository recipeRepository;
+
     private final CommentConverter commentConverter;
+
     private final MessageProvider messageProvider;
 
     @Override
     public CommentDto createComment(String content, Long userId, Long recipeId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageProvider.getMessage("user.not_found", userId)
+                ));
 
         Recipe recipe = recipeRepository.findById(recipeId)
-                .orElseThrow(() -> new EntityNotFoundException("Рецепт не найден"));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageProvider.getMessage("recipe.not_found", recipeId)
+                ));
 
         if (!recipe.isPublished()) {
-            throw new IllegalStateException("Нельзя комментировать неопубликованные рецепты");
+            throw new IllegalStateException(
+                    messageProvider.getMessage("comment.unpublished_recipe")
+            );
         }
 
         Comment comment = new Comment(content, user, recipe);
         Comment savedComment = commentRepository.save(comment);
-
         return commentConverter.toDto(savedComment, userId);
     }
 
     @Override
     public CommentDto updateComment(Long commentId, String content, Long currentUserId) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new EntityNotFoundException("Комментарий не найден"));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageProvider.getMessage("comment.not_found", commentId)
+                ));
 
         if (comment.getUser().getId() != currentUserId.longValue()) {
-            throw new SecurityException("Вы можете редактировать только свои комментарии");
+            throw new SecurityException(
+                    messageProvider.getMessage("comment.edit_denied")
+            );
         }
 
         comment.setContent(content);
         Comment updatedComment = commentRepository.save(comment);
-
         return commentConverter.toDto(updatedComment, currentUserId);
     }
 
     @Override
     public void deleteComment(Long commentId, Long currentUserId) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new EntityNotFoundException("Комментарий не найден"));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageProvider.getMessage("comment.not_found", commentId)
+                ));
 
         if (comment.getUser().getId() != currentUserId.longValue()) {
-            throw new SecurityException("Вы можете удалять только свои комментарии");
+            throw new SecurityException(
+                    messageProvider.getMessage("comment.delete_denied")
+            );
         }
 
         commentRepository.delete(comment);
@@ -96,7 +112,7 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public List<CommentDto> getCommentsByRecipe(Long recipeId, Long currentUserId) {
         return commentRepository.findByRecipeIdWithUser(recipeId).stream()
-                .map(comment -> commentConverter.toDto(comment, currentUserId)) // ✅ С правами
+                .map(comment -> commentConverter.toDto(comment, currentUserId))
                 .collect(Collectors.toList());
     }
 

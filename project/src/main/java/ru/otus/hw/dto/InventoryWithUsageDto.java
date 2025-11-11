@@ -9,4 +9,5 @@ public record InventoryWithUsageDto(
         LocalDateTime createdAt,
         boolean usedInRecipes,
         long recipeCount
-) {}
+) {
+}

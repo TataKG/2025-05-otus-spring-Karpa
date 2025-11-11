@@ -3,16 +3,20 @@ package ru.otus.hw.controllers.rest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import ru.otus.hw.dto.ApiResponse;
-import ru.otus.hw.dto.CategoryDto;
 import ru.otus.hw.dto.InventoryDto;
 import ru.otus.hw.exceptions.EntityAlreadyExistsException;
-import ru.otus.hw.services.CategoryService;
 import ru.otus.hw.services.InventoryService;
 import ru.otus.hw.util.MessageProvider;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -22,30 +26,6 @@ public class AdminInventoryController {
 
     private final InventoryService inventoryService;
     private final MessageProvider messageProvider;
-
-    @GetMapping("/test")
-    public ResponseEntity<ApiResponse<List<InventoryDto>>> testInventory() {
-        try {
-            System.out.println("🧪 TEST: Getting all inventory...");
-            List<InventoryDto> inventory = inventoryService.getAllInventory();
-            System.out.println("🧪 TEST: Found " + inventory.size() + " inventory items");
-
-            // Создаем тестовые данные если пусто
-            if (inventory.isEmpty()) {
-                System.out.println("🧪 TEST: No inventory found, returning test data");
-                return ResponseEntity.ok(ApiResponse.success(List.of(
-                        new InventoryDto(1L, "Test Inventory 1", "Test Description 1", LocalDateTime.now()),
-                        new InventoryDto(2L, "Test Inventory 2", "Test Description 2", LocalDateTime.now())
-                )));
-            }
-
-            return ResponseEntity.ok(ApiResponse.success(inventory));
-        } catch (Exception e) {
-            System.out.println("🧪 TEST: Error loading inventory: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Test error: " + e.getMessage()));
-        }
-    }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<InventoryDto>> updateInventory(
@@ -63,29 +43,25 @@ public class AdminInventoryController {
         try {
             boolean deleted = inventoryService.deleteInventory(id);
             if (deleted) {
-                return ResponseEntity.ok(ApiResponse.success(null, "Инвентарь успешно удален"));
+                return ResponseEntity.ok(ApiResponse.success(null, messageProvider.getMessage("inventory.deleted")));
             } else {
                 return ResponseEntity.badRequest()
-                        .body(ApiResponse.error("Невозможно удалить инвентарь, так как он используется в рецептах"));
+                        .body(ApiResponse.error(messageProvider.getMessage("inventory.delete_used_error")));
             }
         } catch (Exception e) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Ошибка при удалении инвентаря: " + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("inventory.delete_error") + e.getMessage()));
         }
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<InventoryDto>>> getAllInventory() {
         try {
-            System.out.println("Getting all inventory...");
             List<InventoryDto> inventory = inventoryService.getAllInventory();
-            System.out.println("Found " + inventory.size() + " inventory items");
             return ResponseEntity.ok(ApiResponse.success(inventory));
         } catch (Exception e) {
-            System.out.println("Error loading inventory: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Ошибка загрузки инвентаря: " + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("inventory.load_error") + e.getMessage()));
         }
     }
 
@@ -107,11 +83,9 @@ public class AdminInventoryController {
     @PostMapping
     public ResponseEntity<ApiResponse<InventoryDto>> createInventory(@RequestBody CreateInventoryRequest request) {
         try {
-            System.out.println("Creating inventory: " + request.name() + ", " + request.description());
-
             if (request.name() == null || request.name().trim().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(ApiResponse.error("Название инвентаря не может быть пустым"));
+                        .body(ApiResponse.error(messageProvider.getMessage("inventory.name_empty")));
             }
 
             InventoryDto inventoryDto = inventoryService.createInventory(
@@ -119,25 +93,24 @@ public class AdminInventoryController {
                     request.description() != null ? request.description().trim() : null
             );
 
-            System.out.println("Inventory created successfully: " + inventoryDto.id());
             return ResponseEntity.status(HttpStatus.CREATED).body(
-                    ApiResponse.success(inventoryDto, "Инвентарь успешно создан")
+                    ApiResponse.success(inventoryDto, messageProvider.getMessage("inventory.created"))
             );
         } catch (EntityAlreadyExistsException e) {
-            System.out.println("Inventory already exists: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            System.out.println("Error creating inventory: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Ошибка при создании инвентаря: " + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("inventory.create_error") + e.getMessage()));
         }
     }
 
-    // Добавляем record для запроса создания
-    public record CreateInventoryRequest(String name, String description) {}
+    public record CreateInventoryRequest(String name, String description) {
+    }
 
-    public record UpdateInventoryRequest(String description) {}
-    public record InventoryUsageResponse(boolean isUsed, long recipeCount) {}
+    public record UpdateInventoryRequest(String description) {
+    }
+
+    public record InventoryUsageResponse(boolean isUsed, long recipeCount) {
+    }
 }

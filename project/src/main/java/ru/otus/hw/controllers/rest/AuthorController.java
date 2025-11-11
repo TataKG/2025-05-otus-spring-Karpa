@@ -1,8 +1,14 @@
 package ru.otus.hw.controllers.rest;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import ru.otus.hw.dto.ApiResponse;
 import ru.otus.hw.dto.AuthorDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
@@ -13,58 +19,88 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/authors")
+@RequiredArgsConstructor
 public class AuthorController {
 
     private final AuthorService authorService;
     private final MessageProvider messageProvider;
 
-    public AuthorController(AuthorService authorService, MessageProvider messageProvider) {
-        this.authorService = authorService;
-        this.messageProvider = messageProvider;
-    }
-
     @PostMapping
     public ResponseEntity<ApiResponse<AuthorDto>> createAuthor(@RequestBody CreateAuthorRequest request) {
-        AuthorDto authorDto = authorService.createAuthor(request.userId(), request.bio());
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.success(authorDto, messageProvider.getMessage("author.created"))
-        );
+        try {
+            AuthorDto authorDto = authorService.createAuthor(request.userId(), request.bio());
+            return ResponseEntity.status(HttpStatus.CREATED).body(
+                    ApiResponse.success(authorDto, messageProvider.getMessage("author.created"))
+            );
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(messageProvider.getMessage("author.create_error") + e.getMessage()));
+        }
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<AuthorDto>> getAuthorById(@PathVariable Long id) {
-        AuthorDto authorDto = authorService.getAuthorById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        messageProvider.getMessage("author.not_found", id)
-                ));
-        return ResponseEntity.ok(ApiResponse.success(authorDto));
+        try {
+            AuthorDto authorDto = authorService.getAuthorById(id)
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            messageProvider.getMessage("author.not_found", id)
+                    ));
+            return ResponseEntity.ok(ApiResponse.success(authorDto));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(messageProvider.getMessage("author.load_error") + e.getMessage()));
+        }
     }
 
     @GetMapping("/user/{userId}")
     public ResponseEntity<ApiResponse<AuthorDto>> getAuthorByUserId(@PathVariable Long userId) {
-        AuthorDto authorDto = authorService.getAuthorByUserId(userId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        messageProvider.getMessage("author.not_found.user", userId)
-                ));
-        return ResponseEntity.ok(ApiResponse.success(authorDto));
+        try {
+            AuthorDto authorDto = authorService.getAuthorByUserId(userId)
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            messageProvider.getMessage("author.not_found.user", userId)
+                    ));
+            return ResponseEntity.ok(ApiResponse.success(authorDto));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(messageProvider.getMessage("author.load_error") + e.getMessage()));
+        }
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<AuthorDto>>> getAllAuthors() {
-        List<AuthorDto> authors = authorService.getAllAuthors();
-        return ResponseEntity.ok(ApiResponse.success(authors));
+        try {
+            List<AuthorDto> authors = authorService.getAllAuthors();
+            return ResponseEntity.ok(ApiResponse.success(authors));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(messageProvider.getMessage("authors.load_error") + e.getMessage()));
+        }
     }
 
     @PostMapping("/convert/{userId}")
     public ResponseEntity<ApiResponse<AuthorDto>> convertUserToAuthor(
             @PathVariable Long userId,
             @RequestBody ConvertToAuthorRequest request) {
-        AuthorDto authorDto = authorService.convertUserToAuthor(userId, request.bio());
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.success(authorDto, messageProvider.getMessage("author.created"))
-        );
+        try {
+            AuthorDto authorDto = authorService.convertUserToAuthor(userId, request.bio());
+            return ResponseEntity.status(HttpStatus.CREATED).body(
+                    ApiResponse.success(authorDto, messageProvider.getMessage("author.created"))
+            );
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(messageProvider.getMessage("author.convert_error") + e.getMessage()));
+        }
     }
 
-    public record CreateAuthorRequest(Long userId, String bio) {}
-    public record ConvertToAuthorRequest(String bio) {}
+    public record CreateAuthorRequest(Long userId, String bio) {
+    }
+
+    public record ConvertToAuthorRequest(String bio) {
+    }
 }

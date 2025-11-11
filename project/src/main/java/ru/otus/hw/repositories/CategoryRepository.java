@@ -16,18 +16,20 @@ import java.util.Optional;
 @Repository
 public interface CategoryRepository extends CrudRepository<Category, Long> {
 
-    // Базовые методы поиска
     Optional<Category> findByName(String name);
+
     Optional<Category> findByNameIgnoreCase(String name);
+
     List<Category> findByNameContainingIgnoreCase(String name);
+
     boolean existsByName(String name);
+
     List<Category> findAll();
 
-    // Методы с пагинацией
     Page<Category> findAll(Pageable pageable);
+
     Page<Category> findByNameContainingIgnoreCase(String name, Pageable pageable);
 
-    // Методы для загрузки связей
     @Query("SELECT c FROM Category c LEFT JOIN FETCH c.recipes WHERE c.id = :id")
     Optional<Category> findByIdWithRecipes(@Param("id") Long id);
 
@@ -41,7 +43,6 @@ public interface CategoryRepository extends CrudRepository<Category, Long> {
             "LEFT JOIN FETCH c.recipes")
     List<Category> findAllWithRecipes();
 
-    // Методы для опубликованных рецептов
     @Query("SELECT c FROM Category c " +
             "LEFT JOIN FETCH c.recipes r " +
             "WHERE r.published = true")
@@ -58,7 +59,6 @@ public interface CategoryRepository extends CrudRepository<Category, Long> {
         return findPopularCategories(PageRequest.of(0, limit));
     }
 
-    // Методы для подсчета
     @Query("SELECT COUNT(r) FROM Recipe r WHERE r.category.id = :categoryId AND r.published = true")
     long countPublishedRecipesByCategoryId(@Param("categoryId") Long categoryId);
 
@@ -72,7 +72,6 @@ public interface CategoryRepository extends CrudRepository<Category, Long> {
             "ORDER BY recipeCount DESC")
     List<Object[]> findAllWithPublishedRecipeCount();
 
-    // Методы для проверки использования
     @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END " +
             "FROM Recipe r WHERE r.category.id = :categoryId")
     boolean isUsedInRecipes(@Param("categoryId") Long categoryId);
@@ -81,7 +80,6 @@ public interface CategoryRepository extends CrudRepository<Category, Long> {
             "FROM Recipe r WHERE r.category.id = :categoryId AND r.published = true")
     boolean isUsedInPublishedRecipes(@Param("categoryId") Long categoryId);
 
-    // Методы для поиска по рецептам
     @Query("SELECT c FROM Category c " +
             "JOIN c.recipes r " +
             "WHERE r.author.id = :authorId")
@@ -92,8 +90,8 @@ public interface CategoryRepository extends CrudRepository<Category, Long> {
             "WHERE r.author.id = :authorId AND r.published = true")
     List<Category> findByAuthorIdAndPublished(@Param("authorId") Long authorId);
 
-    // Методы сортировки
     List<Category> findAllByOrderByNameAsc();
+
     List<Category> findAllByOrderByCreatedAtDesc();
 
     @Query("SELECT c FROM Category c " +
@@ -104,7 +102,6 @@ public interface CategoryRepository extends CrudRepository<Category, Long> {
         return findRecentCategories(PageRequest.of(0, limit));
     }
 
-    // Методы для статистики
     @Query("SELECT c.name, COUNT(r) as recipeCount " +
             "FROM Category c " +
             "LEFT JOIN c.recipes r " +
@@ -113,11 +110,9 @@ public interface CategoryRepository extends CrudRepository<Category, Long> {
             "ORDER BY recipeCount DESC")
     List<Object[]> getCategoryStats();
 
-    // Методы для массовых операций
     @Query("SELECT c FROM Category c WHERE c.name IN :names")
     List<Category> findByNames(@Param("names") List<String> names);
 
-    // Методы для неиспользуемых категорий
     @Query("SELECT c FROM Category c " +
             "LEFT JOIN c.recipes r " +
             "WHERE r IS NULL")

@@ -5,7 +5,6 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password:
-    initialization-mode: true
 
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
@@ -21,18 +20,14 @@ spring:
   sql:
     init:
       mode: always
-      platform: h2
-      schema-locations: classpath:schema.sql  # Только структура БД
+      schema-locations: classpath:schema.sql
       data-locations: classpath:test-data.sql
-      continue-on-error: true
 
   # H2 Console
   h2:
     console:
       enabled: true
       path: /h2-console
-      settings:
-        web-allow-others: true
 
   # Thymeleaf настройки
   thymeleaf:
@@ -42,21 +37,34 @@ spring:
     encoding: UTF-8
     cache: false
 
-  # MVC настройки
-  mvc:
-    static-path-pattern: /**
+  # MessageSource настройки
+  messages:
+    basename: messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
 
-  # Ресурсы
   web:
     resources:
       static-locations: classpath:/static/,classpath:/public/
 
-# Логирование для отладки
+  output:
+    ansi:
+      enabled: always
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true
+
+# Логирование
 logging:
   level:
     org.springframework.jdbc.datasource.init: DEBUG
-    org.springframework.boot.autoconfigure.jdbc: DEBUG
-    org.springframework.jdbc: TRACE
     org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     ru.otus.hw: DEBUG
+
+server:
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true

@@ -23,8 +23,11 @@ import java.util.stream.Collectors;
 public class AuthorServiceImpl implements AuthorService {
 
     private final AuthorRepository authorRepository;
+
     private final UserRepository userRepository;
+
     private final AuthorConverter authorConverter;
+
     private final MessageProvider messageProvider;
 
     @Override
@@ -59,32 +62,12 @@ public class AuthorServiceImpl implements AuthorService {
 
     @Override
     public Optional<AuthorDto> getAuthorByUsername(String username) {
-        System.out.println("Searching author by username: " + username); // Логирование
-
-        Optional<Author> authorOpt = authorRepository.findByUserUsername(username);
-
-        if (authorOpt.isPresent()) {
-            AuthorDto authorDto = authorConverter.toDto(authorOpt.get());
-            System.out.println("Found author: " + authorDto.id() + " for username: " + username);
-            return Optional.of(authorDto);
-        } else {
-            System.out.println("No author found for username: " + username);
-
-            // Дополнительная проверка - существует ли пользователь
-            Optional<User> userOpt = userRepository.findByUsername(username);
-            if (userOpt.isPresent()) {
-                System.out.println("But user exists: " + userOpt.get().getId());
-            } else {
-                System.out.println("User not found: " + username);
-            }
-
-            return Optional.empty();
-        }
+        return authorRepository.findByUserUsername(username)
+                .map(authorConverter::toDto);
     }
 
     @Override
     public List<AuthorDto> getAllAuthors() {
-        // Используем метод с загрузкой ролей
         return authorRepository.findAllWithUserAndRoles().stream()
                 .map(authorConverter::toDto)
                 .collect(Collectors.toList());

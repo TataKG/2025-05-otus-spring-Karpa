@@ -5,7 +5,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import ru.otus.hw.dto.ApiResponse;
 import ru.otus.hw.dto.UserDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
@@ -25,78 +29,78 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserDto>> register(@RequestBody RegisterRequest request) {
-        UserDto userDto = userService.createUser(
-                request.username(),
-                request.email(),
-                request.password(),
-                request.bio()  // Добавляем bio
-        );
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.success(userDto, messageProvider.getMessage("user.created"))
-        );
+        try {
+            UserDto userDto = userService.createUser(
+                    request.username(),
+                    request.email(),
+                    request.password(),
+                    request.bio()
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(
+                    ApiResponse.success(userDto, messageProvider.getMessage("user.created"))
+            );
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(messageProvider.getMessage("user.register_error") + e.getMessage()));
+        }
     }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<String>> login(@RequestBody LoginRequest request) {
-        return ResponseEntity.ok(ApiResponse.success("Login successful"));
+        return ResponseEntity.ok(ApiResponse.success(
+                messageProvider.getMessage("auth.login_success")));
     }
 
     @GetMapping("/user")
     public ResponseEntity<ApiResponse<AuthUserResponse>> getCurrentUser(Authentication authentication) {
-        System.out.println("=== AUTH USER ENDPOINT ===");
-        System.out.println("Authentication: " + authentication);
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.ok(ApiResponse.success(new AuthUserResponse(false, null, null, null, false)));
+            }
 
-        if (authentication == null || !authentication.isAuthenticated()) {
-            System.out.println("User not authenticated");
-            return ResponseEntity.ok(ApiResponse.success(new AuthUserResponse(false, null, null, null, false)));
+            String username = authentication.getName();
+
+            UserDto userDto = userService.getUserByUsername(username)
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            messageProvider.getMessage("user.not_found.username", username)
+                    ));
+
+            List<String> roles = authentication.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .map(authority -> authority.replace("ROLE_", ""))
+                    .collect(Collectors.toList());
+
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+
+            String bio = userService.getUserBio(username);
+
+            return ResponseEntity.ok(ApiResponse.success(
+                    new AuthUserResponse(true, userDto.username(), roles, bio, isAdmin)
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(messageProvider.getMessage("auth.user_info_error")));
         }
-
-        String username = authentication.getName();
-        System.out.println("Authenticated user: " + username);
-
-        UserDto userDto = userService.getUserByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        messageProvider.getMessage("user.not_found.username", username)
-                ));
-
-        // Получаем роли БЕЗ префикса ROLE_ для фронтенда
-        List<String> roles = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .map(authority -> authority.replace("ROLE_", "")) // Убираем ROLE_ для фронтенда
-                .collect(Collectors.toList());
-
-        System.out.println("User roles for frontend: " + roles);
-
-        // Проверяем, есть ли роль ADMIN на бэкенде (с префиксом ROLE_)
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
-
-        System.out.println("Is admin (backend check): " + isAdmin);
-
-        // Получаем информацию об авторе (биографию)
-        String bio = userService.getUserBio(username);
-
-        System.out.println("Returning user data: " + new AuthUserResponse(true, userDto.username(), roles, bio, isAdmin));
-
-        return ResponseEntity.ok(ApiResponse.success(
-                new AuthUserResponse(true, userDto.username(), roles, bio, isAdmin)
-        ));
     }
 
     public record RegisterRequest(
             String username,
             String email,
             String password,
-            String bio
-    ) {}
+            String bio) {
+    }
 
-    public record LoginRequest(String username, String password) {}
+    public record LoginRequest(
+            String username,
+            String password) {
+    }
 
     public record AuthUserResponse(
             boolean authenticated,
             String name,
             List<String> roles,
             String bio,
-            boolean isAdmin
-    ) {}
+            boolean isAdmin) {
+    }
 }

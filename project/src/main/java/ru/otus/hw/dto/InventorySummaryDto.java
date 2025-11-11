@@ -4,4 +4,5 @@ public record InventorySummaryDto(
         Long id,
         String name,
         String description
-) {}
+) {
+}

@@ -3,7 +3,14 @@ package ru.otus.hw.controllers.rest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import ru.otus.hw.dto.ApiResponse;
 import ru.otus.hw.dto.CategoryDto;
 import ru.otus.hw.exceptions.EntityAlreadyExistsException;
@@ -29,11 +36,9 @@ public class AdminCategoryController {
     @PostMapping
     public ResponseEntity<ApiResponse<CategoryDto>> createCategory(@RequestBody CreateCategoryRequest request) {
         try {
-            System.out.println("Creating category: " + request.name() + ", " + request.description());
-
             if (request.name() == null || request.name().trim().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(ApiResponse.error("Название категории не может быть пустым"));
+                        .body(ApiResponse.error(messageProvider.getMessage("category.name_empty")));
             }
 
             CategoryDto categoryDto = categoryService.createCategoryWithDescription(
@@ -41,19 +46,15 @@ public class AdminCategoryController {
                     request.description() != null ? request.description().trim() : null
             );
 
-            System.out.println("Category created successfully: " + categoryDto.id());
             return ResponseEntity.status(HttpStatus.CREATED).body(
                     ApiResponse.success(categoryDto, messageProvider.getMessage("category.created"))
             );
         } catch (EntityAlreadyExistsException e) {
-            System.out.println("Category already exists: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            System.out.println("Error creating category: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Ошибка при создании категории: " + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("category.create_error") + e.getMessage()));
         }
     }
 
@@ -90,7 +91,12 @@ public class AdminCategoryController {
         return ResponseEntity.ok(ApiResponse.success(usage));
     }
 
-    public record CreateCategoryRequest(String name, String description) {}
-    public record UpdateCategoryRequest(String name, String description) {}
-    public record CategoryUsageResponse(boolean isUsed, long recipeCount) {}
+    public record CreateCategoryRequest(String name, String description) {
+    }
+
+    public record UpdateCategoryRequest(String name, String description) {
+    }
+
+    public record CategoryUsageResponse(boolean isUsed, long recipeCount) {
+    }
 }

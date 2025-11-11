@@ -7,4 +7,5 @@ public record RecipeWithDetailsDto(
         List<InventoryDto> inventoryItems,
         List<CommentDto> comments,
         int totalCommentCount
-) {}
+) {
+}

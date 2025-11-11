@@ -15,7 +15,6 @@ public class CommentConverter {
 
     private final UserConverter userConverter;
 
-    // ✅ Базовый метод без информации о правах
     public CommentDto toDto(Comment comment) {
         return new CommentDto(
                 comment.getId(),
@@ -29,12 +28,10 @@ public class CommentConverter {
         );
     }
 
-    // ✅ Метод с учетом текущего пользователя
     public CommentDto toDto(Comment comment, Long currentUserId) {
         boolean isOwner = false;
 
         if (currentUserId != null && comment.getUser() != null) {
-            // ✅ Сравниваем примитивные long значения
             isOwner = comment.getUser().getId() == currentUserId.longValue();
         }
 
@@ -50,7 +47,6 @@ public class CommentConverter {
         );
     }
 
-    // ✅ Метод для списка комментариев
     public List<CommentDto> toDtoList(List<Comment> comments, Long currentUserId) {
         return comments.stream()
                 .map(comment -> toDto(comment, currentUserId))

@@ -4,10 +4,19 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-import ru.otus.hw.dto.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import ru.otus.hw.dto.ApiResponse;
+import ru.otus.hw.dto.CommentDto;
+import ru.otus.hw.dto.RecipeDto;
+import ru.otus.hw.dto.UserDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
-import ru.otus.hw.services.AuthorService;
 import ru.otus.hw.services.CommentService;
 import ru.otus.hw.services.RecipeService;
 import ru.otus.hw.services.UserService;
@@ -35,19 +44,23 @@ public class CommentController {
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(ApiResponse.error("Требуется авторизация для создания комментариев"));
+                        .body(ApiResponse.error(messageProvider.getMessage("auth.required")));
             }
 
             String username = authentication.getName();
             UserDto currentUser = userService.getUserByUsername(username)
-                    .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            messageProvider.getMessage("user.not_found")
+                    ));
 
             RecipeDto recipe = recipeService.getRecipeById(recipeId)
-                    .orElseThrow(() -> new EntityNotFoundException("Рецепт не найден"));
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            messageProvider.getMessage("recipe.not_found")
+                    ));
 
             if (!recipe.published()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("Нельзя комментировать неопубликованные рецепты"));
+                        .body(ApiResponse.error(messageProvider.getMessage("comment.unpublished_recipe")));
             }
 
             CommentDto commentDto = commentService.createComment(
@@ -64,7 +77,7 @@ public class CommentController {
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Ошибка при создании комментария: " + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("comment.create_error") + e.getMessage()));
         }
     }
 
@@ -91,7 +104,7 @@ public class CommentController {
             return ResponseEntity.ok(ApiResponse.success(comments));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Ошибка при загрузке комментариев: " + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("comment.load_error") + e.getMessage()));
         }
     }
 
@@ -105,12 +118,14 @@ public class CommentController {
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(ApiResponse.error("Требуется авторизация"));
+                        .body(ApiResponse.error(messageProvider.getMessage("auth.required")));
             }
 
             String username = authentication.getName();
             UserDto currentUser = userService.getUserByUsername(username)
-                    .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            messageProvider.getMessage("user.not_found")
+                    ));
 
             CommentDto updatedComment = commentService.updateComment(
                     commentId,
@@ -118,7 +133,7 @@ public class CommentController {
                     currentUser.id()
             );
 
-            return ResponseEntity.ok(ApiResponse.success(updatedComment, "Комментарий обновлен"));
+            return ResponseEntity.ok(ApiResponse.success(updatedComment, messageProvider.getMessage("comment.updated")));
 
         } catch (SecurityException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
@@ -128,7 +143,7 @@ public class CommentController {
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Ошибка при обновлении комментария: " + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("comment.update_error") + e.getMessage()));
         }
     }
 
@@ -141,12 +156,14 @@ public class CommentController {
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(ApiResponse.error("Требуется авторизация"));
+                        .body(ApiResponse.error(messageProvider.getMessage("auth.required")));
             }
 
             String username = authentication.getName();
             UserDto currentUser = userService.getUserByUsername(username)
-                    .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            messageProvider.getMessage("user.not_found")
+                    ));
 
             commentService.deleteComment(commentId, currentUser.id());
 
@@ -162,7 +179,7 @@ public class CommentController {
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Ошибка при удалении комментария: " + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("comment.delete_error") + e.getMessage()));
         }
     }
 

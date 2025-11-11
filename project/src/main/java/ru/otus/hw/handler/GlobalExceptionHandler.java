@@ -1,5 +1,6 @@
 package ru.otus.hw.handler;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -12,21 +13,14 @@ import ru.otus.hw.exceptions.ValidationException;
 import ru.otus.hw.util.MessageProvider;
 
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
 
     private final MessageProvider messageProvider;
 
-    public GlobalExceptionHandler(MessageProvider messageProvider) {
-        this.messageProvider = messageProvider;
-    }
-
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGenericException(Exception ex) {
-         String errorMessage = ex.getMessage();
-        if (errorMessage == null) {
-            errorMessage = "An unexpected error occurred";
-        }
-
+        String errorMessage = messageProvider.getMessage("error.unexpected");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error(errorMessage));
     }
@@ -45,7 +39,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ApiResponse<Object>> handleValidationException(ValidationException ex) {
-        System.out.println("Validation exception: " + ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(ex.getMessage()));
     }
@@ -56,4 +49,9 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<ApiResponse<Object>> handleSecurityException(SecurityException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
 }

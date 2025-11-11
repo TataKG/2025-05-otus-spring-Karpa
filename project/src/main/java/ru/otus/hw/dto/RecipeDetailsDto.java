@@ -15,4 +15,5 @@ public record RecipeDetailsDto(
         boolean published,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
-) {}
+) {
+}

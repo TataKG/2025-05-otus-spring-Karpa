@@ -1,17 +1,14 @@
 package ru.otus.hw.controllers.rest;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import ru.otus.hw.dto.ApiResponse;
 import ru.otus.hw.dto.AuthorDto;
-import ru.otus.hw.dto.CategoryDto;
-import ru.otus.hw.exceptions.EntityAlreadyExistsException;
 import ru.otus.hw.services.AuthorService;
-import ru.otus.hw.services.CategoryService;
 import ru.otus.hw.util.MessageProvider;
-import ru.otus.hw.dto.AuthorDto;
 
 import java.util.List;
 
@@ -21,6 +18,7 @@ import java.util.List;
 public class AdminAuthorController {
 
     private final AuthorService authorService;
+    private final MessageProvider messageProvider;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<AuthorDto>>> getAuthors() {
@@ -29,7 +27,7 @@ public class AdminAuthorController {
             return ResponseEntity.ok(ApiResponse.success(authors));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Ошибка при загрузке авторов: " + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("authors.load_error") + e.getMessage()));
         }
     }
 }

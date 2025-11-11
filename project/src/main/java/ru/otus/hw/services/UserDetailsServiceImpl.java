@@ -19,8 +19,8 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
-
     private final UserRepository userRepository;
+
     private final MessageProvider messageProvider;
 
     @Override
@@ -30,20 +30,9 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                         messageProvider.getMessage("user.not_found.username", username)
                 ));
 
-        System.out.println("=== LOADING USER DETAILS ===");
-        System.out.println("Username: " + username);
-        System.out.println("User roles from DB: " + user.getRoles());
-
-        // ДОБАВЛЯЕМ ПРЕФИКС "ROLE_" для Spring Security
         List<SimpleGrantedAuthority> authorities = user.getRoles().stream()
-                .map(role -> {
-                    String authority = "ROLE_" + role;
-                    System.out.println("Converting role: " + role + " -> " + authority);
-                    return new SimpleGrantedAuthority(authority);
-                })
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                 .collect(Collectors.toList());
-
-        System.out.println("Granted authorities for Spring Security: " + authorities);
 
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
