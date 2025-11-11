@@ -81,26 +81,29 @@
                     <h5>🔧 <span th:text="#{recipe.inventory}">Необходимый инвентарь</span></h5>
                     <p class="text-muted mb-3" th:text="#{recipe.inventory.description}">Выберите кухонный инвентарь из справочника</p>
 
-                    <!-- Добавление нового инвентаря -->
+                    <!-- Поиск и добавление инвентаря -->
                     <div class="mb-3">
-                        <label for="inventorySelect" class="form-label fw-bold">📋 Выберите инвентарь</label>
+                        <label for="inventorySearch" class="form-label fw-bold">🔍 Поиск инвентаря</label>
                         <div class="input-group">
-                            <select class="form-select" id="inventorySelect">
-                                <option value="">-- Выберите инвентарь --</option>
-                                <!-- Опции будут заполнены через JavaScript -->
-                            </select>
+                            <input type="text" class="form-control" id="inventorySearch"
+                                   placeholder="Введите название инвентаря...">
                             <button type="button" class="btn btn-outline-success" id="addInventoryBtn">
-                                ➕ Добавить
+                                ➕ <span th:text="#{action.add}">Добавить</span>
                             </button>
                         </div>
-                        <div class="form-text">Выберите инвентарь из списка и нажмите "Добавить"</div>
+                        <select class="form-select mt-2" id="inventorySelect" size="5" style="max-height: 200px; overflow-y: auto;">
+                            <option value="" disabled selected>Начните вводить для поиска инвентаря</option>
+                            <!-- Результаты поиска будут появляться здесь -->
+                        </select>
+                        <div class="form-text">
+                            Введите название инвентаря, выберите из списка и нажмите "Добавить"
+                        </div>
                     </div>
 
                     <!-- Выбранный инвентарь -->
                     <div class="mb-3">
                         <label class="form-label fw-bold">✅ Выбранный инвентарь</label>
                         <div id="inventoryContainer" class="border rounded p-3 bg-light">
-                            <!-- Инвентарь будет добавляться динамически -->
                             <div class="text-muted" id="noInventorySelected">Инвентарь не выбран</div>
                         </div>
                     </div>

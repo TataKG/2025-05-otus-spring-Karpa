@@ -2,7 +2,6 @@ package ru.otus.hw.converters;
 
 import org.springframework.stereotype.Component;
 import ru.otus.hw.dto.InventoryDto;
-import ru.otus.hw.dto.InventorySummaryDto;
 import ru.otus.hw.dto.InventoryWithUsageDto;
 import ru.otus.hw.models.Inventory;
 
@@ -37,14 +36,6 @@ public class InventoryConverter {
                 inventory.getCreatedAt(),
                 recipeCount > 0,
                 recipeCount
-        );
-    }
-
-    public InventorySummaryDto toSummaryDto(Inventory inventory) {
-        return new InventorySummaryDto(
-                inventory.getId(),
-                inventory.getName(),
-                inventory.getDescription()
         );
     }
 }

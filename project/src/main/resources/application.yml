@@ -46,6 +46,13 @@ spring:
   web:
     resources:
       static-locations: classpath:/static/,classpath:/public/
+      chain:
+        strategy:
+          content:
+            enabled: true
+            paths: /**
+
+
 
   output:
     ansi:
@@ -55,13 +62,19 @@ spring:
       enabled: true
     livereload:
       enabled: true
-
+  mvc:
+    favicon:
+      enabled: false
 # Логирование
 logging:
   level:
     org.springframework.jdbc.datasource.init: DEBUG
     org.hibernate.SQL: DEBUG
-    ru.otus.hw: DEBUG
+    org:
+      springframework:
+        security: DEBUG
+    org.springframework.web: DEBUG
+    ru.otus.hw: TRACE
 
 server:
   servlet:

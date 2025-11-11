@@ -46,35 +46,17 @@ public class UserServiceImpl implements UserService {
 
         if (isFirstUser) {
             user.addRole("ADMIN");
-            user.addRole("USER");
-        } else {
-            user.addRole("USER");
         }
 
         User savedUser = userRepository.save(user);
-        createAuthorForUser(savedUser, bio);
+
+        authorService.createAuthorForUser(savedUser.getId(), bio);
 
         return userConverter.toDto(savedUser);
     }
 
     private boolean isFirstUserInSystem() {
-        Long userCount = userRepository.countAllUsers();
-        return userCount == 0;
-    }
-
-    private void createAuthorForUser(User user, String bio) {
-        try {
-            String authorBio = (bio != null && !bio.trim().isEmpty()) ? bio.trim() : "Автор кулинарных рецептов";
-            authorService.createAuthor(user.getId(), authorBio);
-        } catch (EntityAlreadyExistsException e) {
-        }
-    }
-
-    @Override
-    public String getUserBio(String username) {
-        return authorService.getAuthorByUsername(username)
-                .map(AuthorDto::bio)
-                .orElse(null);
+        return userRepository.count() == 0;
     }
 
     @Override
@@ -106,7 +88,10 @@ public class UserServiceImpl implements UserService {
         return userRepository.existsByEmail(email);
     }
 
-    public boolean validatePassword(String rawPassword, String encodedPassword) {
-        return passwordEncoder.matches(rawPassword, encodedPassword);
+    @Override
+    public String getUserBio(String username) {
+        return authorService.getAuthorByUsername(username)
+                .map(AuthorDto::bio)
+                .orElse(null);
     }
 }

@@ -10,29 +10,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-@Setter
-@Getter
-@ToString
-@AllArgsConstructor
 @NoArgsConstructor
 @Entity
 @Table(name = "recipes")
 public class Recipe {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
     @Column(nullable = false)
     private String title;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
-    @ToString.Exclude
     private Category category;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
-    @ToString.Exclude
     private Author author;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -41,7 +35,6 @@ public class Recipe {
             joinColumns = @JoinColumn(name = "recipe_id"),
             inverseJoinColumns = @JoinColumn(name = "inventory_id")
     )
-    @ToString.Exclude
     private List<Inventory> inventoryItems = new ArrayList<>();
 
     @ElementCollection(fetch = FetchType.LAZY)
@@ -63,7 +56,6 @@ public class Recipe {
             orphanRemoval = true,
             fetch = FetchType.LAZY
     )
-    @ToString.Exclude
     private List<Comment> comments = new ArrayList<>();
 
     @Column(nullable = false)
@@ -82,12 +74,7 @@ public class Recipe {
         this.category = category;
         this.author = author;
         this.description = description;
-        this.inventoryItems = new ArrayList<>();
-        this.ingredients = new ArrayList<>();
-        this.comments = new ArrayList<>();
         this.published = false;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
     }
 
     public Recipe(String title, Category category, Author author, List<String> ingredients, String description) {
@@ -96,21 +83,15 @@ public class Recipe {
         this.author = author;
         this.ingredients = ingredients != null ? ingredients : new ArrayList<>();
         this.description = description;
-        this.inventoryItems = new ArrayList<>();
-        this.comments = new ArrayList<>();
         this.published = false;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
     }
 
     public void addInventoryItem(Inventory inventory) {
         this.inventoryItems.add(inventory);
-        inventory.getRecipes().add(this);
     }
 
     public void removeInventoryItem(Inventory inventory) {
         this.inventoryItems.remove(inventory);
-        inventory.getRecipes().remove(this);
     }
 
     public void addIngredient(String ingredient) {
@@ -125,10 +106,6 @@ public class Recipe {
     public void removeComment(Comment comment) {
         this.comments.remove(comment);
         comment.setRecipe(null);
-    }
-
-    public boolean isPublished() {
-        return published;
     }
 
     public void publish() {

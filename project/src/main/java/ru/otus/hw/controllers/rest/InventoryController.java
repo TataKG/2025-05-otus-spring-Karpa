@@ -19,9 +19,9 @@ import ru.otus.hw.util.MessageProvider;
 
 import java.util.List;
 
-@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/inventories")
+@RequiredArgsConstructor
 public class InventoryController {
 
     private final InventoryService inventoryService;
@@ -30,16 +30,19 @@ public class InventoryController {
     @PostMapping
     public ResponseEntity<ApiResponse<InventoryDto>> createInventory(@RequestBody CreateInventoryRequest request) {
         try {
-            InventoryDto inventoryDto = inventoryService.createInventory(request.name(), request.description());
+            InventoryDto inventoryDto = inventoryService.createInventory(
+                    request.name(),
+                    request.description()
+            );
             return ResponseEntity.status(HttpStatus.CREATED).body(
                     ApiResponse.success(inventoryDto, messageProvider.getMessage("inventory.created"))
             );
         } catch (EntityAlreadyExistsException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(messageProvider.getMessage("inventory.create_error")));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
         }
     }
 
@@ -54,9 +57,6 @@ public class InventoryController {
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(messageProvider.getMessage("inventory.load_error")));
         }
     }
 

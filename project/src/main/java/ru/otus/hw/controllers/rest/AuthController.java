@@ -11,12 +11,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.otus.hw.dto.ApiResponse;
+import ru.otus.hw.dto.AuthorDto;
 import ru.otus.hw.dto.UserDto;
+import ru.otus.hw.exceptions.EntityAlreadyExistsException;
 import ru.otus.hw.exceptions.EntityNotFoundException;
+import ru.otus.hw.services.AuthorService;
 import ru.otus.hw.services.UserService;
 import ru.otus.hw.util.MessageProvider;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -25,7 +29,51 @@ import java.util.stream.Collectors;
 public class AuthController {
 
     private final UserService userService;
+    private final AuthorService authorService;
     private final MessageProvider messageProvider;
+
+    @GetMapping("/user")
+    public ResponseEntity<ApiResponse<AuthUserResponse>> getCurrentUser(Authentication authentication) {
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.ok(ApiResponse.success(new AuthUserResponse(false, null, null, null, false)));
+            }
+
+            String username = authentication.getName();
+
+            Optional<AuthorDto> authorOpt = authorService.getAuthorByUsername(username);
+
+            if (authorOpt.isEmpty()) {
+                return ResponseEntity.ok(ApiResponse.success(
+                        new AuthUserResponse(true, username, List.of("USER"), null, false)
+                ));
+            }
+
+            AuthorDto author = authorOpt.get();
+            List<String> roles = authentication.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .map(authority -> authority.replace("ROLE_", ""))
+                    .collect(Collectors.toList());
+
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+
+            return ResponseEntity.ok(ApiResponse.success(
+                    new AuthUserResponse(true, author.user().username(), roles, author.bio(), isAdmin)
+            ));
+        } catch (Exception e) {
+            System.err.println("Error in getCurrentUser: " + e.getMessage());
+            e.printStackTrace();
+
+            if (authentication != null && authentication.isAuthenticated()) {
+                return ResponseEntity.ok(ApiResponse.success(
+                        new AuthUserResponse(true, authentication.getName(), List.of("USER"), null, false)
+                ));
+            }
+
+            return ResponseEntity.ok(ApiResponse.success(new AuthUserResponse(false, null, null, null, false)));
+        }
+    }
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserDto>> register(@RequestBody RegisterRequest request) {
@@ -39,9 +87,12 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.CREATED).body(
                     ApiResponse.success(userDto, messageProvider.getMessage("user.created"))
             );
+        } catch (EntityAlreadyExistsException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(messageProvider.getMessage("user.register_error") + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("user.register_error")));
         }
     }
 
@@ -49,39 +100,6 @@ public class AuthController {
     public ResponseEntity<ApiResponse<String>> login(@RequestBody LoginRequest request) {
         return ResponseEntity.ok(ApiResponse.success(
                 messageProvider.getMessage("auth.login_success")));
-    }
-
-    @GetMapping("/user")
-    public ResponseEntity<ApiResponse<AuthUserResponse>> getCurrentUser(Authentication authentication) {
-        try {
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.ok(ApiResponse.success(new AuthUserResponse(false, null, null, null, false)));
-            }
-
-            String username = authentication.getName();
-
-            UserDto userDto = userService.getUserByUsername(username)
-                    .orElseThrow(() -> new EntityNotFoundException(
-                            messageProvider.getMessage("user.not_found.username", username)
-                    ));
-
-            List<String> roles = authentication.getAuthorities().stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .map(authority -> authority.replace("ROLE_", ""))
-                    .collect(Collectors.toList());
-
-            boolean isAdmin = authentication.getAuthorities().stream()
-                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
-
-            String bio = userService.getUserBio(username);
-
-            return ResponseEntity.ok(ApiResponse.success(
-                    new AuthUserResponse(true, userDto.username(), roles, bio, isAdmin)
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(messageProvider.getMessage("auth.user_info_error")));
-        }
     }
 
     public record RegisterRequest(

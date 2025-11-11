@@ -1,5 +1,6 @@
 package ru.otus.hw.controllers.rest;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.otus.hw.dto.ApiResponse;
 import ru.otus.hw.dto.UserDto;
+import ru.otus.hw.exceptions.EntityAlreadyExistsException;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.services.UserService;
 import ru.otus.hw.util.MessageProvider;
@@ -18,15 +20,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
+@RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
     private final MessageProvider messageProvider;
-
-    public UserController(UserService userService, MessageProvider messageProvider) {
-        this.userService = userService;
-        this.messageProvider = messageProvider;
-    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<UserDto>> createUser(@RequestBody CreateUserRequest request) {
@@ -40,6 +38,9 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.CREATED).body(
                     ApiResponse.success(userDto, messageProvider.getMessage("user.created"))
             );
+        } catch (EntityAlreadyExistsException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error(messageProvider.getMessage("user.create.failed")));

@@ -19,10 +19,10 @@ import java.util.List;
 public class Author {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     private User user;
 
     @Column(columnDefinition = "TEXT")
@@ -33,7 +33,6 @@ public class Author {
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "author", cascade = CascadeType.ALL)
-    @ToString.Exclude
     private List<Recipe> recipes = new ArrayList<>();
 
     public Author(User user, String bio) {

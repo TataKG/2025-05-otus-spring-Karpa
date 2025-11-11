@@ -1,5 +1,6 @@
 package ru.otus.hw.security;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,12 +12,17 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-    private final UserDetailsService userDetailsService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -24,59 +30,73 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", configuration);
+        return source;
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, UserDetailsService userDetailsService) throws Exception {
         http
+                // CORS конфигурация
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                // CSRF конфигурация - отключаем для API, оставляем для форм
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/h2-console/**", "/api/**")
+                                .ignoringRequestMatchers("/h2-console/**", "/api/**")
+                        // Убрали CookieCsrfTokenRepository для API endpoints
                 )
-                .headers(headers -> headers
-                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
-                )
+
+                // Headers для H2 console
+                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+
+                // Авторизация запросов
                 .authorizeHttpRequests(authorize -> authorize
-                        // Статические ресурсы и публичные страницы
-                        .requestMatchers("/", "/index.html", "/login", "/logout", "/register", "/error").permitAll()
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
+                        // Public endpoints - расширенный список
+                        .requestMatchers(
+                                "/", "/index.html", "/login", "/logout", "/register", "/error",
+                                "/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.ico",
+                                "/create-form-data", "/edit-form-data/**"  // Добавили пути формы
+                        ).permitAll()
 
-                        // API endpoints - разрешаем регистрацию и аутентификацию
+                        // API auth endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-
-                        // API пользователей - GET доступен всем для проверки существования
                         .requestMatchers(HttpMethod.GET, "/api/users/exists/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/users").hasRole("ADMIN")
 
-                        // Остальные API настройки...
-                        .requestMatchers("/api/recipes", "/api/recipes/published", "/api/recipes/category/**").permitAll()
-                        .requestMatchers("/api/recipes/{id}", "/api/recipes/{id}/detailed").permitAll()
-                        .requestMatchers("/api/recipes/search/**", "/api/recipes/filter").permitAll()
-                        .requestMatchers("/api/categories/**").permitAll()
+                        // Recipes - READ operations are public
+                        .requestMatchers(HttpMethod.GET, "/api/recipes/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/recipes/*/comments/**").permitAll()
 
-                        // Комментарии
-                        .requestMatchers(HttpMethod.GET, "/api/recipes/*/comments", "/api/recipes/*/comments/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/recipes/*/comments").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/recipes/*/comments/**").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/recipes/*/comments/**").authenticated()
+                        // Recipes - WRITE operations require auth
+                        .requestMatchers(HttpMethod.POST, "/api/recipes/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/recipes/**").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/recipes/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/recipes/**").authenticated()
 
-                        // API endpoints требующие аутентификации
-                        .requestMatchers("/api/recipes/my-recipes").authenticated()
-                        .requestMatchers("/api/recipes/create-form-data", "/api/recipes/edit-form-data/**").authenticated()
-                        .requestMatchers("/api/recipes/**").authenticated()
-                        .requestMatchers("/api/comments/**").authenticated()
+                        // Categories - public read access
+                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
 
-                        // Админские endpoints - бэкенд проверяет роль
-                        .requestMatchers("/api/admin/**", "/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/authors/**", "/api/users/**", "/api/inventory/**").hasRole("ADMIN")
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        // Inventory - public read access
+                        .requestMatchers(HttpMethod.GET, "/api/inventory/**").permitAll()
 
-                        // H2 console - только для админов
-                        .requestMatchers("/h2-console/**").hasRole("ADMIN")
+                        // Admin endpoints
+                        .requestMatchers("/api/admin/**", "/admin/**", "/h2-console/**").hasRole("ADMIN")
 
-                        // Web страницы
-                        .requestMatchers("/my-recipes").authenticated()
-                        .requestMatchers("/recipe/create", "/recipe/edit/**").authenticated()
-                        .requestMatchers("/recipe/**").permitAll()
+                        // Authenticated user endpoints
+                        .requestMatchers("/my-recipes", "/recipe/create", "/recipe/edit/**").authenticated()
 
                         .anyRequest().authenticated()
                 )
+
+                // Form login
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
@@ -84,6 +104,8 @@ public class SecurityConfig {
                         .failureUrl("/login?error=true")
                         .permitAll()
                 )
+
+                // Logout
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/login?logout=true")
@@ -91,7 +113,33 @@ public class SecurityConfig {
                         .deleteCookies("JSESSIONID")
                         .permitAll()
                 )
-                .userDetailsService(userDetailsService);
+
+                // User details service
+                .userDetailsService(userDetailsService)
+
+                // Exception handling
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            // Для API запросов возвращаем 401, для веб - редирект на логин
+                            if (request.getRequestURI().startsWith("/api/")) {
+                                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                                response.setContentType("application/json");
+                                response.getWriter().write("{\"error\":\"Unauthorized\"}");
+                            } else {
+                                response.sendRedirect("/login");
+                            }
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            // Для API запросов возвращаем 403, для веб - страница ошибки
+                            if (request.getRequestURI().startsWith("/api/")) {
+                                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                                response.setContentType("application/json");
+                                response.getWriter().write("{\"error\":\"Forbidden\"}");
+                            } else {
+                                response.sendRedirect("/error?access_denied");
+                            }
+                        })
+                );
 
         return http.build();
     }

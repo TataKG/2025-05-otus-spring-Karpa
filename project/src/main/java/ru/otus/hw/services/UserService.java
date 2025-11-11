@@ -8,10 +8,6 @@ import java.util.Optional;
 public interface UserService {
     UserDto createUser(String username, String email, String password, String bio);
 
-    default UserDto createUser(String username, String email, String password) {
-        return createUser(username, email, password, null);
-    }
-
     Optional<UserDto> getUserById(Long id);
 
     Optional<UserDto> getUserByUsername(String username);

@@ -1,4 +1,4 @@
-// admin-inventory.js - полностью переписанная версия
+// admin-inventory-fixed.js - полностью автономная версия
 (function() {
     'use strict';
 
@@ -9,7 +9,191 @@
     }
     window.InventoryAdminAppInitialized = true;
 
-    class InventoryAdminApp extends BaseApiClient {
+    // ВРЕМЕННАЯ КОПИЯ BaseApiClient прямо в этом файле
+    class TemporaryBaseApiClient {
+        constructor(baseUrl = '/api') {
+            this.baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+            this.pendingRequests = new Map();
+        }
+
+        async makeRequest(fullUrl, options) {
+            try {
+                const response = await fetch(fullUrl, options);
+                console.log(`📨 API Response status: ${response.status} ${response.statusText}`);
+
+                if (!response.ok) {
+                    let errorMessage = `HTTP error! status: ${response.status}`;
+                    try {
+                        const errorResult = await response.json();
+                        errorMessage = errorResult.message || errorMessage;
+                    } catch (e) {
+                        // Ignore JSON parsing error
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                // Handle 204 No Content
+                if (response.status === 204) {
+                    return { success: true };
+                }
+
+                const data = await response.json();
+                console.log(`✅ API Response data:`, data);
+                return data;
+            } catch (error) {
+                console.error(`💥 Fetch error for ${fullUrl}:`, error);
+                throw error;
+            }
+        }
+
+        async request(url, options = {}) {
+            const fullUrl = url.startsWith('/') ? `${this.baseUrl}${url}` : `${this.baseUrl}/${url}`;
+
+            // Защита от дублирующихся запросов
+            const requestKey = `${options.method || 'GET'}:${fullUrl}`;
+            if (this.pendingRequests.has(requestKey)) {
+                console.log(`⚠️ Skipping duplicate request: ${requestKey}`);
+                return this.pendingRequests.get(requestKey);
+            }
+
+            console.log(`🔗 API ${options.method || 'GET'}: ${fullUrl}`);
+
+            const defaultOptions = {
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                }
+            };
+
+            try {
+                const requestPromise = this.makeRequest(fullUrl, { ...defaultOptions, ...options });
+                this.pendingRequests.set(requestKey, requestPromise);
+
+                const response = await requestPromise;
+                return response;
+            } catch (error) {
+                // Преобразуем ошибку для единообразной обработки
+                if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                    throw new Error('Ошибка сети. Проверьте подключение к интернету.');
+                }
+                throw error;
+            } finally {
+                this.pendingRequests.delete(requestKey);
+            }
+        }
+
+        async get(url) {
+            return this.request(url, { method: 'GET' });
+        }
+
+        async post(url, data) {
+            return this.request(url, {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+        }
+
+        async put(url, data) {
+            return this.request(url, {
+                method: 'PUT',
+                body: JSON.stringify(data)
+            });
+        }
+
+        async delete(url) {
+            return this.request(url, { method: 'DELETE' });
+        }
+    }
+
+    // ВРЕМЕННАЯ КОПИЯ CommonUtils
+    const TemporaryCommonUtils = {
+        escapeHtml(unsafe) {
+            if (unsafe === null || unsafe === undefined) return '';
+            return unsafe
+                .toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        },
+
+        formatDateShort(dateString) {
+            if (!dateString) return 'Не указана';
+            try {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                    return 'Неверная дата';
+                }
+                return date.toLocaleDateString('ru-RU', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            } catch (error) {
+                console.error('Error formatting date:', error);
+                return 'Ошибка даты';
+            }
+        },
+
+        showToast(message, type = 'success') {
+            const toastElement = type === 'success'
+                ? document.getElementById('successToast')
+                : document.getElementById('errorToast');
+
+            const toastMessage = type === 'success'
+                ? document.getElementById('successToastMessage')
+                : document.getElementById('errorToastMessage');
+
+            if (toastMessage && toastElement) {
+                toastMessage.textContent = message;
+                try {
+                    const toast = new bootstrap.Toast(toastElement);
+                    toast.show();
+                } catch (error) {
+                    console.error('Error showing toast:', error);
+                }
+            }
+        },
+
+        showLoadingState(containerId, message = 'Загрузка...', columns = 5) {
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.innerHTML = `
+                    <tr>
+                        <td colspan="${columns}" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Загрузка...</span>
+                            </div>
+                            <p class="mt-2 text-muted">${message}</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        },
+
+        showError(containerId, message, columns = 5) {
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.innerHTML = `
+                    <tr>
+                        <td colspan="${columns}" class="text-center py-4">
+                            <div class="text-danger mb-2">❌</div>
+                            <p class="text-muted">${message}</p>
+                            <button class="btn btn-sm btn-outline-primary" onclick="location.reload()">
+                                Повторить
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+    };
+
+    // ОСНОВНОЙ КЛАСС ПРИЛОЖЕНИЯ
+    class InventoryAdminApp extends TemporaryBaseApiClient {
         constructor() {
             super('/api/admin');
             this.inventories = [];
@@ -52,12 +236,6 @@
             console.log('🚀 InventoryAdminApp initialization started');
 
             // Проверяем зависимости
-            if (typeof CommonUtils === 'undefined') {
-                console.error('❌ CommonUtils not available');
-                this.showError('CommonUtils not loaded');
-                return;
-            }
-
             if (typeof bootstrap === 'undefined') {
                 console.error('❌ Bootstrap not available');
                 this.showError('Bootstrap not loaded');
@@ -79,7 +257,7 @@
         async loadInventories() {
             try {
                 console.log('📥 Loading inventories...');
-                CommonUtils.showLoadingState('inventoriesTableBody', this.translations.loading, 6);
+                TemporaryCommonUtils.showLoadingState('inventoriesTableBody', this.translations.loading, 6);
 
                 const response = await this.get('/inventory');
                 console.log('✅ Inventories API response:', response);
@@ -91,11 +269,11 @@
                 } else {
                     const errorMsg = response?.message || this.translations.errorLoad;
                     console.error('❌ API returned error:', errorMsg);
-                    CommonUtils.showError('inventoriesTableBody', errorMsg, 6);
+                    TemporaryCommonUtils.showError('inventoriesTableBody', errorMsg, 6);
                 }
             } catch (error) {
                 console.error('💥 Error loading inventories:', error);
-                CommonUtils.showError('inventoriesTableBody', this.translations.errorLoad, 6);
+                TemporaryCommonUtils.showError('inventoriesTableBody', this.translations.errorLoad, 6);
             }
         }
 
@@ -120,9 +298,9 @@
             tbody.innerHTML = this.inventories.map(inventory => `
                 <tr>
                     <td>${inventory.id}</td>
-                    <td class="fw-bold">${CommonUtils.escapeHtml(inventory.name)}</td>
-                    <td>${CommonUtils.escapeHtml(inventory.description || '—')}</td>
-                    <td class="small">${CommonUtils.formatDateShort(inventory.createdAt)}</td>
+                    <td class="fw-bold">${TemporaryCommonUtils.escapeHtml(inventory.name)}</td>
+                    <td>${TemporaryCommonUtils.escapeHtml(inventory.description || '—')}</td>
+                    <td class="small">${TemporaryCommonUtils.formatDateShort(inventory.createdAt)}</td>
                     <td>
                         <span class="badge bg-secondary usage-badge"
                               data-inventory-id="${inventory.id}"
@@ -138,7 +316,7 @@
                         </button>
                         <button class="btn btn-sm btn-outline-danger delete-inventory"
                                 data-inventory-id="${inventory.id}"
-                                data-inventory-name="${CommonUtils.escapeHtml(inventory.name)}">
+                                data-inventory-name="${TemporaryCommonUtils.escapeHtml(inventory.name)}">
                             🗑️
                         </button>
                     </td>
@@ -258,7 +436,7 @@
             if (!name) {
                 nameInput.classList.add('is-invalid');
                 nameInput.focus();
-                CommonUtils.showToast(this.translations.required, 'error');
+                TemporaryCommonUtils.showToast(this.translations.required, 'error');
                 return;
             }
 
@@ -273,7 +451,7 @@
                 console.log('Inventory creation response:', response);
 
                 if (response.success) {
-                    CommonUtils.showToast(response.message || this.translations.successCreated);
+                    TemporaryCommonUtils.showToast(response.message || this.translations.successCreated);
                     this.resetCreateForm();
 
                     const modal = bootstrap.Modal.getInstance(document.getElementById('createInventoryModal'));
@@ -283,11 +461,11 @@
 
                     await this.loadInventories();
                 } else {
-                    CommonUtils.showToast(response.message || this.translations.errorCreate, 'error');
+                    TemporaryCommonUtils.showToast(response.message || this.translations.errorCreate, 'error');
                 }
             } catch (error) {
                 console.error('Error creating inventory:', error);
-                CommonUtils.showToast(this.translations.errorCreate, 'error');
+                TemporaryCommonUtils.showToast(this.translations.errorCreate, 'error');
             } finally {
                 if (createBtn) {
                     createBtn.disabled = false;
@@ -317,7 +495,7 @@
             const updateBtn = document.getElementById('updateInventoryBtn');
 
             if (!name) {
-                CommonUtils.showToast(this.translations.required, 'error');
+                TemporaryCommonUtils.showToast(this.translations.required, 'error');
                 return;
             }
 
@@ -330,7 +508,7 @@
                 const response = await this.put(`/inventory/${id}`, { name, description });
 
                 if (response.success) {
-                    CommonUtils.showToast(response.message || this.translations.successUpdated);
+                    TemporaryCommonUtils.showToast(response.message || this.translations.successUpdated);
 
                     const modalElement = document.getElementById('editInventoryModal');
                     const closeBtn = modalElement.querySelector('.btn-close');
@@ -338,11 +516,11 @@
 
                     await this.loadInventories();
                 } else {
-                    CommonUtils.showToast(response.message || this.translations.errorUpdate, 'error');
+                    TemporaryCommonUtils.showToast(response.message || this.translations.errorUpdate, 'error');
                 }
             } catch (error) {
                 console.error('Error updating inventory:', error);
-                CommonUtils.showToast(this.translations.errorUpdate, 'error');
+                TemporaryCommonUtils.showToast(this.translations.errorUpdate, 'error');
             } finally {
                 if (updateBtn) {
                     updateBtn.disabled = false;
@@ -419,7 +597,7 @@
 
             if (!inventoryId) {
                 console.error('No inventory ID found for deletion');
-                CommonUtils.showToast('Ошибка: ID инвентаря не найден', 'error');
+                TemporaryCommonUtils.showToast('Ошибка: ID инвентаря не найден', 'error');
                 return;
             }
 
@@ -437,7 +615,7 @@
                 console.log('Delete response:', response);
 
                 if (response.success) {
-                    CommonUtils.showToast(response.message || this.translations.successDeleted);
+                    TemporaryCommonUtils.showToast(response.message || this.translations.successDeleted);
                     console.log('Inventory deleted successfully');
 
                     const modal = bootstrap.Modal.getInstance(document.getElementById('deleteInventoryModal'));
@@ -448,13 +626,13 @@
                     await this.loadInventories();
                 } else {
                     console.error('Delete failed:', response.message);
-                    CommonUtils.showToast(response.message || this.translations.errorDelete, 'error');
+                    TemporaryCommonUtils.showToast(response.message || this.translations.errorDelete, 'error');
                     deleteBtn.disabled = false;
                     deleteBtn.innerHTML = this.translations.delete;
                 }
             } catch (error) {
                 console.error('Error deleting inventory:', error);
-                CommonUtils.showToast(this.translations.errorDelete, 'error');
+                TemporaryCommonUtils.showToast(this.translations.errorDelete, 'error');
                 deleteBtn.disabled = false;
                 deleteBtn.innerHTML = this.translations.delete;
             }
@@ -469,11 +647,11 @@
                         `${this.translations.usedIn} ${usage.recipeCount} ${this.translations.recipes}` :
                         this.translations.notUsed;
 
-                    CommonUtils.showToast(message, usage.isUsed ? 'info' : 'success');
+                    TemporaryCommonUtils.showToast(message, usage.isUsed ? 'info' : 'success');
                 }
             } catch (error) {
                 console.error('Error checking usage:', error);
-                CommonUtils.showToast(this.translations.errorUsageCheck, 'error');
+                TemporaryCommonUtils.showToast(this.translations.errorUsageCheck, 'error');
             }
         }
 
@@ -496,14 +674,7 @@
     }
 
     // Глобальная инициализация
-    let inventoryApp = null;
-
     function initializeInventoryApp() {
-        if (inventoryApp) {
-            console.log('⚠️ Inventory app already exists');
-            return inventoryApp;
-        }
-
         // Проверяем, что мы на странице инвентаря
         if (!document.getElementById('inventoriesTableBody')) {
             console.log('ℹ️ Not on inventory page, skipping initialization');
@@ -511,14 +682,14 @@
         }
 
         // Проверяем зависимости
-        if (typeof BaseApiClient === 'undefined') {
-            console.error('❌ BaseApiClient not available');
+        if (typeof bootstrap === 'undefined') {
+            console.error('❌ Bootstrap not available');
             setTimeout(initializeInventoryApp, 100);
             return null;
         }
 
         try {
-            inventoryApp = new InventoryAdminApp();
+            const inventoryApp = new InventoryAdminApp();
             inventoryApp.init().catch(error => {
                 console.error('💥 Failed to initialize inventory app:', error);
             });
@@ -539,9 +710,5 @@
         console.log('📄 DOM already loaded - initializing inventory app');
         setTimeout(initializeInventoryApp, 100);
     }
-
-    // Экспортируем для глобального доступа
-    window.inventoryApp = inventoryApp;
-    window.initializeInventoryApp = initializeInventoryApp;
 
 })();

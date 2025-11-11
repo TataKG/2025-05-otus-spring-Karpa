@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.otus.hw.dto.ApiResponse;
 import ru.otus.hw.dto.CategoryDto;
 import ru.otus.hw.exceptions.EntityAlreadyExistsException;
+import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.services.CategoryService;
 import ru.otus.hw.util.MessageProvider;
 
@@ -36,12 +37,7 @@ public class AdminCategoryController {
     @PostMapping
     public ResponseEntity<ApiResponse<CategoryDto>> createCategory(@RequestBody CreateCategoryRequest request) {
         try {
-            if (request.name() == null || request.name().trim().isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(ApiResponse.error(messageProvider.getMessage("category.name_empty")));
-            }
-
-            CategoryDto categoryDto = categoryService.createCategoryWithDescription(
+            CategoryDto categoryDto = categoryService.createCategory(
                     request.name().trim(),
                     request.description() != null ? request.description().trim() : null
             );
@@ -52,9 +48,9 @@ public class AdminCategoryController {
         } catch (EntityAlreadyExistsException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(ApiResponse.error(e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(messageProvider.getMessage("category.create_error") + e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
         }
     }
 
@@ -62,11 +58,18 @@ public class AdminCategoryController {
     public ResponseEntity<ApiResponse<CategoryDto>> updateCategory(
             @PathVariable Long id,
             @RequestBody UpdateCategoryRequest request) {
-
-        CategoryDto categoryDto = categoryService.updateCategory(id, request.name(), request.description());
-        return ResponseEntity.ok(
-                ApiResponse.success(categoryDto, messageProvider.getMessage("category.updated"))
-        );
+        try {
+            CategoryDto categoryDto = categoryService.updateCategory(id, request.name(), request.description());
+            return ResponseEntity.ok(
+                    ApiResponse.success(categoryDto, messageProvider.getMessage("category.updated"))
+            );
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (EntityAlreadyExistsException | IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
     }
 
     @DeleteMapping("/{id}")
@@ -76,6 +79,9 @@ public class AdminCategoryController {
             return ResponseEntity.ok(
                     ApiResponse.success(null, messageProvider.getMessage("category.deleted"))
             );
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(ApiResponse.error(e.getMessage()));
@@ -84,11 +90,15 @@ public class AdminCategoryController {
 
     @GetMapping("/{id}/usage")
     public ResponseEntity<ApiResponse<CategoryUsageResponse>> getCategoryUsage(@PathVariable Long id) {
-        boolean isUsed = categoryService.isCategoryUsedInRecipes(id);
-        long recipeCount = categoryService.getRecipeCountByCategory(id);
-
-        CategoryUsageResponse usage = new CategoryUsageResponse(isUsed, recipeCount);
-        return ResponseEntity.ok(ApiResponse.success(usage));
+        try {
+            boolean isUsed = categoryService.isCategoryUsedInRecipes(id);
+            long recipeCount = categoryService.getRecipeCountByCategory(id);
+            CategoryUsageResponse usage = new CategoryUsageResponse(isUsed, recipeCount);
+            return ResponseEntity.ok(ApiResponse.success(usage));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(messageProvider.getMessage("category.not_found", id)));
+        }
     }
 
     public record CreateCategoryRequest(String name, String description) {

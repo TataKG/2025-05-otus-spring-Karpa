@@ -1,7 +1,5 @@
 package ru.otus.hw.dto;
 
-import ru.otus.hw.models.Comment;
-
 import java.time.LocalDateTime;
 
 public record CommentDto(

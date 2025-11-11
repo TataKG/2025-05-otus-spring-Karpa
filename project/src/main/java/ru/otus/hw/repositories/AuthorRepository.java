@@ -14,7 +14,8 @@ import java.util.Optional;
 public interface AuthorRepository extends CrudRepository<Author, Long> {
     Optional<Author> findByUser(User user);
 
-    Optional<Author> findByUserId(Long userId);
+    @Query("SELECT a FROM Author a JOIN FETCH a.user WHERE a.user.id = :userId")
+    Optional<Author> findByUserId(@Param("userId") Long userId);
 
     @Query("SELECT a FROM Author a JOIN FETCH a.user u WHERE u.username = :username")
     Optional<Author> findByUserUsername(@Param("username") String username);

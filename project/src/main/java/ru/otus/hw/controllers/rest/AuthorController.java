@@ -5,8 +5,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.otus.hw.dto.ApiResponse;
@@ -24,19 +22,6 @@ public class AuthorController {
 
     private final AuthorService authorService;
     private final MessageProvider messageProvider;
-
-    @PostMapping
-    public ResponseEntity<ApiResponse<AuthorDto>> createAuthor(@RequestBody CreateAuthorRequest request) {
-        try {
-            AuthorDto authorDto = authorService.createAuthor(request.userId(), request.bio());
-            return ResponseEntity.status(HttpStatus.CREATED).body(
-                    ApiResponse.success(authorDto, messageProvider.getMessage("author.created"))
-            );
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(messageProvider.getMessage("author.create_error") + e.getMessage()));
-        }
-    }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<AuthorDto>> getAuthorById(@PathVariable Long id) {
@@ -81,26 +66,5 @@ public class AuthorController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error(messageProvider.getMessage("authors.load_error") + e.getMessage()));
         }
-    }
-
-    @PostMapping("/convert/{userId}")
-    public ResponseEntity<ApiResponse<AuthorDto>> convertUserToAuthor(
-            @PathVariable Long userId,
-            @RequestBody ConvertToAuthorRequest request) {
-        try {
-            AuthorDto authorDto = authorService.convertUserToAuthor(userId, request.bio());
-            return ResponseEntity.status(HttpStatus.CREATED).body(
-                    ApiResponse.success(authorDto, messageProvider.getMessage("author.created"))
-            );
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(messageProvider.getMessage("author.convert_error") + e.getMessage()));
-        }
-    }
-
-    public record CreateAuthorRequest(Long userId, String bio) {
-    }
-
-    public record ConvertToAuthorRequest(String bio) {
     }
 }

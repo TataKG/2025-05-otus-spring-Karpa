@@ -1,27 +1,22 @@
 package ru.otus.hw.models;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Entity
 @Table(name = "users")
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
     @Column(nullable = false, unique = true)
     private String username;
@@ -40,35 +35,23 @@ public class User {
     private LocalDateTime createdAt;
 
     @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(
-            name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id")
-    )
+    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role")
     private Set<String> roles = new HashSet<>();
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @ToString.Exclude
     private Author author;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @ToString.Exclude
-    private List<Comment> comments = new ArrayList<>();
 
     public User(String username, String email, String password) {
         this.username = username;
         this.email = email;
         this.password = password;
         this.enabled = true;
-        this.createdAt = LocalDateTime.now();
+        this.roles.add("USER");
     }
 
     public void addRole(String role) {
         this.roles.add(role);
-    }
-
-    public void removeRole(String role) {
-        this.roles.remove(role);
     }
 
     public boolean hasRole(String role) {
@@ -76,6 +59,6 @@ public class User {
     }
 
     public boolean isAuthor() {
-        return this.roles.contains("AUTHOR") || this.author != null;
+        return this.author != null;
     }
 }

@@ -206,31 +206,29 @@
 </div>
 
 <!-- Подключаем скрипты -->
+<!-- Сначала Bootstrap -->
 <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
-<script th:src="@{/js/common.js}"></script>
+<!-- Затем наши базовые скрипты -->
+<script th:src="@{/js/common-base.js}"></script>
+<script th:src="@{/js/common-auth.js}"></script>
 
 <!-- Языковой переключатель -->
 <script>
-    // Переключение языка с сохранением текущей страницы
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.language-switch').forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
                 const lang = this.getAttribute('data-lang');
                 const currentUrl = window.location.href;
-
-                // Удаляем существующий параметр lang и добавляем новый
                 const url = new URL(currentUrl);
                 url.searchParams.set('lang', lang);
-
-                // Переходим на ту же страницу с новым языком
                 window.location.href = url.toString();
             });
         });
     });
 </script>
 
-<!-- Скрипты конкретной страницы -->
+<!-- Скрипты конкретной страницы (будут загружены последними) -->
 <div th:insert="~{::scripts}"></div>
 </body>
 </html>

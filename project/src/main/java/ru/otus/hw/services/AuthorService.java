@@ -6,9 +6,13 @@ import java.util.List;
 import java.util.Optional;
 
 public interface AuthorService {
-    AuthorDto createAuthor(Long userId, String bio);
+    AuthorDto createAuthorForUser(Long userId, String bio);
+
+    AuthorDto convertUserToAuthor(Long userId, String bio);
 
     Optional<AuthorDto> getAuthorById(Long id);
+
+    Optional<AuthorDto> getAuthorForInternalUse(Long id); // переименовать!
 
     Optional<AuthorDto> getAuthorByUserId(Long userId);
 
@@ -16,6 +20,9 @@ public interface AuthorService {
 
     List<AuthorDto> getAllAuthors();
 
-    AuthorDto convertUserToAuthor(Long userId, String bio);
+    AuthorDto updateAuthor(Long id, String bio);
 
+    void deleteAuthor(Long id);
+
+    boolean existsByUserId(Long userId);
 }

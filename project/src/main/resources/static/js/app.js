@@ -81,11 +81,24 @@ class CookbookApp extends BaseApiClient {
     }
 
     async init() {
+        console.log('🚀 CookbookApp initialization started');
+
+        // Проверяем наличие необходимых DOM элементов
+        if (!document.getElementById('recipeModal')) {
+            console.error('❌ recipeModal not found in DOM');
+        }
+
+        if (!document.getElementById('commentsModal')) {
+            console.error('❌ commentsModal not found in DOM');
+        }
+
         await this.loadCurrentUser();
         await this.loadCategories();
         await this.loadAuthors();
         await this.loadRecipes();
         this.setupEventListeners();
+
+        console.log('✅ CookbookApp initialization completed');
     }
 
     async loadCurrentUser() {
@@ -262,8 +275,11 @@ class CookbookApp extends BaseApiClient {
         document.querySelectorAll('.view-recipe').forEach(button => {
             button.addEventListener('click', (e) => {
                 const recipeId = e.target.closest('.view-recipe').dataset.recipeId;
+                console.log('🔍 View recipe button clicked, recipeId:', recipeId);
                 if (recipeId) {
                     this.loadRecipeDetails(recipeId);
+                } else {
+                    console.error('❌ Recipe ID not found');
                 }
             });
         });
@@ -281,14 +297,36 @@ class CookbookApp extends BaseApiClient {
 
     async loadRecipeDetails(recipeId) {
         try {
+            console.log('📥 Loading recipe details for:', recipeId);
             const response = await this.get(`/recipes/${recipeId}/detailed`);
+
+            console.log('📋 FULL Recipe details API response:', response);
+
             if (response.success) {
-                this.showRecipeModal(response.data);
+                console.log('✅ Recipe details loaded successfully');
+
+                // Определяем структуру данных
+                let recipeData;
+                if (response.data.recipe) {
+                    console.log('🔍 Data is nested under "recipe" property');
+                    recipeData = response.data.recipe;
+                } else if (response.data) {
+                    console.log('🔍 Data is directly in response.data');
+                    recipeData = response.data;
+                } else {
+                    console.error('❌ No recipe data found in response');
+                    CommonUtils.showToast('Данные рецепта не найдены', 'error');
+                    return;
+                }
+
+                console.log('🎯 Final recipe data to display:', recipeData);
+                this.showRecipeModal(recipeData);
             } else {
+                console.error('❌ API error loading recipe details:', response);
                 CommonUtils.showToast(this.messages['error-loading-details'], 'error');
             }
         } catch (error) {
-            console.error('Error loading recipe details:', error);
+            console.error('💥 Error loading recipe details:', error);
             CommonUtils.showToast(this.messages['error-loading-details'], 'error');
         }
     }
@@ -331,32 +369,65 @@ class CookbookApp extends BaseApiClient {
     }
 
     showRecipeModal(recipe) {
+        console.log('📋 FULL Recipe data structure for modal:', recipe);
+
+        const modalElement = document.getElementById('recipeModal');
+        if (!modalElement) {
+            console.error('❌ recipeModal element not found');
+            CommonUtils.showToast('Ошибка: модальное окно не найдено', 'error');
+            return;
+        }
+
         const modalTitle = document.getElementById('recipeModalTitle');
         const modalBody = document.getElementById('recipeModalBody');
 
+        if (!modalTitle || !modalBody) {
+            console.error('❌ Modal title or body not found');
+            return;
+        }
+
         modalTitle.textContent = `📖 ${CommonUtils.escapeHtml(recipe.title)}`;
+
+        // Детальная отладка структуры данных
+        console.log('🔍 Recipe category structure:', recipe.category);
+        console.log('🔍 Recipe author structure:', recipe.author);
+        console.log('🔍 Recipe ingredients:', recipe.ingredients);
+        console.log('🔍 Recipe inventoryItems:', recipe.inventoryItems);
+
+        // Используем улучшенные методы для получения данных
+        const categoryName = this.getCategoryName(recipe);
+        const authorName = this.getAuthorName(recipe);
+        const ingredients = this.getIngredients(recipe);
+        const description = recipe.description || 'Описание отсутствует';
+        const inventoryItems = this.getInventoryItems(recipe);
+        const commentCount = this.getCommentCount(recipe);
+
+        console.log('📊 Extracted data:', {
+            categoryName,
+            authorName,
+            ingredients,
+            description,
+            inventoryItems,
+            commentCount
+        });
 
         modalBody.innerHTML = `
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
                         <h6>${this.messages['recipe-details-category']}:</h6>
-                        <p><span class="badge bg-primary">${CommonUtils.escapeHtml(recipe.category.name)}</span></p>
+                        <p><span class="badge bg-primary">${CommonUtils.escapeHtml(categoryName)}</span></p>
                     </div>
 
                     <div class="mb-3">
                         <h6>${this.messages['recipe-details-author']}:</h6>
-                        <p class="text-muted">${CommonUtils.escapeHtml(recipe.author.user.username)}</p>
+                        <p class="text-muted">${CommonUtils.escapeHtml(authorName)}</p>
                     </div>
 
                     <div class="mb-3">
                         <h6>${this.messages['recipe-details-ingredients']}:</h6>
                         <div class="list-group">
-                            ${recipe.ingredients.map(ingredient => `
-                                <div class="list-group-item list-group-item-action">
-                                    ${CommonUtils.escapeHtml(ingredient)}
-                                </div>
-                            `).join('')}
+                            ${this.getIngredientsList(ingredients)}
                         </div>
                     </div>
                 </div>
@@ -365,18 +436,14 @@ class CookbookApp extends BaseApiClient {
                     <div class="mb-3">
                         <h6>${this.messages['recipe-details-description']}:</h6>
                         <p class="text-muted border-start border-3 border-primary ps-3 py-2 bg-light">
-                            ${CommonUtils.escapeHtml(recipe.description)}
+                            ${CommonUtils.escapeHtml(description)}
                         </p>
                     </div>
 
                     <div class="mb-3">
                         <h6>${this.messages['recipe-details-inventory']}:</h6>
                         <div class="d-flex flex-wrap gap-2">
-                            ${recipe.inventoryItems.map(item => `
-                                <span class="badge bg-warning text-dark">
-                                    🍴 ${CommonUtils.escapeHtml(item.name)}
-                                </span>
-                            `).join('')}
+                            ${this.getInventoryItemsList(inventoryItems)}
                         </div>
                     </div>
 
@@ -388,7 +455,7 @@ class CookbookApp extends BaseApiClient {
                                   data-recipe-id="${recipe.id}"
                                   data-recipe-title="${CommonUtils.escapeHtml(recipe.title)}"
                                   title="${this.messages.view} ${this.messages.comments.toLowerCase()}">
-                                💬 ${recipe.commentCount || 0} ${CommonUtils.getCommentText(recipe.commentCount || 0)}
+                                💬 ${commentCount} ${CommonUtils.getCommentText(commentCount)}
                             </span>
                         </p>
                     </div>
@@ -405,8 +472,130 @@ class CookbookApp extends BaseApiClient {
             });
         }
 
-        const modal = new bootstrap.Modal(document.getElementById('recipeModal'));
-        modal.show();
+        try {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+            console.log('✅ Recipe modal shown successfully');
+        } catch (error) {
+            console.error('❌ Error showing modal:', error);
+            CommonUtils.showToast('Ошибка при открытии модального окна', 'error');
+        }
+    }
+
+    getCategoryName(recipe) {
+        if (!recipe) return 'Не указана';
+
+        console.log('🔍 Getting category name from:', recipe.category);
+
+        // Пробуем разные пути к данным категории
+        if (recipe.categoryName) {
+            return recipe.categoryName;
+        } else if (recipe.category && recipe.category.name) {
+            return recipe.category.name;
+        } else if (recipe.category && typeof recipe.category === 'string') {
+            return recipe.category;
+        } else if (recipe.categoryId) {
+            return `Категория ID: ${recipe.categoryId}`;
+        }
+        return 'Не указана';
+    }
+
+    getAuthorName(recipe) {
+        if (!recipe) return 'Неизвестен';
+
+        console.log('🔍 Getting author name from:', recipe.author);
+
+        // Пробуем разные пути к данным автора
+        if (recipe.authorName) {
+            return recipe.authorName;
+        } else if (recipe.author && recipe.author.user && recipe.author.user.username) {
+            return recipe.author.user.username;
+        } else if (recipe.author && recipe.author.username) {
+            return recipe.author.username;
+        } else if (recipe.author && typeof recipe.author === 'string') {
+            return recipe.author;
+        } else if (recipe.author && recipe.author.name) {
+            return recipe.author.name;
+        } else if (recipe.authorName) {
+            return recipe.authorName;
+        }
+        return 'Неизвестен';
+    }
+
+    getIngredients(recipe) {
+        if (!recipe) return [];
+
+        console.log('🔍 Getting ingredients from:', recipe.ingredients);
+
+        // Пробуем разные пути к данным ингредиентов
+        if (Array.isArray(recipe.ingredients)) {
+            return recipe.ingredients;
+        } else if (recipe.ingredientList) {
+            return recipe.ingredientList;
+        } else if (recipe.ingredientsList) {
+            return recipe.ingredientsList;
+        }
+        return [];
+    }
+
+    getInventoryItems(recipe) {
+        if (!recipe) return [];
+
+        console.log('🔍 Getting inventory items from:', recipe.inventoryItems);
+
+        // Пробуем разные пути к данным инвентаря
+        if (Array.isArray(recipe.inventoryItems)) {
+            return recipe.inventoryItems;
+        } else if (recipe.inventoryList) {
+            return recipe.inventoryList;
+        } else if (recipe.equipment) {
+            return recipe.equipment;
+        } else if (recipe.tools) {
+            return recipe.tools;
+        }
+        return [];
+    }
+
+    getCommentCount(recipe) {
+        if (!recipe) return 0;
+
+        console.log('🔍 Getting comment count from:', {
+            commentCount: recipe.commentCount,
+            commentsCount: recipe.commentsCount,
+            comments: recipe.comments
+        });
+
+        if (recipe.commentCount !== undefined) {
+            return recipe.commentCount;
+        } else if (recipe.commentsCount !== undefined) {
+            return recipe.commentsCount;
+        } else if (Array.isArray(recipe.comments)) {
+            return recipe.comments.length;
+        }
+        return 0;
+    }
+
+    getIngredientsList(ingredients) {
+        if (!ingredients || ingredients.length === 0) {
+            return '<div class="list-group-item text-muted">Ингредиенты не указаны</div>';
+        }
+
+        return ingredients.map(ingredient => `
+            <div class="list-group-item list-group-item-action">
+                ${CommonUtils.escapeHtml(ingredient)}
+            </div>
+        `).join('');
+    }
+
+    getInventoryItemsList(inventoryItems) {
+        if (!inventoryItems || inventoryItems.length === 0) {
+            return '<span class="text-muted">Инвентарь не указан</span>';
+        }
+
+        return inventoryItems.map(item => {
+            const itemName = item.name || item;
+            return `<span class="badge bg-warning text-dark">🍴 ${CommonUtils.escapeHtml(itemName)}</span>`;
+        }).join('');
     }
 
     async showCommentsModal(recipeId, recipeTitle) {
