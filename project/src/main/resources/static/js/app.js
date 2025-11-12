@@ -1,5 +1,12 @@
 // app.js - для главной страницы
 class CookbookApp extends BaseApiClient {
+    handleLanguageChange() {
+        // Перезагружаем все данные при смене языка
+        this.loadCategories();
+        this.loadAuthors();
+        this.loadRecipes();
+    }
+
     constructor() {
         super('/api');
         this.messages = window.i18nMessages || this.getFallbackMessages();
@@ -14,6 +21,12 @@ class CookbookApp extends BaseApiClient {
         };
         this.currentUserId = null;
         this.currentRecipeId = null;
+
+        // Слушаем события смены языка
+        window.addEventListener('languageChange', () => {
+           this.handleLanguageChange();
+        });
+
         this.init();
     }
 

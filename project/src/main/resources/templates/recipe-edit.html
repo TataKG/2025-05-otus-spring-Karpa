@@ -225,5 +225,30 @@
         transform: scale(1.1);
     }
 </style>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    window.collectFormData = function() {
+        const title = document.getElementById('title')?.value || '';
+        const category = document.getElementById('category')?.value || '';
+        const description = document.getElementById('description')?.value || '';
+
+        // Собираем ингредиенты
+        const ingredients = Array.from(document.querySelectorAll('.ingredient-input'))
+            .map(input => input.value.trim())
+            .filter(val => val !== '');
+
+        // Собираем инвентарь (используем текущее состояние из app)
+        const selectedInventory = window.recipeApp?.selectedInventory || [];
+
+        return {
+            title,
+            category,
+            description,
+            ingredients,
+            selectedInventory
+        };
+    };
+    /*]]>*/
+</script>
 </body>
 </html>

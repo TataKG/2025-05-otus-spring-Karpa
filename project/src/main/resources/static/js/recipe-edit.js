@@ -9,6 +9,7 @@ class RecipeEditApp extends BaseApiClient {
         this.selectedInventory = [];
         this.availableInventory = [];
         this.isInitialized = false;
+        this.isRestoringData = false;
         this.init();
     }
 
@@ -84,6 +85,13 @@ class RecipeEditApp extends BaseApiClient {
         this.inventoryItems = inventoryItems || [];
         this.availableInventory = [...this.inventoryItems];
 
+        console.log('📥 Данные формы получены:', {
+            categoriesCount: this.categories.length,
+            inventoryCount: this.inventoryItems.length,
+            recipe: recipe ? recipe.title : 'нет'
+        });
+
+        // Получаем authorId из различных возможных источников
         if (recipe && recipe.author && recipe.author.id) {
             this.authorId = recipe.author.id;
         } else if (formData.authorId) {
@@ -94,6 +102,39 @@ class RecipeEditApp extends BaseApiClient {
             throw new Error(this.getMessage('error.author_not_found'));
         }
 
+        // ВОССТАНОВЛЕНИЕ ДАННЫХ: проверяем, есть ли сохраненные данные
+        const savedData = localStorage.getItem('pendingFormData');
+        const languageChanged = localStorage.getItem('pendingLanguageChange');
+
+        if (savedData && languageChanged === 'true') {
+            this.isRestoringData = true;
+            console.log('🔄 Восстанавливаем данные формы после смены языка...');
+
+            // При восстановлении используем специальный метод
+            this.populateWithRestoration(recipe, savedData);
+        } else {
+            // Обычная загрузка
+            this.populateNormal(recipe);
+        }
+
+        // Обновляем UI
+        document.getElementById('loadingSpinner').style.display = 'none';
+        document.getElementById('recipeFormContainer').style.display = 'block';
+        document.getElementById('errorAlert').style.display = 'none';
+
+        // Очищаем флаги после восстановления
+        if (this.isRestoringData) {
+            setTimeout(() => {
+                localStorage.removeItem('pendingFormData');
+                localStorage.removeItem('pendingLanguageChange');
+                this.isRestoringData = false;
+                console.log('✅ Данные формы восстановлены');
+            }, 500);
+        }
+    }
+
+    populateNormal(recipe) {
+        // Обычное заполнение формы
         if (recipe && recipe.title) {
             document.getElementById('title').value = recipe.title;
         }
@@ -105,27 +146,131 @@ class RecipeEditApp extends BaseApiClient {
         this.populateCategories(recipe?.category);
         this.populateIngredients(recipe?.ingredients || []);
         this.populateInventory(recipe?.inventoryItems || []);
+    }
 
-        document.getElementById('loadingSpinner').style.display = 'none';
-        document.getElementById('recipeFormContainer').style.display = 'block';
-        document.getElementById('errorAlert').style.display = 'none';
+    populateWithRestoration(recipe, savedData) {
+        try {
+            const formData = JSON.parse(savedData);
+            console.log('📋 Восстанавливаем сохраненные данные:', formData);
+
+            // 1. Восстанавливаем основные поля
+            if (document.getElementById('title')) {
+                document.getElementById('title').value = formData.title || '';
+            }
+
+            if (document.getElementById('description')) {
+                document.getElementById('description').value = formData.description || '';
+            }
+
+            // 2. Заполняем категории СРАЗУ с восстановлением значения
+            this.populateCategoriesWithRestore(formData.category);
+
+            // 3. Восстанавливаем ингредиенты
+            if (formData.ingredients && Array.isArray(formData.ingredients)) {
+                this.populateIngredients(formData.ingredients);
+            } else {
+                this.populateIngredients([]);
+            }
+
+            // 4. Восстанавливаем инвентарь
+            if (formData.selectedInventory && Array.isArray(formData.selectedInventory)) {
+                this.selectedInventory = formData.selectedInventory;
+                this.updateAvailableInventory();
+                this.renderSelectedInventory();
+                this.renderInventorySelect();
+            } else {
+                this.populateInventory([]);
+            }
+
+        } catch (error) {
+            console.error('❌ Ошибка при восстановлении данных:', error);
+            // В случае ошибки восстанавливаем пустую форму
+            this.populateNormal(recipe);
+        }
     }
 
     populateCategories(selectedCategory) {
         const categorySelect = document.getElementById('category');
-        if (!categorySelect) return;
+        if (!categorySelect) {
+            console.error('❌ Элемент category не найден в DOM');
+            return;
+        }
 
-        categorySelect.innerHTML = `<option value="">${this.getMessage('recipe.category.placeholder')}</option>`;
+        // Очищаем select
+        categorySelect.innerHTML = '';
 
-        this.categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category.id;
-            option.textContent = category.name;
-            if (selectedCategory && selectedCategory.id === category.id) {
-                option.selected = true;
+        // Добавляем пустую опцию
+        const emptyOption = document.createElement('option');
+        emptyOption.value = "";
+        emptyOption.textContent = this.getMessage('recipe.category.placeholder');
+        categorySelect.appendChild(emptyOption);
+
+        // Добавляем категории из БД
+        if (this.categories && this.categories.length > 0) {
+            this.categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = String(category.id);
+                option.textContent = category.name;
+
+                // Автоматически выбираем категорию если указана
+                if (selectedCategory && selectedCategory.id === category.id) {
+                    option.selected = true;
+                }
+                categorySelect.appendChild(option);
+            });
+
+            console.log('✅ Категории загружены в select:', this.categories.length, 'шт');
+        } else {
+            console.warn('⚠️ Нет категорий для загрузки в select');
+        }
+    }
+
+    populateCategoriesWithRestore(savedCategoryId) {
+        const categorySelect = document.getElementById('category');
+        if (!categorySelect) {
+            console.error('❌ Элемент category не найден в DOM');
+            return;
+        }
+
+        // Очищаем select
+        categorySelect.innerHTML = '';
+
+        // Добавляем пустую опцию
+        const emptyOption = document.createElement('option');
+        emptyOption.value = "";
+        emptyOption.textContent = this.getMessage('recipe.category.placeholder');
+        categorySelect.appendChild(emptyOption);
+
+        // Добавляем категории из БД
+        if (this.categories && this.categories.length > 0) {
+            this.categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = String(category.id);
+                option.textContent = category.name;
+                categorySelect.appendChild(option);
+            });
+
+            console.log('✅ Категории загружены в select:', this.categories.length, 'шт');
+
+            // НЕМЕДЛЕННО восстанавливаем сохраненное значение
+            if (savedCategoryId) {
+                const categoryIdStr = String(savedCategoryId);
+                setTimeout(() => {
+                    categorySelect.value = categoryIdStr;
+                    console.log('🎯 Категория восстановлена:', categoryIdStr, '->', categorySelect.value);
+
+                    // Дополнительная проверка через небольшой таймаут
+                    setTimeout(() => {
+                        if (categorySelect.value !== categoryIdStr) {
+                            console.warn('⚠️ Категория не установилась, пробуем снова...');
+                            categorySelect.value = categoryIdStr;
+                        }
+                    }, 50);
+                }, 0);
             }
-            categorySelect.appendChild(option);
-        });
+        } else {
+            console.warn('⚠️ Нет категорий для загрузки в select');
+        }
     }
 
     populateIngredients(ingredients) {
@@ -603,9 +748,13 @@ class RecipeEditApp extends BaseApiClient {
     }
 }
 
+// Делаем app глобально доступной для функций
+let recipeApp;
+
 document.addEventListener('DOMContentLoaded', () => {
     try {
-        new RecipeEditApp();
+        recipeApp = new RecipeEditApp();
+        window.recipeApp = recipeApp; // Делаем глобально доступной
     } catch (error) {
         console.error('Failed to initialize RecipeEditApp:', error);
         const errorAlert = document.getElementById('errorAlert');
@@ -613,7 +762,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const loadingSpinner = document.getElementById('loadingSpinner');
 
         if (errorAlert && errorMessage) {
-            errorMessage.textContent = this.getMessage('error.initialization') + error.message;
+            // Используем прямое обращение к i18nMessages, так как this недоступен
+            const errorMsg = (window.i18nMessages?.['error.initialization'] || 'Ошибка инициализации: ') + error.message;
+            errorMessage.textContent = errorMsg;
             errorAlert.style.display = 'block';
         }
 

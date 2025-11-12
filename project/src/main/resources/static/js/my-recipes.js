@@ -1,11 +1,21 @@
 // my-recipes.js - для страницы "Мои рецепты"
 class MyRecipesApp extends BaseApiClient {
+    handleLanguageChange() {
+        // При смене языка просто перезагружаем данные
+        this.loadMyRecipes();
+    }
+
     constructor() {
         super('/api/recipes');
         console.log("MyRecipesApp initialized");
         this.messages = window.i18nMessages || this.getFallbackMessages();
         this.currentFilter = 'all';
         this.currentUserRecipes = [];
+
+        window.addEventListener('languageChange', () => {
+            this.handleLanguageChange();
+        });
+
         this.init();
     }
 

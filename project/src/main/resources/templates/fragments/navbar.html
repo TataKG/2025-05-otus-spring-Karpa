@@ -50,14 +50,10 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>
-                                <a class="dropdown-item" href="?lang=ru" th:text="#{language.russian}">
-                                    Русский
-                                </a>
+                                <button class="dropdown-item" onclick="console.log('click ru'); changeLanguage('ru')" th:text="#{language.russian}">Русский</button>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="?lang=en" th:text="#{language.english}">
-                                    English
-                                </a>
+                                <button class="dropdown-item" onclick="console.log('click en'); changeLanguage('en')" th:text="#{language.english}">English</button>
                             </li>
                         </ul>
                     </li>
