@@ -1,0 +1,82 @@
+spring:
+  application:
+    name: culinary-book
+
+  # Настройки базы данных (H2 in-memory для разработки)
+  datasource:
+    url: jdbc:h2:mem:culinarydb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  # H2 Console (доступна по http://localhost:8080/h2-console)
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # JPA/Hibernate настройки
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+        use_sql_comments: true
+    defer-datasource-initialization: true
+
+  # Инициализация данных
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:test.sql
+
+  # Web настройки
+  web:
+    resources:
+      static-locations: classpath:/static/
+
+  # Jackson (JSON)
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    date-format: com.fasterxml.jackson.databind.util.StdDateFormat
+    property-naming-strategy: SNAKE_CASE
+
+  messages:
+    basename: messages/messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+
+# Server настройки
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  error:
+    include-stacktrace: never
+
+# Logging настройки
+logging:
+  level:
+    com.culinarybook: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Security (для тестов)
+security:
+  basic:
+    enabled: false
+
+# Custom application properties
+app:
+  pagination:
+    page-size: 20
+  features:
+    registration-enabled: true
+    comments-enabled: true
