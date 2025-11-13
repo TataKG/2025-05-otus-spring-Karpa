@@ -10,10 +10,14 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "inventory")
 @Data
 @NoArgsConstructor
+@Entity
+@Table(name = "inventory")
+@NamedEntityGraph(
+        name = "Inventory.withRecipes",
+        attributeNodes = @NamedAttributeNode("recipes")
+)
 public class Inventory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

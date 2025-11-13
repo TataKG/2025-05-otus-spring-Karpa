@@ -25,4 +25,6 @@ public interface AuthorService {
     void deleteAuthor(Long id);
 
     boolean existsByUserId(Long userId);
+
+    Optional<AuthorDto> getAuthorWithRecipes(Long id);
 }

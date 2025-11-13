@@ -9,10 +9,23 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-@Entity
-@Table(name = "users")
 @Data
 @NoArgsConstructor
+@Entity
+@Table(name = "users")
+@NamedEntityGraphs({
+        @NamedEntityGraph(
+                name = "User.withRoles",
+                attributeNodes = @NamedAttributeNode("roles")
+        ),
+        @NamedEntityGraph(
+                name = "User.withRolesAndAuthor",
+                attributeNodes = {
+                        @NamedAttributeNode("roles"),
+                        @NamedAttributeNode("author")
+                }
+        )
+})
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

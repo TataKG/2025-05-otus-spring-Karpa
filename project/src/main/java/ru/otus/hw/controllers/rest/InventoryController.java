@@ -66,6 +66,9 @@ public class InventoryController {
         try {
             List<InventoryDto> inventory = inventoryService.getInventoryByNameContaining(name);
             return ResponseEntity.ok(ApiResponse.success(inventory));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error(messageProvider.getMessage("inventory.search_error")));
@@ -87,8 +90,15 @@ public class InventoryController {
     public ResponseEntity<ApiResponse<List<InventoryDto>>> getInventoryByNames(
             @RequestBody List<String> names) {
         try {
+            if (names == null || names.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.error(messageProvider.getMessage("inventory.names_empty")));
+            }
             List<InventoryDto> inventory = inventoryService.getInventoryByNames(names);
             return ResponseEntity.ok(ApiResponse.success(inventory));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error(messageProvider.getMessage("inventories.load_error")));

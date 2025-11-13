@@ -24,20 +24,16 @@ import java.util.stream.Collectors;
 public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
-
     private final UserRepository userRepository;
-
     private final RecipeRepository recipeRepository;
-
     private final CommentConverter commentConverter;
-
     private final MessageProvider messageProvider;
 
     @Override
-    public CommentDto createComment(String content, Long userId, Long recipeId) {
-        User user = userRepository.findById(userId)
+    public CommentDto createCommentForRecipe(String content, String username, Long recipeId) {
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        messageProvider.getMessage("user.not_found", userId)
+                        messageProvider.getMessage("user.not_found")
                 ));
 
         Recipe recipe = recipeRepository.findById(recipeId)
@@ -53,7 +49,25 @@ public class CommentServiceImpl implements CommentService {
 
         Comment comment = new Comment(content, user, recipe);
         Comment savedComment = commentRepository.save(comment);
-        return commentConverter.toDto(savedComment, userId);
+        return commentConverter.toDto(savedComment, user.getId());
+    }
+
+    @Override
+    public List<CommentDto> getCommentsForRecipe(Long recipeId, String username) {
+        Long currentUserId = username != null
+                ? userRepository.findByUsername(username).map(User::getId).orElse(null)
+                : null;
+
+        boolean recipeExistsAndPublished = recipeRepository.existsByIdAndPublishedTrue(recipeId);
+
+        if (!recipeExistsAndPublished) {
+            return List.of();
+        }
+
+        final Long finalCurrentUserId = currentUserId;
+        return commentRepository.findByRecipeIdWithUser(recipeId).stream()
+                .map(comment -> commentConverter.toDto(comment, finalCurrentUserId))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -63,7 +77,7 @@ public class CommentServiceImpl implements CommentService {
                         messageProvider.getMessage("comment.not_found", commentId)
                 ));
 
-        if (comment.getUser().getId() != currentUserId.longValue()) {
+        if (!comment.getUser().getId().equals(currentUserId)) {
             throw new SecurityException(
                     messageProvider.getMessage("comment.edit_denied")
             );
@@ -81,7 +95,7 @@ public class CommentServiceImpl implements CommentService {
                         messageProvider.getMessage("comment.not_found", commentId)
                 ));
 
-        if (comment.getUser().getId() != currentUserId.longValue()) {
+        if (!comment.getUser().getId().equals(currentUserId)) {
             throw new SecurityException(
                     messageProvider.getMessage("comment.delete_denied")
             );
@@ -103,25 +117,6 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public List<CommentDto> getCommentsByRecipe(Long recipeId) {
-        return commentRepository.findByRecipeIdWithUser(recipeId).stream()
-                .map(commentConverter::toDto)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<CommentDto> getCommentsByRecipe(Long recipeId, Long currentUserId) {
-        return commentRepository.findByRecipeIdWithUser(recipeId).stream()
-                .map(comment -> commentConverter.toDto(comment, currentUserId))
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<CommentDto> getCommentsByRecipeId(Long recipeId) {
-        return getCommentsByRecipe(recipeId);
-    }
-
-    @Override
     public List<CommentDto> getCommentsByUser(Long userId) {
         return commentRepository.findByUserId(userId).stream()
                 .map(commentConverter::toDto)
@@ -131,5 +126,23 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public int getCommentCountForRecipe(Long recipeId) {
         return commentRepository.countByRecipeId(recipeId);
+    }
+
+    @Override
+    public Long getUserIdByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .map(User::getId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageProvider.getMessage("user.not_found")
+                ));
+    }
+
+    private Long getCurrentUserId(String username) {
+        if (username == null) {
+            return null;
+        }
+        return userRepository.findByUsername(username)
+                .map(User::getId)
+                .orElse(null);
     }
 }

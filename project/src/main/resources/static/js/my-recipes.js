@@ -1,7 +1,6 @@
 // my-recipes.js - для страницы "Мои рецепты"
 class MyRecipesApp extends BaseApiClient {
     handleLanguageChange() {
-        // При смене языка просто перезагружаем данные
         this.loadMyRecipes();
     }
 
@@ -101,7 +100,7 @@ class MyRecipesApp extends BaseApiClient {
         const totalRecipes = recipes.length;
         const publishedRecipes = recipes.filter(recipe => recipe.published).length;
         const draftRecipes = totalRecipes - publishedRecipes;
-        const totalComments = recipes.reduce((sum, recipe) => sum + CommonUtils.getCommentCount(recipe), 0);
+        const totalComments = recipes.reduce((sum, recipe) => sum + (recipe.commentCount || 0), 0);
 
         document.getElementById('totalRecipesCount').textContent = totalRecipes;
         document.getElementById('publishedRecipesCount').textContent = publishedRecipes;
@@ -112,7 +111,6 @@ class MyRecipesApp extends BaseApiClient {
     filterRecipes(filterType) {
         this.currentFilter = filterType;
 
-        // Обновляем активную кнопку фильтра
         document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
         const filterButton = document.getElementById(`filter${filterType.charAt(0).toUpperCase() + filterType.slice(1)}`);
         if (filterButton) {
@@ -151,8 +149,10 @@ class MyRecipesApp extends BaseApiClient {
         }
 
         tbody.innerHTML = recipes.map(recipe => {
-            const categoryName = CommonUtils.getCategoryName(recipe);
-            const commentCount = CommonUtils.getCommentCount(recipe);
+            // Используем данные напрямую из RecipeSummaryDto
+            const categoryName = recipe.categoryName || 'Не указана';
+            const authorName = recipe.authorName || 'Неизвестен';
+            const commentCount = recipe.commentCount || 0;
 
             return `
                 <tr>
@@ -167,7 +167,7 @@ class MyRecipesApp extends BaseApiClient {
                         }
                     </td>
                     <td class="text-muted">
-                        <small>${CommonUtils.formatDate(recipe.createdAt)}</small>
+                        <small>${CommonUtils.formatDateShort(recipe.createdAt)}</small>
                     </td>
                     <td>
                         <span class="badge bg-info text-dark comments-badge"
@@ -214,7 +214,6 @@ class MyRecipesApp extends BaseApiClient {
     }
 
     addRecipeActionListeners() {
-        // View recipe
         document.querySelectorAll('.view-recipe').forEach(button => {
             button.addEventListener('click', (e) => {
                 const recipeId = e.target.closest('.view-recipe').dataset.recipeId;
@@ -223,7 +222,6 @@ class MyRecipesApp extends BaseApiClient {
             });
         });
 
-        // Edit recipe
         document.querySelectorAll('.edit-recipe').forEach(button => {
             button.addEventListener('click', (e) => {
                 const recipeId = e.target.closest('.edit-recipe').dataset.recipeId;
@@ -232,7 +230,6 @@ class MyRecipesApp extends BaseApiClient {
             });
         });
 
-        // Publish recipe
         document.querySelectorAll('.publish-recipe').forEach(button => {
             button.addEventListener('click', (e) => {
                 const recipeId = e.target.closest('.publish-recipe').dataset.recipeId;
@@ -241,7 +238,6 @@ class MyRecipesApp extends BaseApiClient {
             });
         });
 
-        // Delete recipe
         document.querySelectorAll('.delete-recipe').forEach(button => {
             button.addEventListener('click', (e) => {
                 const recipeId = e.target.closest('.delete-recipe').dataset.recipeId;
@@ -291,7 +287,6 @@ class MyRecipesApp extends BaseApiClient {
         try {
             console.log("Loading comments for recipe:", recipeId);
 
-            // Используем прямой fetch для комментариев
             const response = await fetch(`/api/recipes/${recipeId}/comments`, {
                 credentials: 'include',
                 headers: {
@@ -325,25 +320,21 @@ class MyRecipesApp extends BaseApiClient {
         }
     }
 
-    showRecipeModal(data) {
-        console.log("Recipe detailed data for modal:", data);
-
-        // Извлекаем данные из правильной структуры
-        const recipe = data.recipe || data;
-        const inventoryItems = data.inventoryItems || recipe.inventoryItems || [];
-        const comments = data.comments || [];
-        const totalCommentCount = data.totalCommentCount || comments.length;
+    showRecipeModal(recipe) {
+        console.log("Recipe detailed data for modal:", recipe);
 
         const modalTitle = document.getElementById('recipeModalTitle');
         const modalBody = document.getElementById('recipeModalBody');
 
         modalTitle.textContent = `📖 ${CommonUtils.escapeHtml(recipe.title)}`;
 
-        // Получаем данные с учетом вложенной структуры
-        const categoryName = this.getCategoryNameFromRecipe(recipe);
-        const authorName = this.getAuthorNameFromRecipe(recipe);
+        // Используем данные напрямую из RecipeDto
+        const categoryName = recipe.category ? recipe.category.name : 'Не указана';
+        const authorName = recipe.author ? this.getAuthorDisplayName(recipe.author) : 'Неизвестен';
         const ingredients = recipe.ingredients || [];
         const description = recipe.description || 'Описание отсутствует';
+        const inventoryItems = recipe.inventoryItems || [];
+        const commentCount = recipe.commentCount || 0;
 
         modalBody.innerHTML = `
             <div class="row">
@@ -377,7 +368,7 @@ class MyRecipesApp extends BaseApiClient {
                     <div class="mb-3">
                         <h6>${this.messages['recipe-details-inventory']}:</h6>
                         <div class="d-flex flex-wrap gap-2">
-                            ${this.getInventoryItems(inventoryItems)}
+                            ${this.getInventoryItemsList(inventoryItems)}
                         </div>
                     </div>
 
@@ -389,7 +380,7 @@ class MyRecipesApp extends BaseApiClient {
                                   data-recipe-id="${recipe.id}"
                                   data-recipe-title="${CommonUtils.escapeHtml(recipe.title)}"
                                   title="${this.messages.view} ${this.messages.comments.toLowerCase()}">
-                                💬 ${totalCommentCount} ${CommonUtils.getCommentText(totalCommentCount)}
+                                💬 ${commentCount} ${CommonUtils.getCommentText(commentCount)}
                             </span>
                         </p>
                     </div>
@@ -397,7 +388,6 @@ class MyRecipesApp extends BaseApiClient {
             </div>
         `;
 
-        // Добавляем обработчик для комментариев в модальном окне
         const commentsBadge = modalBody.querySelector('.comments-badge');
         if (commentsBadge) {
             commentsBadge.addEventListener('click', () => {
@@ -412,7 +402,6 @@ class MyRecipesApp extends BaseApiClient {
 
                 this.showCommentsModal(recipeId, recipeTitle);
 
-                // Закрываем текущее модальное окно
                 const recipeModal = bootstrap.Modal.getInstance(document.getElementById('recipeModal'));
                 if (recipeModal) {
                     recipeModal.hide();
@@ -424,35 +413,15 @@ class MyRecipesApp extends BaseApiClient {
         modal.show();
     }
 
-    // Специальные методы для извлечения данных из вложенной структуры
-    getCategoryNameFromRecipe(recipe) {
-        if (!recipe) return 'Не указана';
+    getAuthorDisplayName(author) {
+        if (!author) return 'Неизвестен';
 
-        // Пробуем разные пути к данным категории
-        if (recipe.categoryName) {
-            return recipe.categoryName;
-        } else if (recipe.category && recipe.category.name) {
-            return recipe.category.name;
-        } else if (recipe.category && typeof recipe.category === 'string') {
-            return recipe.category;
-        } else if (recipe.categoryId) {
-            return `Категория ID: ${recipe.categoryId}`;
-        }
-        return 'Не указана';
-    }
-
-    getAuthorNameFromRecipe(recipe) {
-        if (!recipe) return 'Неизвестен';
-
-        // Пробуем разные пути к данным автора
-        if (recipe.authorName) {
-            return recipe.authorName;
-        } else if (recipe.author && recipe.author.user && recipe.author.user.username) {
-            return recipe.author.user.username;
-        } else if (recipe.author && recipe.author.username) {
-            return recipe.author.username;
-        } else if (recipe.author && typeof recipe.author === 'string') {
-            return recipe.author;
+        if (author.username) {
+            return author.username;
+        } else if (author.name) {
+            return author.name;
+        } else if (author.user && author.user.username) {
+            return author.user.username;
         }
         return 'Неизвестен';
     }
@@ -469,7 +438,7 @@ class MyRecipesApp extends BaseApiClient {
         `).join('');
     }
 
-    getInventoryItems(inventoryItems) {
+    getInventoryItemsList(inventoryItems) {
         if (!inventoryItems || inventoryItems.length === 0) {
             return '<span class="text-muted">Инвентарь не указан</span>';
         }
@@ -558,14 +527,26 @@ class MyRecipesApp extends BaseApiClient {
     }
 
     editRecipe(recipeId) {
-        window.location.href = `/recipe/edit/${recipeId}`;
+        console.log("Edit recipe with ID:", recipeId);
+
+        // Проверяем, что recipeId валидный
+        if (!recipeId || recipeId === 'undefined') {
+            console.error('Invalid recipe ID for editing:', recipeId);
+            CommonUtils.showToast('Неверный идентификатор рецепта для редактирования', 'error');
+            return;
+        }
+
+        // Явно формируем URL
+        const editUrl = `/recipe/edit/${recipeId}`;
+        console.log("Redirecting to:", editUrl);
+
+        window.location.href = editUrl;
     }
 
     showDeleteConfirmation(recipeId, recipeTitle) {
         document.getElementById('recipeToDeleteTitle').textContent = recipeTitle;
 
         const confirmBtn = document.getElementById('confirmDeleteBtn');
-        // Удаляем старые обработчики и добавляем новый
         confirmBtn.replaceWith(confirmBtn.cloneNode(true));
         const newConfirmBtn = document.getElementById('confirmDeleteBtn');
 
@@ -589,7 +570,6 @@ class MyRecipesApp extends BaseApiClient {
             if (response.success) {
                 CommonUtils.showToast(this.messages['delete-success'], 'success');
 
-                // Обновляем локальный массив и перерисовываем таблицу
                 this.currentUserRecipes = this.currentUserRecipes.filter(recipe => recipe.id != recipeId);
                 this.updateStatistics(this.currentUserRecipes);
                 this.displayRecipes(this.currentUserRecipes);
@@ -600,10 +580,8 @@ class MyRecipesApp extends BaseApiClient {
         } catch (error) {
             console.error('Error deleting recipe:', error);
 
-            // Обрабатываем 404 ошибку как успешное удаление
             if (error.message.includes('404')) {
                 CommonUtils.showToast(this.messages['delete-success'], 'success');
-                // Обновляем локальный список
                 this.currentUserRecipes = this.currentUserRecipes.filter(recipe => recipe.id != recipeId);
                 this.updateStatistics(this.currentUserRecipes);
                 this.displayRecipes(this.currentUserRecipes);
@@ -618,7 +596,6 @@ class MyRecipesApp extends BaseApiClient {
         try {
             console.log("Publishing recipe:", recipeId);
 
-            // Показываем индикатор загрузки
             const publishButton = document.querySelector(`.publish-recipe[data-recipe-id="${recipeId}"]`);
             if (publishButton) {
                 const originalText = publishButton.innerHTML;
@@ -631,7 +608,6 @@ class MyRecipesApp extends BaseApiClient {
             if (response.success) {
                 CommonUtils.showToast(this.messages['publish-success'], 'success');
 
-                // Обновляем локальные данные
                 const recipeIndex = this.currentUserRecipes.findIndex(r => r.id == recipeId);
                 if (recipeIndex !== -1) {
                     this.currentUserRecipes[recipeIndex].published = true;
@@ -647,7 +623,6 @@ class MyRecipesApp extends BaseApiClient {
         } catch (error) {
             console.error('Error publishing recipe:', error);
 
-            // Восстанавливаем кнопку
             const publishButton = document.querySelector(`.publish-recipe[data-recipe-id="${recipeId}"]`);
             if (publishButton) {
                 publishButton.innerHTML = '📢 Опубликовать';
@@ -662,7 +637,6 @@ class MyRecipesApp extends BaseApiClient {
     setupEventListeners() {
         console.log("Event listeners setup");
 
-        // Фильтры
         const filterAll = document.getElementById('filterAll');
         const filterPublished = document.getElementById('filterPublished');
         const filterDrafts = document.getElementById('filterDrafts');

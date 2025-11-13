@@ -290,16 +290,22 @@ public class RecipeController {
     }
 
     @GetMapping("/{id}/detailed")
-    public ResponseEntity<ApiResponse<RecipeWithDetailsDto>> getRecipeWithDetails(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<RecipeDto>> getRecipeWithDetails(@PathVariable Long id) {
         try {
-            RecipeWithDetailsDto recipeWithDetails = recipeService.getRecipeWithDetails(id);
-            return ResponseEntity.ok(ApiResponse.success(recipeWithDetails));
+            RecipeDto recipeDto = recipeService.getRecipeWithDetails(id);
+            if (!recipeDto.published()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error(messageProvider.getMessage("recipe.not_found_or_unpublished")));
+            }
+
+            return ResponseEntity.ok(ApiResponse.success(recipeDto));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(messageProvider.getMessage("recipe.details.load_failed")));
+                    .body(ApiResponse.error(messageProvider.getMessage("recipe.details.load_failed") + ": " + e.getMessage()));
         }
     }
 
@@ -406,24 +412,6 @@ public class RecipeController {
         }
         return recipeService.getPublishedRecipesByAuthor(authorId);
     }
-
-//    private void validateCreateRequest(CreateRecipeRequest request) {
-//        if (request.title() == null || request.title().trim().isEmpty()) {
-//            throw new IllegalArgumentException(messageProvider.getMessage("recipe.title.required"));
-//        }
-//        if (request.categoryId() == null) {
-//            throw new IllegalArgumentException(messageProvider.getMessage("recipe.category.required"));
-//        }
-//        if (request.authorId() == null) {
-//            throw new IllegalArgumentException(messageProvider.getMessage("recipe.author.required"));
-//        }
-//        if (request.ingredients() == null || request.ingredients().isEmpty()) {
-//            throw new IllegalArgumentException(messageProvider.getMessage("recipe.ingredients.required"));
-//        }
-//        if (request.description() == null || request.description().trim().isEmpty()) {
-//            throw new IllegalArgumentException(messageProvider.getMessage("recipe.description.required"));
-//        }
-//    }
 
     public record UpdateRecipeRequest(
             String title,

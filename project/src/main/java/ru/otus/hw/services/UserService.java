@@ -19,4 +19,6 @@ public interface UserService {
     boolean emailExists(String email);
 
     String getUserBio(String username);
+
+    Optional<UserDto> getUserWithAuthorAndRoles(Long id);
 }

@@ -1,28 +1,28 @@
 package ru.otus.hw.services;
 
 import ru.otus.hw.dto.CommentDto;
+import ru.otus.hw.models.Recipe;
+import ru.otus.hw.models.User;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface CommentService {
-    CommentDto createComment(String content, Long userId, Long recipeId);
+    CommentDto createCommentForRecipe(String content, String username, Long recipeId);
 
     CommentDto updateComment(Long commentId, String content, Long currentUserId);
 
     void deleteComment(Long commentId, Long currentUserId);
 
+    List<CommentDto> getCommentsForRecipe(Long recipeId, String username);
+
     Optional<CommentDto> getCommentById(Long id);
 
     Optional<CommentDto> getCommentById(Long id, Long currentUserId);
 
-    List<CommentDto> getCommentsByRecipe(Long recipeId);
-
-    List<CommentDto> getCommentsByRecipe(Long recipeId, Long currentUserId);
-
-    List<CommentDto> getCommentsByRecipeId(Long recipeId);
-
     List<CommentDto> getCommentsByUser(Long userId);
 
     int getCommentCountForRecipe(Long recipeId);
+
+    Long getUserIdByUsername(String username);
 }

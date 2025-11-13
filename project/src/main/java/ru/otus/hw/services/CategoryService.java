@@ -4,6 +4,7 @@ import ru.otus.hw.dto.CategoryDto;
 import ru.otus.hw.dto.CategoryWithUsageDto;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface CategoryService {
@@ -28,4 +29,10 @@ public interface CategoryService {
     List<CategoryDto> getUnusedCategories();
 
     List<CategoryWithUsageDto> getCategoriesWithUsage();
+
+    List<CategoryDto> getAllCategoriesWithRecipes();
+
+    Map<Long, Boolean> getCategoriesUsageStatus(List<Long> categoryIds);
+
+    List<CategoryWithUsageDto> getCategoriesWithPublishedUsage();
 }

@@ -11,11 +11,24 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "authors")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
+@Table(name = "authors")
+@NamedEntityGraphs({
+        @NamedEntityGraph(
+                name = "Author.withUser",
+                attributeNodes = @NamedAttributeNode("user")
+        ),
+        @NamedEntityGraph(
+                name = "Author.withUserAndRecipes",
+                attributeNodes = {
+                        @NamedAttributeNode("user"),
+                        @NamedAttributeNode("recipes")
+                }
+        )
+})
 public class Author {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

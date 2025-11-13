@@ -8,6 +8,7 @@ import ru.otus.hw.converters.UserConverter;
 import ru.otus.hw.dto.AuthorDto;
 import ru.otus.hw.dto.UserDto;
 import ru.otus.hw.exceptions.EntityAlreadyExistsException;
+import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.models.User;
 import ru.otus.hw.repositories.UserRepository;
 import ru.otus.hw.util.MessageProvider;
@@ -52,7 +53,11 @@ public class UserServiceImpl implements UserService {
 
         authorService.createAuthorForUser(savedUser.getId(), bio);
 
-        return userConverter.toDto(savedUser);
+        return userRepository.findByIdWithRolesAndAuthor(savedUser.getId())
+                .map(userConverter::toDto)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageProvider.getMessage("user.not_found", savedUser.getId())
+                ));
     }
 
     private boolean isFirstUserInSystem() {
@@ -60,18 +65,21 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<UserDto> getUserById(Long id) {
-        return userRepository.findById(id)
+        return userRepository.findByIdWithRolesAndAuthor(id)
                 .map(userConverter::toDto);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<UserDto> getUserByUsername(String username) {
-        return userRepository.findByUsername(username)
+        return userRepository.findByUsernameWithRoles(username)
                 .map(userConverter::toDto);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<UserDto> getAllEnabledUsers() {
         return userRepository.findAllEnabledUsers().stream()
                 .map(userConverter::toDto)
@@ -79,19 +87,29 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean userExists(String username) {
         return userRepository.existsByUsername(username);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean emailExists(String email) {
         return userRepository.existsByEmail(email);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public String getUserBio(String username) {
         return authorService.getAuthorByUsername(username)
                 .map(AuthorDto::bio)
                 .orElse(null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<UserDto> getUserWithAuthorAndRoles(Long id) {
+        return userRepository.findByIdWithRolesAndAuthor(id)
+                .map(userConverter::toDto);
     }
 }

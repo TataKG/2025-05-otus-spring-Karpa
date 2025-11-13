@@ -13,6 +13,47 @@ import java.util.List;
 @NoArgsConstructor
 @Entity
 @Table(name = "recipes")
+@NamedEntityGraphs({
+        @NamedEntityGraph(
+                name = "Recipe.withBasicRelations",
+                attributeNodes = {
+                        @NamedAttributeNode("category"),
+                        @NamedAttributeNode("author")
+                }
+        ),
+        @NamedEntityGraph(
+                name = "Recipe.withAllRelations",
+                attributeNodes = {
+                        @NamedAttributeNode("category"),
+                        @NamedAttributeNode("author"),
+                        @NamedAttributeNode("inventoryItems")
+                }
+        ),
+        @NamedEntityGraph(
+                name = "Recipe.withCategoryAndAuthor",
+                attributeNodes = {
+                        @NamedAttributeNode("category"),
+                        @NamedAttributeNode("author")
+                }
+        ),
+        @NamedEntityGraph(
+                name = "Recipe.withCommentsAndUser",
+                attributeNodes = {
+                        @NamedAttributeNode("category"),
+                        @NamedAttributeNode("author"),
+                        @NamedAttributeNode("comments")
+                }
+        ),
+        @NamedEntityGraph(
+                name = "Recipe.withInventoryAndIngredients",
+                attributeNodes = {
+                        @NamedAttributeNode("category"),
+                        @NamedAttributeNode("author"),
+                        @NamedAttributeNode("inventoryItems"),
+                        @NamedAttributeNode("ingredients")
+                }
+        )
+})
 public class Recipe {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

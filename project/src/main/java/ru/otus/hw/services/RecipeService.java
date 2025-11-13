@@ -3,7 +3,6 @@ package ru.otus.hw.services;
 import ru.otus.hw.dto.InventoryDto;
 import ru.otus.hw.dto.RecipeDto;
 import ru.otus.hw.dto.RecipeSummaryDto;
-import ru.otus.hw.dto.RecipeWithDetailsDto;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +25,7 @@ public interface RecipeService {
 
     Optional<RecipeDto> getRecipeByIdWithAllRelations(Long id);
 
-    RecipeWithDetailsDto getRecipeWithDetails(Long id);
+    RecipeDto getRecipeWithDetails(Long id);
 
     List<RecipeSummaryDto> getAllPublishedRecipes();
 
@@ -54,9 +53,4 @@ public interface RecipeService {
 
     long getPublishedRecipesCount();
 
-    List<InventoryDto> getInventoryByRecipeId(Long recipeId);
-
-    boolean isInventoryUsedInRecipes(Long inventoryId);
-
-    long getRecipeCountByInventoryId(Long inventoryId);
 }

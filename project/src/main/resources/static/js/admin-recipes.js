@@ -1,3 +1,4 @@
+// admin-recipes.js
 class RecipesAdminApp extends BaseApiClient {
     constructor() {
         super('/api/admin');
@@ -43,7 +44,6 @@ class RecipesAdminApp extends BaseApiClient {
             if (categoryId) params.append('categoryId', categoryId);
             if (authorId) params.append('authorId', authorId);
 
-            // ИСПРАВЛЕНО: правильный URL для API
             const url = `/recipes?${params.toString()}`;
             const response = await this.get(url);
             console.log('Recipes loaded:', response);
@@ -64,7 +64,6 @@ class RecipesAdminApp extends BaseApiClient {
 
     async loadCategories() {
         try {
-            // ИСПРАВЛЕНО: правильный URL для категорий
             const response = await this.get('/categories');
             if (response.success) {
                 this.categories = response.data;
@@ -78,7 +77,6 @@ class RecipesAdminApp extends BaseApiClient {
 
     async loadAuthors() {
         try {
-            // ИСПРАВЛЕНО: правильный URL для авторов
             const response = await this.get('/authors');
             if (response.success) {
                 this.authors = response.data;
@@ -92,7 +90,6 @@ class RecipesAdminApp extends BaseApiClient {
 
     populateCategoryFilter() {
         const select = document.getElementById('categoryFilter');
-        // Оставляем только опцию "Все категории"
         while (select.children.length > 1) {
             select.removeChild(select.lastChild);
         }
@@ -107,15 +104,14 @@ class RecipesAdminApp extends BaseApiClient {
 
     populateAuthorFilter() {
         const select = document.getElementById('authorFilter');
-        // Оставляем только опцию "Все авторы"
         while (select.children.length > 1) {
             select.removeChild(select.lastChild);
         }
 
         this.authors.forEach(author => {
             const option = document.createElement('option');
-            option.value = author.user.id;
-            option.textContent = author.user.username;
+            option.value = author.id;
+            option.textContent = author.user ? author.user.username : author.username || 'Неизвестен';
             select.appendChild(option);
         });
     }
@@ -138,8 +134,8 @@ class RecipesAdminApp extends BaseApiClient {
             <tr>
                 <td>${recipe.id}</td>
                 <td class="fw-bold">${CommonUtils.escapeHtml(recipe.title)}</td>
-                <td>${CommonUtils.escapeHtml(recipe.category?.name || '—')}</td>
-                <td>${CommonUtils.escapeHtml(recipe.author?.user?.username || '—')}</td>
+                <td>${CommonUtils.escapeHtml(recipe.category?.name || recipe.categoryName || '—')}</td>
+                <td>${CommonUtils.escapeHtml(recipe.author?.user?.username || recipe.authorName || '—')}</td>
                 <td>
                     <span class="badge bg-info">${recipe.commentCount || 0}</span>
                 </td>
@@ -180,7 +176,6 @@ class RecipesAdminApp extends BaseApiClient {
     }
 
     setupEventListeners() {
-        // Поиск
         const searchInput = document.getElementById('searchInput');
         if (searchInput) {
             let searchTimeout;
@@ -192,24 +187,34 @@ class RecipesAdminApp extends BaseApiClient {
             });
         }
 
-        // Фильтры
-        document.getElementById('categoryFilter').addEventListener('change', () => {
-            this.applyFilters();
-        });
+        const categoryFilter = document.getElementById('categoryFilter');
+        const authorFilter = document.getElementById('authorFilter');
 
-        document.getElementById('authorFilter').addEventListener('change', () => {
-            this.applyFilters();
-        });
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', () => {
+                this.applyFilters();
+            });
+        }
 
-        // Очистка фильтров
-        document.getElementById('clearFilters').addEventListener('click', () => {
-            this.clearFilters();
-        });
+        if (authorFilter) {
+            authorFilter.addEventListener('change', () => {
+                this.applyFilters();
+            });
+        }
 
-        // Удаление рецепта
-        document.getElementById('confirmDeleteRecipeBtn').addEventListener('click', () => {
-            this.deleteRecipe();
-        });
+        const clearFilters = document.getElementById('clearFilters');
+        if (clearFilters) {
+            clearFilters.addEventListener('click', () => {
+                this.clearFilters();
+            });
+        }
+
+        const confirmDeleteBtn = document.getElementById('confirmDeleteRecipeBtn');
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', () => {
+                this.deleteRecipe();
+            });
+        }
     }
 
     applyFilters() {
@@ -237,7 +242,6 @@ class RecipesAdminApp extends BaseApiClient {
     openDeleteModal(recipeId, recipeTitle) {
         console.log('Opening delete modal for recipe:', recipeId, recipeTitle);
 
-        // Проверяем существование элементов перед обращением к ним
         const titleElement = document.getElementById('deleteRecipeTitle');
         const modalElement = document.getElementById('deleteRecipeModal');
 
@@ -251,11 +255,9 @@ class RecipesAdminApp extends BaseApiClient {
             return;
         }
 
-        // Устанавливаем значения
         titleElement.textContent = recipeTitle;
         modalElement.dataset.recipeId = recipeId;
 
-        // Показываем модальное окно
         const modal = new bootstrap.Modal(modalElement);
         modal.show();
 
@@ -279,7 +281,6 @@ class RecipesAdminApp extends BaseApiClient {
             return;
         }
 
-        // Блокируем кнопку во время удаления
         deleteBtn.disabled = true;
         deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Удаление...';
 
@@ -291,13 +292,11 @@ class RecipesAdminApp extends BaseApiClient {
             if (response.success) {
                 CommonUtils.showToast(response.message || this.translations.deleteSuccess);
 
-                // Закрываем модальное окно
                 const modal = bootstrap.Modal.getInstance(modalElement);
                 if (modal) {
                     modal.hide();
                 }
 
-                // Перезагружаем список рецептов
                 await this.loadRecipes();
             } else {
                 CommonUtils.showToast(response.message || this.translations.errorDelete, 'error');
@@ -306,13 +305,11 @@ class RecipesAdminApp extends BaseApiClient {
             console.error('Error deleting recipe:', error);
             CommonUtils.showToast(this.translations.errorDelete, 'error');
         } finally {
-            // Разблокируем кнопку
             deleteBtn.disabled = false;
             deleteBtn.innerHTML = 'Удалить';
         }
     }
 }
-
 
 // Инициализация приложения
 let recipesApp;

@@ -27,6 +27,7 @@ public class AuthorServiceImpl implements AuthorService {
     private final MessageProvider messageProvider;
 
     @Override
+    @Transactional
     public AuthorDto createAuthorForUser(Long userId, String bio) {
         try {
             System.out.println("Creating author for user ID: " + userId + ", bio: " + bio);
@@ -39,7 +40,8 @@ public class AuthorServiceImpl implements AuthorService {
                 );
             }
 
-            User user = userRepository.findById(userId)
+            // Загружаем пользователя с ролями
+            User user = userRepository.findByIdWithRolesAndAuthor(userId)
                     .orElseThrow(() -> {
                         System.err.println("User not found with ID: " + userId);
                         return new EntityNotFoundException(
@@ -57,7 +59,12 @@ public class AuthorServiceImpl implements AuthorService {
 
             System.out.println("Author created successfully with ID: " + savedAuthor.getId());
 
-            return authorConverter.toDto(savedAuthor);
+            // Возвращаем автора с загруженными связями
+            return authorRepository.findByIdWithUserAndRoles(savedAuthor.getId())
+                    .map(authorConverter::toDto)
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            messageProvider.getMessage("author.not_found", savedAuthor.getId())
+                    ));
         } catch (Exception e) {
             System.err.println("Error creating author for user " + userId + ": " + e.getMessage());
             e.printStackTrace();
@@ -66,32 +73,38 @@ public class AuthorServiceImpl implements AuthorService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<AuthorDto> getAuthorForInternalUse(Long id) {
         return authorRepository.findByIdWithUser(id)
                 .map(authorConverter::toDto);
     }
 
     @Override
+    @Transactional
     public AuthorDto convertUserToAuthor(Long userId, String bio) {
         return createAuthorForUser(userId, bio);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<AuthorDto> getAuthorById(Long id) {
-        return authorRepository.findByIdWithUser(id)
+        // Используем метод с загрузкой пользователя и ролей
+        return authorRepository.findByIdWithUserAndRoles(id)
                 .map(authorConverter::toDto);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<AuthorDto> getAuthorByUserId(Long userId) {
         return authorRepository.findByUserId(userId)
                 .map(authorConverter::toDto);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<AuthorDto> getAuthorByUsername(String username) {
         try {
-            System.out.println("Searching author by username: " + username); // Логирование
+            System.out.println("Searching author by username: " + username);
 
             Optional<Author> authorOpt = authorRepository.findByUserUsername(username);
 
@@ -111,15 +124,24 @@ public class AuthorServiceImpl implements AuthorService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AuthorDto> getAllAuthors() {
-        return authorRepository.findAllWithUserAndRoles().stream()
-                .map(authorConverter::toDto)
+        List<Author> authors = authorRepository.findAllWithUser();
+
+        return authors.stream()
+                .map(author -> {
+                      if (author.getUser() != null && author.getUser().getRoles() != null) {
+                        author.getUser().getRoles().size();
+                    }
+                    return authorConverter.toDto(author);
+                })
                 .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional
     public AuthorDto updateAuthor(Long id, String bio) {
-        Author author = authorRepository.findById(id)
+        Author author = authorRepository.findByIdWithUser(id)
                 .orElseThrow(() -> new EntityNotFoundException(
                         messageProvider.getMessage("author.not_found", id)
                 ));
@@ -129,10 +151,12 @@ public class AuthorServiceImpl implements AuthorService {
         }
 
         Author updatedAuthor = authorRepository.save(author);
+
         return authorConverter.toDto(updatedAuthor);
     }
 
     @Override
+    @Transactional
     public void deleteAuthor(Long id) {
         Author author = authorRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -142,7 +166,18 @@ public class AuthorServiceImpl implements AuthorService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean existsByUserId(Long userId) {
         return authorRepository.findByUserId(userId).isPresent();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<AuthorDto> getAuthorWithRecipes(Long id) {
+        return authorRepository.findById(id)
+                .map(author -> {
+                    int recipeCount = author.getRecipes() != null ? author.getRecipes().size() : 0;
+                    return authorConverter.toDto(author, recipeCount);
+                });
     }
 }

@@ -13,6 +13,7 @@ import ru.otus.hw.repositories.CategoryRepository;
 import ru.otus.hw.util.MessageProvider;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -25,6 +26,7 @@ public class CategoryServiceImpl implements CategoryService {
     private final MessageProvider messageProvider;
 
     @Override
+    @Transactional
     public CategoryDto createCategory(String name, String description) {
         validateCategoryName(name);
         String trimmedName = name.trim();
@@ -37,24 +39,33 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<CategoryDto> getCategoryById(Long id) {
         return categoryRepository.findById(id)
                 .map(categoryConverter::toDto);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<CategoryDto> getCategoryEntityForInternalUse(Long id) {
         return categoryRepository.findById(id)
-                .map(categoryConverter::toDto);
+                .map(category -> {
+                    if (category.getRecipes() != null) {
+                        category.getRecipes().size();
+                    }
+                    return categoryConverter.toDto(category);
+                });
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<CategoryDto> getCategoryByName(String name) {
         return categoryRepository.findByName(name)
                 .map(categoryConverter::toDto);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<CategoryDto> getAllCategories() {
         return categoryRepository.findAll().stream()
                 .map(categoryConverter::toDto)
@@ -62,6 +73,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Transactional
     public CategoryDto updateCategory(Long id, String name, String description) {
         Category category = getCategoryEntity(id);
         validateCategoryName(name);
@@ -79,6 +91,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Transactional
     public void deleteCategory(Long id) {
         Category category = getCategoryEntity(id);
 
@@ -92,16 +105,19 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean isCategoryUsedInRecipes(Long categoryId) {
         return categoryRepository.isUsedInRecipes(categoryId);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public long getRecipeCountByCategory(Long categoryId) {
         return categoryRepository.countRecipesByCategoryId(categoryId);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<CategoryDto> getUnusedCategories() {
         return categoryRepository.findUnusedCategories().stream()
                 .map(categoryConverter::toDto)
@@ -111,12 +127,47 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional(readOnly = true)
     public List<CategoryWithUsageDto> getCategoriesWithUsage() {
-        return categoryRepository.findAll().stream()
-                .map(category -> {
-                    long recipeCount = categoryRepository.countRecipesByCategoryId(category.getId());
+        List<Object[]> results = categoryRepository.findAllWithRecipeCount();
+
+        return results.stream()
+                .map(result -> {
+                    Category category = (Category) result[0];
+                    Long recipeCount = (Long) result[1];
                     return categoryConverter.toDtoWithUsage(category, recipeCount);
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CategoryWithUsageDto> getCategoriesWithPublishedUsage() {
+        List<Object[]> results = categoryRepository.findAllWithPublishedRecipeCount();
+
+        return results.stream()
+                .map(result -> {
+                    Category category = (Category) result[0];
+                    Long publishedRecipeCount = (Long) result[1];
+                    return categoryConverter.toDtoWithUsage(category, publishedRecipeCount);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CategoryDto> getAllCategoriesWithRecipes() {
+        return categoryRepository.findAllWithRecipes().stream()
+                .map(categoryConverter::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, Boolean> getCategoriesUsageStatus(List<Long> categoryIds) {
+        return categoryIds.stream()
+                .collect(Collectors.toMap(
+                        categoryId -> categoryId,
+                        categoryRepository::isUsedInRecipes
+                ));
     }
 
     private void validateCategoryName(String name) {

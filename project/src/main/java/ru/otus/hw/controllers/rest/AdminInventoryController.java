@@ -25,7 +25,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/inventory")
 @RequiredArgsConstructor
-@Slf4j
 public class AdminInventoryController {
 
     private final InventoryService inventoryService;
@@ -37,16 +36,20 @@ public class AdminInventoryController {
             List<InventoryDto> inventory = inventoryService.getAllInventory();
             return ResponseEntity.ok(ApiResponse.success(inventory));
         } catch (Exception e) {
-            log.error("Error getting all inventory", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Ошибка при получении списка инвентаря: " + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("inventories.load_error")));
         }
     }
 
     @GetMapping("/with-usage")
     public ResponseEntity<ApiResponse<List<InventoryWithUsageDto>>> getInventoryWithUsage() {
-        List<InventoryWithUsageDto> inventory = inventoryService.getInventoryWithUsage();
-        return ResponseEntity.ok(ApiResponse.success(inventory));
+        try {
+            List<InventoryWithUsageDto> inventory = inventoryService.getInventoryWithUsage();
+            return ResponseEntity.ok(ApiResponse.success(inventory));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(messageProvider.getMessage("inventories.load_error")));
+        }
     }
 
     @PostMapping
@@ -66,6 +69,9 @@ public class AdminInventoryController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error(e.getMessage()));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
         }
     }
 
@@ -81,6 +87,9 @@ public class AdminInventoryController {
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
         }
     }
 
@@ -95,6 +104,9 @@ public class AdminInventoryController {
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(ApiResponse.error(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
         }
     }
 
@@ -105,16 +117,35 @@ public class AdminInventoryController {
             long recipeCount = inventoryService.getRecipeCountByInventory(id);
             InventoryUsageResponse usage = new InventoryUsageResponse(isUsed, recipeCount);
             return ResponseEntity.ok(ApiResponse.success(usage));
-        } catch (Exception e) {
+        } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.error(messageProvider.getMessage("inventory.not_found", id)));
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(messageProvider.getMessage("inventory.usage_error")));
         }
     }
 
     @GetMapping("/unused")
     public ResponseEntity<ApiResponse<List<InventoryDto>>> getUnusedInventory() {
-        List<InventoryDto> unusedInventory = inventoryService.getUnusedInventory();
-        return ResponseEntity.ok(ApiResponse.success(unusedInventory));
+        try {
+            List<InventoryDto> unusedInventory = inventoryService.getUnusedInventory();
+            return ResponseEntity.ok(ApiResponse.success(unusedInventory));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(messageProvider.getMessage("inventories.load_error")));
+        }
+    }
+
+    @GetMapping("/with-published-usage")
+    public ResponseEntity<ApiResponse<List<InventoryWithUsageDto>>> getInventoryWithPublishedUsage() {
+        try {
+            List<InventoryWithUsageDto> inventory = inventoryService.getInventoryWithPublishedUsage();
+            return ResponseEntity.ok(ApiResponse.success(inventory));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(messageProvider.getMessage("inventories.load_error")));
+        }
     }
 
     public record CreateInventoryRequest(String name, String description) {

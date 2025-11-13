@@ -14,16 +14,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.otus.hw.dto.ApiResponse;
 import ru.otus.hw.dto.CommentDto;
-import ru.otus.hw.dto.RecipeDto;
-import ru.otus.hw.dto.UserDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.services.CommentService;
-import ru.otus.hw.services.RecipeService;
-import ru.otus.hw.services.UserService;
 import ru.otus.hw.util.MessageProvider;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,8 +27,6 @@ public class CommentController {
 
     private final CommentService commentService;
     private final MessageProvider messageProvider;
-    private final RecipeService recipeService;
-    private final UserService userService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<CommentDto>> createComment(
@@ -48,24 +41,10 @@ public class CommentController {
             }
 
             String username = authentication.getName();
-            UserDto currentUser = userService.getUserByUsername(username)
-                    .orElseThrow(() -> new EntityNotFoundException(
-                            messageProvider.getMessage("user.not_found")
-                    ));
 
-            RecipeDto recipe = recipeService.getRecipeById(recipeId)
-                    .orElseThrow(() -> new EntityNotFoundException(
-                            messageProvider.getMessage("recipe.not_found")
-                    ));
-
-            if (!recipe.published()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error(messageProvider.getMessage("comment.unpublished_recipe")));
-            }
-
-            CommentDto commentDto = commentService.createComment(
+            CommentDto commentDto = commentService.createCommentForRecipe(
                     request.content(),
-                    currentUser.id(),
+                    username,
                     recipeId
             );
 
@@ -75,9 +54,12 @@ public class CommentController {
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(messageProvider.getMessage("comment.create_error") + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("comment.create_error")));
         }
     }
 
@@ -87,24 +69,16 @@ public class CommentController {
             Authentication authentication) {
 
         try {
-            Long currentUserId = null;
+            String username = null;
             if (authentication != null && authentication.isAuthenticated()) {
-                String username = authentication.getName();
-                currentUserId = userService.getUserByUsername(username)
-                        .map(UserDto::id)
-                        .orElse(null);
+                username = authentication.getName();
             }
 
-            Optional<RecipeDto> recipeOpt = recipeService.getRecipeById(recipeId);
-            if (recipeOpt.isEmpty() || !recipeOpt.get().published()) {
-                return ResponseEntity.ok(ApiResponse.success(List.of()));
-            }
-
-            List<CommentDto> comments = commentService.getCommentsByRecipe(recipeId, currentUserId);
+            List<CommentDto> comments = commentService.getCommentsForRecipe(recipeId, username);
             return ResponseEntity.ok(ApiResponse.success(comments));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(messageProvider.getMessage("comment.load_error") + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("comment.load_error")));
         }
     }
 
@@ -122,15 +96,12 @@ public class CommentController {
             }
 
             String username = authentication.getName();
-            UserDto currentUser = userService.getUserByUsername(username)
-                    .orElseThrow(() -> new EntityNotFoundException(
-                            messageProvider.getMessage("user.not_found")
-                    ));
+            Long currentUserId = commentService.getUserIdByUsername(username);
 
             CommentDto updatedComment = commentService.updateComment(
                     commentId,
                     request.content(),
-                    currentUser.id()
+                    currentUserId
             );
 
             return ResponseEntity.ok(ApiResponse.success(updatedComment, messageProvider.getMessage("comment.updated")));
@@ -143,7 +114,7 @@ public class CommentController {
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(messageProvider.getMessage("comment.update_error") + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("comment.update_error")));
         }
     }
 
@@ -160,12 +131,9 @@ public class CommentController {
             }
 
             String username = authentication.getName();
-            UserDto currentUser = userService.getUserByUsername(username)
-                    .orElseThrow(() -> new EntityNotFoundException(
-                            messageProvider.getMessage("user.not_found")
-                    ));
+            Long currentUserId = commentService.getUserIdByUsername(username);
 
-            commentService.deleteComment(commentId, currentUser.id());
+            commentService.deleteComment(commentId, currentUserId);
 
             return ResponseEntity.ok(
                     ApiResponse.success(null, messageProvider.getMessage("comment.deleted"))
@@ -179,7 +147,7 @@ public class CommentController {
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(messageProvider.getMessage("comment.delete_error") + e.getMessage()));
+                    .body(ApiResponse.error(messageProvider.getMessage("comment.delete_error")));
         }
     }
 

@@ -318,20 +318,8 @@ class CookbookApp extends BaseApiClient {
             if (response.success) {
                 console.log('✅ Recipe details loaded successfully');
 
-                // Определяем структуру данных
-                let recipeData;
-                if (response.data.recipe) {
-                    console.log('🔍 Data is nested under "recipe" property');
-                    recipeData = response.data.recipe;
-                } else if (response.data) {
-                    console.log('🔍 Data is directly in response.data');
-                    recipeData = response.data;
-                } else {
-                    console.error('❌ No recipe data found in response');
-                    CommonUtils.showToast('Данные рецепта не найдены', 'error');
-                    return;
-                }
-
+                // Используем данные напрямую из response.data (RecipeDto)
+                const recipeData = response.data;
                 console.log('🎯 Final recipe data to display:', recipeData);
                 this.showRecipeModal(recipeData);
             } else {
@@ -401,19 +389,13 @@ class CookbookApp extends BaseApiClient {
 
         modalTitle.textContent = `📖 ${CommonUtils.escapeHtml(recipe.title)}`;
 
-        // Детальная отладка структуры данных
-        console.log('🔍 Recipe category structure:', recipe.category);
-        console.log('🔍 Recipe author structure:', recipe.author);
-        console.log('🔍 Recipe ingredients:', recipe.ingredients);
-        console.log('🔍 Recipe inventoryItems:', recipe.inventoryItems);
-
-        // Используем улучшенные методы для получения данных
-        const categoryName = this.getCategoryName(recipe);
-        const authorName = this.getAuthorName(recipe);
-        const ingredients = this.getIngredients(recipe);
+        // Используем данные напрямую из RecipeDto
+        const categoryName = recipe.category ? recipe.category.name : 'Не указана';
+        const authorName = recipe.author ? this.getAuthorDisplayName(recipe.author) : 'Неизвестен';
+        const ingredients = recipe.ingredients || [];
         const description = recipe.description || 'Описание отсутствует';
-        const inventoryItems = this.getInventoryItems(recipe);
-        const commentCount = this.getCommentCount(recipe);
+        const inventoryItems = recipe.inventoryItems || [];
+        const commentCount = recipe.commentCount || 0;
 
         console.log('📊 Extracted data:', {
             categoryName,
@@ -495,97 +477,18 @@ class CookbookApp extends BaseApiClient {
         }
     }
 
-    getCategoryName(recipe) {
-        if (!recipe) return 'Не указана';
+    getAuthorDisplayName(author) {
+        if (!author) return 'Неизвестен';
 
-        console.log('🔍 Getting category name from:', recipe.category);
-
-        // Пробуем разные пути к данным категории
-        if (recipe.categoryName) {
-            return recipe.categoryName;
-        } else if (recipe.category && recipe.category.name) {
-            return recipe.category.name;
-        } else if (recipe.category && typeof recipe.category === 'string') {
-            return recipe.category;
-        } else if (recipe.categoryId) {
-            return `Категория ID: ${recipe.categoryId}`;
-        }
-        return 'Не указана';
-    }
-
-    getAuthorName(recipe) {
-        if (!recipe) return 'Неизвестен';
-
-        console.log('🔍 Getting author name from:', recipe.author);
-
-        // Пробуем разные пути к данным автора
-        if (recipe.authorName) {
-            return recipe.authorName;
-        } else if (recipe.author && recipe.author.user && recipe.author.user.username) {
-            return recipe.author.user.username;
-        } else if (recipe.author && recipe.author.username) {
-            return recipe.author.username;
-        } else if (recipe.author && typeof recipe.author === 'string') {
-            return recipe.author;
-        } else if (recipe.author && recipe.author.name) {
-            return recipe.author.name;
-        } else if (recipe.authorName) {
-            return recipe.authorName;
+        // Пробуем разные пути к данным автора в AuthorDto
+        if (author.username) {
+            return author.username;
+        } else if (author.name) {
+            return author.name;
+        } else if (author.user && author.user.username) {
+            return author.user.username;
         }
         return 'Неизвестен';
-    }
-
-    getIngredients(recipe) {
-        if (!recipe) return [];
-
-        console.log('🔍 Getting ingredients from:', recipe.ingredients);
-
-        // Пробуем разные пути к данным ингредиентов
-        if (Array.isArray(recipe.ingredients)) {
-            return recipe.ingredients;
-        } else if (recipe.ingredientList) {
-            return recipe.ingredientList;
-        } else if (recipe.ingredientsList) {
-            return recipe.ingredientsList;
-        }
-        return [];
-    }
-
-    getInventoryItems(recipe) {
-        if (!recipe) return [];
-
-        console.log('🔍 Getting inventory items from:', recipe.inventoryItems);
-
-        // Пробуем разные пути к данным инвентаря
-        if (Array.isArray(recipe.inventoryItems)) {
-            return recipe.inventoryItems;
-        } else if (recipe.inventoryList) {
-            return recipe.inventoryList;
-        } else if (recipe.equipment) {
-            return recipe.equipment;
-        } else if (recipe.tools) {
-            return recipe.tools;
-        }
-        return [];
-    }
-
-    getCommentCount(recipe) {
-        if (!recipe) return 0;
-
-        console.log('🔍 Getting comment count from:', {
-            commentCount: recipe.commentCount,
-            commentsCount: recipe.commentsCount,
-            comments: recipe.comments
-        });
-
-        if (recipe.commentCount !== undefined) {
-            return recipe.commentCount;
-        } else if (recipe.commentsCount !== undefined) {
-            return recipe.commentsCount;
-        } else if (Array.isArray(recipe.comments)) {
-            return recipe.comments.length;
-        }
-        return 0;
     }
 
     getIngredientsList(ingredients) {

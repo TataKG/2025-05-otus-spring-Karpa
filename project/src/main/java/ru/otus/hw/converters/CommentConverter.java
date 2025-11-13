@@ -19,7 +19,7 @@ public class CommentConverter {
         return new CommentDto(
                 comment.getId(),
                 comment.getContent(),
-                comment.getUser() != null ? UserDto.fromEntity(comment.getUser()) : null,
+                comment.getUser() != null ? userConverter.toDto(comment.getUser()) : null, // ✅ Использовать конвертер
                 comment.getRecipe() != null ? comment.getRecipe().getId() : null,
                 comment.getCreatedAt(),
                 comment.getUpdatedAt(),
@@ -29,16 +29,14 @@ public class CommentConverter {
     }
 
     public CommentDto toDto(Comment comment, Long currentUserId) {
-        boolean isOwner = false;
-
-        if (currentUserId != null && comment.getUser() != null) {
-            isOwner = comment.getUser().getId() == currentUserId.longValue();
-        }
+        boolean isOwner = currentUserId != null &&
+                comment.getUser() != null &&
+                comment.getUser().getId().equals(currentUserId);
 
         return new CommentDto(
                 comment.getId(),
                 comment.getContent(),
-                comment.getUser() != null ? UserDto.fromEntity(comment.getUser()) : null,
+                comment.getUser() != null ? userConverter.toDto(comment.getUser()) : null,
                 comment.getRecipe() != null ? comment.getRecipe().getId() : null,
                 comment.getCreatedAt(),
                 comment.getUpdatedAt(),

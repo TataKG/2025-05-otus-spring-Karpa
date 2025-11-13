@@ -4,6 +4,7 @@ import ru.otus.hw.dto.InventoryDto;
 import ru.otus.hw.dto.InventoryWithUsageDto;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface InventoryService {
@@ -32,4 +33,14 @@ public interface InventoryService {
     List<InventoryDto> getUnusedInventory();
 
     List<InventoryWithUsageDto> getInventoryWithUsage();
+
+    List<InventoryDto> getInventoryByNameContainingWithRecipes(String name);
+
+    Map<Long, Boolean> getInventoryUsageStatus(List<Long> inventoryIds);
+
+    List<InventoryWithUsageDto> getInventoryWithPublishedUsage();
+
+    Optional<InventoryDto> getInventoryByIdWithRecipes(Long id);
+
+    List<InventoryDto> getAllInventoryWithRecipes();
 }
