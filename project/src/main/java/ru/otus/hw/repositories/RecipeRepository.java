@@ -2,7 +2,6 @@ package ru.otus.hw.repositories;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -16,38 +15,45 @@ import java.util.Optional;
 @Repository
 public interface RecipeRepository extends CrudRepository<Recipe, Long> {
 
-    @EntityGraph(value = "Recipe.withCategoryAndAuthor", type = EntityGraph.EntityGraphType.LOAD)
-    @Query("SELECT r FROM Recipe r WHERE r.author.id = :authorId")
+    @Query("SELECT DISTINCT r FROM Recipe r " +
+            "LEFT JOIN FETCH r.category " +
+            "LEFT JOIN FETCH r.author " +
+            "WHERE r.author.id = :authorId")
     List<Recipe> findByAuthorIdWithDetails(@Param("authorId") Long authorId);
 
-    @EntityGraph(value = "Recipe.withCategoryAndAuthor", type = EntityGraph.EntityGraphType.LOAD)
-    @Query("SELECT r FROM Recipe r WHERE r.author.id = :authorId AND r.published = true")
+    @Query("SELECT DISTINCT r FROM Recipe r " +
+            "LEFT JOIN FETCH r.category " +
+            "LEFT JOIN FETCH r.author " +
+            "LEFT JOIN FETCH r.comments " +
+            "WHERE r.author.id = :authorId AND r.published = true")
     List<Recipe> findPublishedByAuthorIdWithDetails(@Param("authorId") Long authorId);
 
-    @EntityGraph(value = "Recipe.withCategoryAndAuthor", type = EntityGraph.EntityGraphType.LOAD)
-    @Query("SELECT r FROM Recipe r WHERE r.id = :id")
+    @Query("SELECT r FROM Recipe r LEFT JOIN FETCH r.category LEFT JOIN FETCH r.author WHERE r.id = :id")
     Optional<Recipe> findByIdWithBasicRelations(@Param("id") Long id);
 
-    @EntityGraph(value = "Recipe.withCategoryAndAuthor", type = EntityGraph.EntityGraphType.LOAD)
-    @Query("SELECT r FROM Recipe r WHERE r.published = true")
+    @Query("SELECT DISTINCT r FROM Recipe r " +
+            "LEFT JOIN FETCH r.category " +
+            "LEFT JOIN FETCH r.author " +
+            "WHERE r.published = true")
     List<Recipe> findPublishedRecipesWithBasicAssociations();
 
-    @EntityGraph(value = "Recipe.withCategoryAndAuthor", type = EntityGraph.EntityGraphType.LOAD)
-    @Query("SELECT r FROM Recipe r " +
-            "WHERE LOWER(r.title) LIKE LOWER(CONCAT('%', :title, '%')) " +
-            "AND r.published = true")
+    @Query("SELECT DISTINCT r FROM Recipe r " +
+            "LEFT JOIN FETCH r.category " +
+            "LEFT JOIN FETCH r.author " +
+            "WHERE LOWER(r.title) LIKE LOWER(CONCAT('%', :title, '%')) AND r.published = true")
     List<Recipe> findPublishedByTitleContainingIgnoreCase(@Param("title") String title);
 
-    @EntityGraph(value = "Recipe.withCategoryAndAuthor", type = EntityGraph.EntityGraphType.LOAD)
-    @Query("SELECT DISTINCT r " +
-            "FROM Recipe r " +
+    @Query("SELECT DISTINCT r FROM Recipe r " +
             "JOIN r.ingredients i " +
-            "WHERE LOWER(i) LIKE LOWER(CONCAT('%', :ingredient, '%')) " +
-            "AND r.published = true")
+            "LEFT JOIN FETCH r.category " +
+            "LEFT JOIN FETCH r.author " +
+            "WHERE LOWER(i) LIKE LOWER(CONCAT('%', :ingredient, '%')) AND r.published = true")
     List<Recipe> findPublishedByIngredientContaining(@Param("ingredient") String ingredient);
 
-    @EntityGraph(value = "Recipe.withCategoryAndAuthor", type = EntityGraph.EntityGraphType.LOAD)
-    @Query("SELECT r FROM Recipe r WHERE r.published = true " +
+    @Query("SELECT DISTINCT r FROM Recipe r " +
+            "LEFT JOIN FETCH r.category " +
+            "LEFT JOIN FETCH r.author " +
+            "WHERE r.published = true " +
             "AND (:title IS NULL OR LOWER(r.title) LIKE LOWER(CONCAT('%', :title, '%'))) " +
             "AND (:categoryId IS NULL OR r.category.id = :categoryId) " +
             "AND (:authorId IS NULL OR r.author.id = :authorId)")
@@ -55,17 +61,20 @@ public interface RecipeRepository extends CrudRepository<Recipe, Long> {
                                         @Param("categoryId") Long categoryId,
                                         @Param("authorId") Long authorId);
 
-    @EntityGraph(value = "Recipe.withCategoryAndAuthor", type = EntityGraph.EntityGraphType.LOAD)
-    @Query("SELECT r FROM Recipe r WHERE r.published = true ORDER BY r.createdAt DESC")
+    @Query("SELECT r FROM Recipe r " +
+            "LEFT JOIN FETCH r.category " +
+            "LEFT JOIN FETCH r.author " +
+            "WHERE r.published = true " +
+            "ORDER BY r.createdAt DESC")
     List<Recipe> findRecentPublishedRecipes(Pageable pageable);
 
     default List<Recipe> findRecentPublishedRecipes(int limit) {
         return findRecentPublishedRecipes(PageRequest.of(0, limit));
     }
 
-    @EntityGraph(value = "Recipe.withCommentsAndUser", type = EntityGraph.EntityGraphType.LOAD)
-    @Query("SELECT r " +
-            "FROM Recipe r " +
+    @Query("SELECT r FROM Recipe r " +
+            "LEFT JOIN FETCH r.category " +
+            "LEFT JOIN FETCH r.author " +
             "WHERE r.published = true " +
             "ORDER BY SIZE(r.comments) DESC, r.createdAt DESC")
     List<Recipe> findPopularPublishedRecipes(Pageable pageable);
@@ -73,18 +82,6 @@ public interface RecipeRepository extends CrudRepository<Recipe, Long> {
     default List<Recipe> findPopularPublishedRecipes(int limit) {
         return findPopularPublishedRecipes(PageRequest.of(0, limit));
     }
-
-    @EntityGraph(value = "Recipe.withInventoryAndIngredients", type = EntityGraph.EntityGraphType.LOAD)
-    @Query("SELECT r FROM Recipe r WHERE r.id = :id")
-    Optional<Recipe> findByIdWithInventoryAndIngredients(@Param("id") Long id);
-
-    @EntityGraph(value = "Recipe.withCommentsAndUser", type = EntityGraph.EntityGraphType.LOAD)
-    @Query("SELECT r FROM Recipe r WHERE r.id = :id")
-    Optional<Recipe> findByIdWithComments(@Param("id") Long id);
-
-    @EntityGraph(value = "Recipe.withAllRelations", type = EntityGraph.EntityGraphType.LOAD)
-    @Query("SELECT r FROM Recipe r WHERE r.id = :id")
-    Optional<Recipe> findByIdWithAllRelations(@Param("id") Long id);
 
     long countByPublishedTrue();
 
@@ -94,7 +91,7 @@ public interface RecipeRepository extends CrudRepository<Recipe, Long> {
 
     @Modifying
     @Query("DELETE FROM Comment c WHERE c.recipe.id = :recipeId")
-    void deleteCommentsByRecipeId(@Param("recipeId") Long recipeId);
+    void deleteByRecipeId(@Param("recipeId") Long recipeId);
 
     @Modifying
     @Query(nativeQuery = true, value = "DELETE FROM recipe_inventory WHERE recipe_id = :recipeId")
@@ -103,16 +100,4 @@ public interface RecipeRepository extends CrudRepository<Recipe, Long> {
     @Modifying
     @Query(nativeQuery = true, value = "DELETE FROM recipe_ingredients WHERE recipe_id = :recipeId")
     void deleteIngredients(@Param("recipeId") Long recipeId);
-
-    @EntityGraph(value = "Recipe.withInventoryAndIngredients", type = EntityGraph.EntityGraphType.LOAD)
-    @Query("SELECT r FROM Recipe r WHERE r.id IN :ids")
-    List<Recipe> findByIdsWithInventory(@Param("ids") List<Long> ids);
-
-    @EntityGraph(value = "Recipe.withCommentsAndUser", type = EntityGraph.EntityGraphType.LOAD)
-    @Query("SELECT r FROM Recipe r WHERE r.id IN :ids")
-    List<Recipe> findByIdsWithComments(@Param("ids") List<Long> ids);
-
-    @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END " +
-            "FROM Recipe r WHERE r.id = :recipeId AND r.published = true")
-    boolean existsByIdAndPublishedTrue(@Param("recipeId") Long recipeId);
 }

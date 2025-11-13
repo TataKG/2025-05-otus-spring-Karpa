@@ -12,8 +12,6 @@ public interface AuthorService {
 
     Optional<AuthorDto> getAuthorById(Long id);
 
-    Optional<AuthorDto> getAuthorForInternalUse(Long id); // переименовать!
-
     Optional<AuthorDto> getAuthorByUserId(Long userId);
 
     Optional<AuthorDto> getAuthorByUsername(String username);
