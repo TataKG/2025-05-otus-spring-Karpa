@@ -2,6 +2,7 @@ package ru.otus.hw.repositories;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -30,6 +31,14 @@ public interface RecipeRepository extends CrudRepository<Recipe, Long> {
 
     @Query("SELECT r FROM Recipe r LEFT JOIN FETCH r.category LEFT JOIN FETCH r.author WHERE r.id = :id")
     Optional<Recipe> findByIdWithBasicRelations(@Param("id") Long id);
+
+    @EntityGraph(value = "Recipe.withInventoryAndIngredients", type = EntityGraph.EntityGraphType.LOAD)
+    @Query("SELECT r FROM Recipe r WHERE r.id = :id")
+    Optional<Recipe> findByIdWithInventoryAndIngredients(@Param("id") Long id);
+
+    @EntityGraph(value = "Recipe.withAllRelations", type = EntityGraph.EntityGraphType.LOAD)
+    @Query("SELECT r FROM Recipe r WHERE r.id = :id")
+    Optional<Recipe> findByIdWithAllRelations(@Param("id") Long id);
 
     @Query("SELECT DISTINCT r FROM Recipe r " +
             "LEFT JOIN FETCH r.category " +
@@ -100,4 +109,12 @@ public interface RecipeRepository extends CrudRepository<Recipe, Long> {
     @Modifying
     @Query(nativeQuery = true, value = "DELETE FROM recipe_ingredients WHERE recipe_id = :recipeId")
     void deleteIngredients(@Param("recipeId") Long recipeId);
+
+    @Modifying
+    @Query(nativeQuery = true, value = "INSERT INTO recipe_ingredients (recipe_id, ingredient, ingredient_order) VALUES (:recipeId, :ingredient, :order)")
+    void addIngredient(@Param("recipeId") Long recipeId, @Param("ingredient") String ingredient, @Param("order") int order);
+
+    @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END " +
+            "FROM Recipe r WHERE r.id = :id AND r.published = true")
+    boolean existsByIdAndPublishedTrue(@Param("id") Long id);
 }

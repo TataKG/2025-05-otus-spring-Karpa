@@ -12,7 +12,10 @@ import ru.otus.hw.models.Inventory;
 import ru.otus.hw.repositories.InventoryRepository;
 import ru.otus.hw.util.MessageProvider;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,36 +27,20 @@ public class InventoryServiceImpl implements InventoryService {
     private final MessageProvider messageProvider;
 
     @Override
-    @Transactional(readOnly = true)
     public List<InventoryDto> getInventoryByIdsForInternalUse(List<Long> inventoryIds) {
-        try {
-            if (inventoryIds == null || inventoryIds.isEmpty()) {
-                return new ArrayList<>();
-            }
-
-            List<Inventory> inventoryList = new ArrayList<>();
-            inventoryRepository.findAllById(inventoryIds).forEach(inventoryList::add);
-
-            if (inventoryList.size() != inventoryIds.size()) {
-                Set<Long> foundIds = inventoryList.stream()
-                        .map(Inventory::getId)
-                        .collect(Collectors.toSet());
-                List<Long> missingIds = inventoryIds.stream()
-                        .filter(id -> !foundIds.contains(id))
-                        .collect(Collectors.toList());
-            }
-
-            List<InventoryDto> result = inventoryList.stream()
-                    .map(inventoryConverter::toDto)
-                    .collect(Collectors.toList());
-            return result;
-        } catch (Exception e) {
-            throw e;
+        if (inventoryIds == null || inventoryIds.isEmpty()) {
+            return new ArrayList<>();
         }
+
+        List<Inventory> inventoryList = new ArrayList<>();
+        inventoryRepository.findAllById(inventoryIds).forEach(inventoryList::add);
+
+        return inventoryList.stream()
+                .map(inventoryConverter::toDto)
+                .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional
     public InventoryDto createInventory(String name, String description) {
         validateInventoryName(name);
         String trimmedName = name.trim();
@@ -70,26 +57,18 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Optional<InventoryDto> getInventoryById(Long id) {
         return inventoryRepository.findById(id)
                 .map(inventoryConverter::toDto);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Optional<InventoryDto> getInventoryByIdWithRecipes(Long id) {
         return inventoryRepository.findById(id)
-                .map(inventory -> {
-                    if (inventory.getRecipes() != null) {
-                        inventory.getRecipes().size();
-                    }
-                    return inventoryConverter.toDto(inventory);
-                });
+                .map(inventoryConverter::toDto);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<InventoryDto> getInventoryByNameContaining(String name) {
         if (name == null || name.trim().isEmpty()) {
             return inventoryRepository.findAllByOrderByNameAsc().stream()
@@ -103,28 +82,18 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<InventoryDto> getAllInventory() {
-        try {
-            List<Inventory> inventoryList = inventoryRepository.findAllByOrderByNameAsc();
-            return inventoryList.stream()
-                    .map(inventoryConverter::toDto)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            throw e;
-        }
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<InventoryDto> getAllInventoryWithRecipes() {
-        return inventoryRepository.findAllWithRecipes().stream()
+        return inventoryRepository.findAllByOrderByNameAsc().stream()
                 .map(inventoryConverter::toDto)
                 .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional(readOnly = true)
+    public List<InventoryDto> getAllInventoryWithRecipes() {
+        return getAllInventory();
+    }
+
+    @Override
     public List<InventoryDto> getInventoryByNames(List<String> names) {
         return inventoryRepository.findByNames(names).stream()
                 .map(inventoryConverter::toDto)
@@ -132,7 +101,6 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<InventoryDto> getInventoryByRecipeId(Long recipeId) {
         return inventoryRepository.findByRecipeId(recipeId).stream()
                 .map(inventoryConverter::toDto)
@@ -140,7 +108,6 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
-    @Transactional
     public InventoryDto updateInventory(Long id, String description) {
         Inventory inventory = getInventoryEntity(id);
         inventory.setDescription(description);
@@ -149,7 +116,6 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
-    @Transactional
     public void deleteInventory(Long id) {
         Inventory inventory = getInventoryEntity(id);
 
@@ -163,19 +129,16 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean isInventoryUsedInRecipes(Long inventoryId) {
         return inventoryRepository.isUsedInRecipes(inventoryId);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public long getRecipeCountByInventory(Long inventoryId) {
         return inventoryRepository.countRecipesByInventoryId(inventoryId);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<InventoryDto> getUnusedInventory() {
         return inventoryRepository.findUnusedInventory().stream()
                 .map(inventoryConverter::toDto)
@@ -183,35 +146,21 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<InventoryWithUsageDto> getInventoryWithUsage() {
-        List<Object[]> results = inventoryRepository.findAllWithRecipeCount();
-
-        return results.stream()
-                .map(result -> {
-                    Inventory inventory = (Inventory) result[0];
-                    Long recipeCount = (Long) result[1];
-                    return inventoryConverter.toDtoWithUsage(inventory, recipeCount);
+        return getAllInventory().stream()
+                .map(inventoryDto -> {
+                    long recipeCount = inventoryRepository.countRecipesByInventoryId(inventoryDto.id());
+                    return inventoryConverter.toDtoWithUsageFromDto(inventoryDto, recipeCount);
                 })
                 .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<InventoryWithUsageDto> getInventoryWithPublishedUsage() {
-        List<Object[]> results = inventoryRepository.findAllWithPublishedRecipeCount();
-
-        return results.stream()
-                .map(result -> {
-                    Inventory inventory = (Inventory) result[0];
-                    Long publishedRecipeCount = (Long) result[1];
-                    return inventoryConverter.toDtoWithUsage(inventory, publishedRecipeCount);
-                })
-                .collect(Collectors.toList());
+        return new ArrayList<>();
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Map<Long, Boolean> getInventoryUsageStatus(List<Long> inventoryIds) {
         return inventoryIds.stream()
                 .collect(Collectors.toMap(
@@ -221,17 +170,8 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<InventoryDto> getInventoryByNameContainingWithRecipes(String name) {
-        if (name == null || name.trim().isEmpty()) {
-            return inventoryRepository.findAllWithRecipes().stream()
-                    .map(inventoryConverter::toDto)
-                    .collect(Collectors.toList());
-        }
-
-        return inventoryRepository.findByNameContainingIgnoreCaseWithRecipes(name).stream()
-                .map(inventoryConverter::toDto)
-                .collect(Collectors.toList());
+        return getInventoryByNameContaining(name);
     }
 
     private void validateInventoryName(String name) {

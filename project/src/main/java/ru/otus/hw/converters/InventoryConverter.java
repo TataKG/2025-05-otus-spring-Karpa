@@ -73,4 +73,17 @@ public class InventoryConverter {
                 .map(this::toSummaryDto)
                 .collect(Collectors.toList());
     }
+
+    public InventoryWithUsageDto toDtoWithUsageFromDto(InventoryDto inventoryDto, long recipeCount) {
+        if (inventoryDto == null) return null;
+
+        return new InventoryWithUsageDto(
+                inventoryDto.id(),
+                inventoryDto.name(),
+                inventoryDto.description(),
+                inventoryDto.createdAt(),
+                recipeCount > 0,
+                recipeCount
+        );
+    }
 }
