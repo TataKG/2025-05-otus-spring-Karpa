@@ -16,7 +16,7 @@ public interface RecipeService {
                                         List<String> ingredients, String description,
                                         List<Long> inventoryIds, boolean published);
 
-    RecipeDto updateRecipe(Long id, String title, Long categoryId, List<String> ingredients,
+    RecipeDto updateRecipe(Long id, String title, Long categoryId, Long authorId, List<String> ingredients,
                            String description, List<Long> inventoryIds, boolean published);
 
     Optional<RecipeDto> getRecipeById(Long id);

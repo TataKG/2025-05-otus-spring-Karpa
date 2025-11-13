@@ -166,7 +166,7 @@ class CookbookApp extends BaseApiClient {
     populateCategoryFilter() {
         const categoryFilter = document.getElementById('categoryFilter');
         if (categoryFilter) {
-            categoryFilter.innerHTML = '<option value="">' + this.messages['filter.all_categories'] + '</option>' +
+            categoryFilter.innerHTML = '<option value="">' + (this.messages['filter.all_categories'] || 'Все категории') + '</option>' +
                 this.categories.map(cat =>
                     `<option value="${CommonUtils.escapeHtml(cat.name)}">${CommonUtils.escapeHtml(cat.name)}</option>`
                 ).join('');
@@ -176,7 +176,7 @@ class CookbookApp extends BaseApiClient {
     populateAuthorFilter() {
         const authorFilter = document.getElementById('authorFilter');
         if (authorFilter) {
-            authorFilter.innerHTML = '<option value="">' + this.messages['filter.all_authors'] + '</option>' +
+            authorFilter.innerHTML = '<option value="">' + (this.messages['filter.all_authors'] || 'Все авторы') + '</option>' +
                 this.authors.map(author =>
                     `<option value="${CommonUtils.escapeHtml(author)}">${CommonUtils.escapeHtml(author)}</option>`
                 ).join('');
@@ -223,18 +223,18 @@ class CookbookApp extends BaseApiClient {
             const filtered = this.filteredRecipes.length;
             const countText = filtered === total ?
                 `${total} ${this.getRecipeCountText(total)}` :
-                `${filtered} ${this.getRecipeCountText(filtered)} ${this.messages['common.from'] || 'из'} ${total}`;
+                `${filtered} ${this.getRecipeCountText(filtered)} из ${total}`;
             countElement.textContent = countText;
         }
     }
 
     getRecipeCountText(count) {
         if (count % 10 === 1 && count % 100 !== 11) {
-            return this.messages['recipe.count.one'] || 'рецепт';
+            return 'рецепт';
         } else if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) {
-            return this.messages['recipe.count.few'] || 'рецепта';
+            return 'рецепта';
         } else {
-            return this.messages['recipe.count.many'] || 'рецептов';
+            return 'рецептов';
         }
     }
 
@@ -827,11 +827,26 @@ class CookbookApp extends BaseApiClient {
     }
 
     updateCommentsCount() {
+        // Обновляем счетчик в модальном окне комментариев
         const commentsCount = document.querySelectorAll('.comments-list .card').length;
-        const countBadge = document.querySelector(`.comments-badge[data-recipe-id="${this.currentRecipeId}"]`);
-        if (countBadge) {
-            countBadge.textContent = `💬 ${commentsCount}`;
+        const modalBadge = document.querySelector(`#commentsModal .comments-badge`);
+        if (modalBadge) {
+            modalBadge.textContent = `💬 ${commentsCount} ${CommonUtils.getCommentText(commentsCount)}`;
         }
+
+        // Обновляем счетчик в таблице рецептов
+        const tableBadge = document.querySelector(`.comments-badge[data-recipe-id="${this.currentRecipeId}"]`);
+        if (tableBadge) {
+            tableBadge.textContent = `💬 ${commentsCount}`;
+        }
+
+        // Обновляем счетчик в модальном окне рецепта
+        const recipeModalBadge = document.querySelector(`#recipeModal .comments-badge`);
+        if (recipeModalBadge) {
+            recipeModalBadge.textContent = `💬 ${commentsCount} ${CommonUtils.getCommentText(commentsCount)}`;
+        }
+
+        console.log(`🔄 Updated comment count to ${commentsCount} for recipe ${this.currentRecipeId}`);
     }
 
     async addNewComment(recipeId) {
@@ -866,6 +881,9 @@ class CookbookApp extends BaseApiClient {
             const comments = await this.loadRecipeComments(recipeId);
             const modalBody = document.getElementById('commentsModalBody');
             this.displayComments(comments, modalBody, recipeId);
+
+            // Обновляем счетчик после успешной загрузки комментариев
+            this.updateCommentsCount();
         } catch (error) {
             console.error('Failed to refresh comments:', error);
         }

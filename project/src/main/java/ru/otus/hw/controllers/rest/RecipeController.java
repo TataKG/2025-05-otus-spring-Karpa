@@ -122,37 +122,12 @@ public class RecipeController {
 
             validateAuthorOwnership(request.authorId(), author.id());
 
-            if (request.title() == null || request.title().trim().isEmpty()) {
-                throw new IllegalArgumentException(messageProvider.getMessage("recipe.title.required"));
-            }
-            if (request.title().trim().length() < 2) {
-                throw new IllegalArgumentException(messageProvider.getMessage("recipe.title.min_length"));
-            }
-            if (request.categoryId() == null) {
-                throw new IllegalArgumentException(messageProvider.getMessage("recipe.category.required"));
-            }
-            if (request.description() == null || request.description().trim().isEmpty()) {
-                throw new IllegalArgumentException(messageProvider.getMessage("recipe.description.required"));
-            }
-            if (request.description().trim().length() < 10) {
-                throw new IllegalArgumentException(messageProvider.getMessage("recipe.description.min_length"));
-            }
-            if (request.ingredients() == null || request.ingredients().isEmpty()) {
-                throw new IllegalArgumentException(messageProvider.getMessage("recipe.ingredients.required"));
-            }
-
-            boolean hasValidIngredients = request.ingredients().stream()
-                    .anyMatch(ingredient -> ingredient != null && !ingredient.trim().isEmpty());
-            if (!hasValidIngredients) {
-                throw new IllegalArgumentException(messageProvider.getMessage("recipe.ingredients.min_one"));
-            }
-
             RecipeDto recipeDto = recipeService.createRecipeWithInventory(
-                    request.title().trim(),
+                    request.title(),
                     request.categoryId(),
                     request.authorId(),
                     request.ingredients(),
-                    request.description().trim(),
+                    request.description(),
                     request.inventoryIds(),
                     request.published()
             );
@@ -189,6 +164,7 @@ public class RecipeController {
                     id,
                     request.title(),
                     request.categoryId(),
+                    request.authorId(),
                     request.ingredients(),
                     request.description(),
                     request.inventoryIds(),
@@ -201,6 +177,9 @@ public class RecipeController {
                     .body(ApiResponse.error(e.getMessage()));
         } catch (SecurityException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -416,6 +395,7 @@ public class RecipeController {
     public record UpdateRecipeRequest(
             String title,
             Long categoryId,
+            Long authorId,
             List<String> ingredients,
             String description,
             List<Long> inventoryIds,
