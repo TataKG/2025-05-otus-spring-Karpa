@@ -1,0 +1,39 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: false
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:test.sql
+
+  messages:
+    basename: messages/messages
+    encoding: UTF-8
+
+logging:
+  level:
+    root: WARN
+    org.springframework: WARN
+    ru.otus.hw: DEBUG
+
+server:
+  port: 8081
+
+security:
+  basic:
+    enabled: false
