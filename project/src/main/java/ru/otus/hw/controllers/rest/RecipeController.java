@@ -272,11 +272,6 @@ public class RecipeController {
     public ResponseEntity<ApiResponse<RecipeDto>> getRecipeWithDetails(@PathVariable Long id) {
         try {
             RecipeDto recipeDto = recipeService.getRecipeWithDetails(id);
-            if (!recipeDto.published()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error(messageProvider.getMessage("recipe.not_found_or_unpublished")));
-            }
-
             return ResponseEntity.ok(ApiResponse.success(recipeDto));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)

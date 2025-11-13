@@ -10,6 +10,7 @@ class RecipeEditApp extends BaseApiClient {
         this.availableInventory = [];
         this.isInitialized = false;
         this.isRestoringData = false;
+        this.isSaving = false; // Флаг для отслеживания процесса сохранения
         this.init();
     }
 
@@ -280,11 +281,17 @@ class RecipeEditApp extends BaseApiClient {
         container.innerHTML = '';
 
         if (ingredients && ingredients.length > 0) {
+            // Добавляем существующие ингредиенты
             ingredients.forEach((ingredient, index) => {
                 const row = this.createIngredientRow(ingredient, index === 0);
                 container.appendChild(row);
             });
+
+            // Добавляем одну пустую строку для нового ввода ПОСЛЕ существующих
+            const emptyRow = this.createIngredientRow('', false);
+            container.appendChild(emptyRow);
         } else {
+            // Для нового рецепта - одна пустая строка
             container.appendChild(this.createIngredientRow('', true));
         }
 
@@ -505,20 +512,13 @@ class RecipeEditApp extends BaseApiClient {
                    value="${escapedValue}"
                    placeholder="${this.getMessage('recipe.ingredient.placeholder')}">
             <button type="button" class="btn btn-outline-danger remove-ingredient"
-                    ${isFirst ? 'style="display: none;"' : ''}>🗑️</button>
+                    ${isFirst && document.querySelectorAll('.ingredient-row').length === 1 ? 'style="display: none;"' : ''}>🗑️</button>
         `;
         return row;
     }
 
     setupIngredientHandlers() {
-        const addButton = document.getElementById('addIngredient');
         const container = document.getElementById('ingredientsContainer');
-
-        if (addButton) {
-            addButton.addEventListener('click', () => {
-                this.addIngredientField();
-            });
-        }
 
         if (container) {
             container.addEventListener('click', (e) => {
@@ -532,22 +532,13 @@ class RecipeEditApp extends BaseApiClient {
                     this.handleIngredientInput(e.target);
                 }
             });
-        }
-    }
 
-    addIngredientField() {
-        const container = document.getElementById('ingredientsContainer');
-        if (container) {
-            container.appendChild(this.createIngredientRow());
-            this.updateRemoveButtons();
-        }
-    }
-
-    removeIngredientField(button) {
-        const row = button.closest('.ingredient-row');
-        if (row && document.querySelectorAll('.ingredient-row').length > 1) {
-            row.remove();
-            this.updateRemoveButtons();
+            // Добавляем обработчик для автоматического добавления нового поля при вводе
+            container.addEventListener('keydown', (e) => {
+                if (e.target.classList.contains('ingredient-input')) {
+                    this.handleIngredientKeydown(e);
+                }
+            });
         }
     }
 
@@ -556,8 +547,55 @@ class RecipeEditApp extends BaseApiClient {
         const lastRow = rows[rows.length - 1];
         const lastInput = lastRow.querySelector('.ingredient-input');
 
+        // Автоматически добавляем новое поле, если в текущем последнем поле есть текст
+        // и это поле действительно последнее
         if (input === lastInput && input.value.trim() !== '') {
             this.addIngredientField();
+        }
+    }
+
+    handleIngredientKeydown(e) {
+        const input = e.target;
+        const rows = document.querySelectorAll('.ingredient-row');
+        const lastRow = rows[rows.length - 1];
+        const lastInput = lastRow.querySelector('.ingredient-input');
+
+        // Автоматическое добавление при нажатии Enter или Tab в последнем поле
+        if ((e.key === 'Enter' || e.key === 'Tab') && input === lastInput && input.value.trim() !== '') {
+            e.preventDefault();
+            this.addIngredientField();
+
+            // Фокус на новое поле с небольшой задержкой
+            setTimeout(() => {
+                const newRows = document.querySelectorAll('.ingredient-row');
+                const newLastRow = newRows[newRows.length - 1];
+                const newInput = newLastRow.querySelector('.ingredient-input');
+                if (newInput) {
+                    newInput.focus();
+                }
+            }, 10);
+        }
+    }
+
+    addIngredientField() {
+        const container = document.getElementById('ingredientsContainer');
+        if (container) {
+            // Всегда добавляем новую строку ПОСЛЕ существующих
+            const newRow = this.createIngredientRow();
+            container.appendChild(newRow);
+            this.updateRemoveButtons();
+
+            console.log('✅ Добавлена новая строка для ингредиента. Всего строк:', document.querySelectorAll('.ingredient-row').length);
+        }
+    }
+
+    removeIngredientField(button) {
+        const row = button.closest('.ingredient-row');
+        const rows = document.querySelectorAll('.ingredient-row');
+
+        if (row && rows.length > 1) {
+            row.remove();
+            this.updateRemoveButtons();
         }
     }
 
@@ -565,8 +603,15 @@ class RecipeEditApp extends BaseApiClient {
         const rows = document.querySelectorAll('.ingredient-row');
         const ingredientRemoveButtons = document.querySelectorAll('.remove-ingredient');
 
-        ingredientRemoveButtons.forEach(btn => {
-            btn.style.display = rows.length > 1 ? 'block' : 'none';
+        console.log('🔄 Обновление кнопок удаления. Всего строк:', rows.length);
+
+        // Скрываем кнопку удаления только у первой строки, если всего одна строка
+        ingredientRemoveButtons.forEach((btn, index) => {
+            if (rows.length === 1 && index === 0) {
+                btn.style.display = 'none';
+            } else {
+                btn.style.display = 'block';
+            }
         });
     }
 
@@ -668,9 +713,16 @@ class RecipeEditApp extends BaseApiClient {
     }
 
     async saveRecipe(publish) {
+        // Защита от повторного нажатия
+        if (this.isSaving) {
+            return;
+        }
+
         if (!this.validateForm()) {
             return;
         }
+
+        this.isSaving = true;
 
         const title = document.getElementById('title').value.trim();
         const categoryId = parseInt(document.getElementById('category').value);
@@ -689,6 +741,10 @@ class RecipeEditApp extends BaseApiClient {
         };
 
         try {
+            // Сохраняем оригинальные тексты кнопок перед показом состояния сохранения
+            this.originalSaveDraftText = document.getElementById('saveDraftBtn').innerHTML;
+            this.originalPublishText = document.getElementById('publishBtn').innerHTML;
+
             this.showSavingState(true);
 
             let response;
@@ -705,9 +761,10 @@ class RecipeEditApp extends BaseApiClient {
 
                 this.showSuccess(message);
 
+                // Увеличиваем задержку перед переходом для лучшего UX
                 setTimeout(() => {
                     window.location.href = '/my-recipes';
-                }, 1500);
+                }, 2000);
             } else {
                 const errorMessage = response?.message || response?.error || this.getMessage('error.save_unknown');
                 throw new Error(errorMessage);
@@ -715,8 +772,11 @@ class RecipeEditApp extends BaseApiClient {
         } catch (error) {
             console.error('Error saving recipe:', error);
             this.showError(error.message || this.getMessage('error.save_failed'));
-        } finally {
+
+            // Восстанавливаем кнопки при ошибке
             this.showSavingState(false);
+        } finally {
+            this.isSaving = false;
         }
     }
 
@@ -726,16 +786,22 @@ class RecipeEditApp extends BaseApiClient {
 
         if (saveDraftBtn) {
             saveDraftBtn.disabled = show;
-            saveDraftBtn.innerHTML = show ?
-                `<span class="spinner-border spinner-border-sm" role="status"></span> ${this.getMessage('common.saving')}` :
-                `💾 ${this.getMessage('recipe.save_draft')}`;
+            if (show) {
+                saveDraftBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span> ${this.getMessage('common.saving')}`;
+            } else {
+                // Восстанавливаем оригинальный текст
+                saveDraftBtn.innerHTML = this.originalSaveDraftText || `💾 ${this.getMessage('recipe.save_draft')}`;
+            }
         }
 
         if (publishBtn) {
             publishBtn.disabled = show;
-            publishBtn.innerHTML = show ?
-                `<span class="spinner-border spinner-border-sm" role="status"></span> ${this.getMessage('common.publishing')}` :
-                `🚀 ${this.getMessage('recipe.publish')}`;
+            if (show) {
+                publishBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span> ${this.getMessage('common.publishing')}`;
+            } else {
+                // Восстанавливаем оригинальный текст
+                publishBtn.innerHTML = this.originalPublishText || `🚀 ${this.getMessage('recipe.publish')}`;
+            }
         }
     }
 
