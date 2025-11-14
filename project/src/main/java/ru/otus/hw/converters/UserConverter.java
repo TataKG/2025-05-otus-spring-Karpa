@@ -46,9 +46,9 @@ public class UserConverter {
                 user.getUsername(),
                 user.getEmail(),
                 user.isEnabled(),
-                new HashSet<>(), // Не загружаем роли
+                new HashSet<>(),
                 user.getCreatedAt(),
-                false // Не проверяем автора
+                false
         );
     }
 }

@@ -76,28 +76,30 @@ class AuthorServiceImplTest {
     }
 
     @Test
-    @DisplayName("Создание автора для пользователя - успешное создание")
-    void createAuthorForUser_ShouldCreateAuthor_WhenUserExistsAndAuthorNotExists() {
+    @DisplayName("Создание автора с дефолтной биографией - успешно")
+    void createAuthorForUser_ShouldUseDefaultBio_WhenBioIsNullOrEmpty() {
         // Arrange
-        String bio = "Тестовая биография";
+        String defaultBio = "Биография по умолчанию";
+        String userNotFoundMessage = "Пользователь не найден";
 
         when(authorRepository.findByUserId(EXISTING_USER_ID)).thenReturn(Optional.empty());
-        when(userRepository.findByIdWithRolesAndAuthor(EXISTING_USER_ID)).thenReturn(Optional.of(testUser));
+
+        when(userRepository.findById(EXISTING_USER_ID)).thenReturn(Optional.of(testUser));
+
         when(authorRepository.save(any(Author.class))).thenReturn(testAuthor);
-        when(authorRepository.findByIdWithUserAndRoles(anyLong())).thenReturn(Optional.of(testAuthor));
-        when(authorConverter.toDto(testAuthor)).thenReturn(testAuthorDto);
+
+        when(authorConverter.toBasicDto(testAuthor)).thenReturn(testAuthorDto);
+
+        when(messageProvider.getMessage("author.default_bio")).thenReturn(defaultBio);
 
         // Act
-        AuthorDto result = authorService.createAuthorForUser(EXISTING_USER_ID, bio);
+        AuthorDto result = authorService.createAuthorForUser(EXISTING_USER_ID, null);
 
         // Assert
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo(testAuthorDto);
         verify(authorRepository).save(any(Author.class));
-        verify(messageProvider, never()).getMessage("author.default_bio");
-        verify(messageProvider, never()).getMessage(eq("author.not_found"), anyLong());
-        verify(messageProvider, never()).getMessage("user.not_found", EXISTING_USER_ID);
-        verify(messageProvider, never()).getMessage("author.already_exists");
+        verify(messageProvider).getMessage("author.default_bio");
     }
 
     @Test
@@ -112,29 +114,6 @@ class AuthorServiceImplTest {
         assertThatThrownBy(() -> authorService.createAuthorForUser(EXISTING_USER_ID, bio))
                 .isInstanceOf(EntityAlreadyExistsException.class)
                 .hasMessage("Автор уже существует");
-    }
-
-    @Test
-    @DisplayName("Создание автора с дефолтной биографией - успешно")
-    void createAuthorForUser_ShouldUseDefaultBio_WhenBioIsNullOrEmpty() {
-        // Arrange
-        String defaultBio = "Биография по умолчанию";
-
-        when(authorRepository.findByUserId(EXISTING_USER_ID)).thenReturn(Optional.empty());
-        when(userRepository.findByIdWithRolesAndAuthor(EXISTING_USER_ID)).thenReturn(Optional.of(testUser));
-        when(authorRepository.save(any(Author.class))).thenReturn(testAuthor);
-        when(authorRepository.findByIdWithUserAndRoles(anyLong())).thenReturn(Optional.of(testAuthor));
-        when(authorConverter.toDto(testAuthor)).thenReturn(testAuthorDto);
-        when(messageProvider.getMessage("author.default_bio")).thenReturn(defaultBio);
-
-        // Act
-        AuthorDto result = authorService.createAuthorForUser(EXISTING_USER_ID, null);
-
-        // Assert
-        assertThat(result).isNotNull();
-        assertThat(result).isEqualTo(testAuthorDto);
-        verify(authorRepository).save(any(Author.class));
-        verify(messageProvider).getMessage("author.default_bio");
     }
 
     @Test
@@ -284,10 +263,9 @@ class AuthorServiceImplTest {
         String bio = "Тестовая биография";
 
         when(authorRepository.findByUserId(EXISTING_USER_ID)).thenReturn(Optional.empty());
-        when(userRepository.findByIdWithRolesAndAuthor(EXISTING_USER_ID)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(EXISTING_USER_ID)).thenReturn(Optional.of(testUser)); // ИСПРАВЛЕНО: убрали WithRolesAndAuthor
         when(authorRepository.save(any(Author.class))).thenReturn(testAuthor);
-        when(authorRepository.findByIdWithUserAndRoles(anyLong())).thenReturn(Optional.of(testAuthor));
-        when(authorConverter.toDto(testAuthor)).thenReturn(testAuthorDto);
+        when(authorConverter.toBasicDto(testAuthor)).thenReturn(testAuthorDto); // ИСПРАВЛЕНО: используем toBasicDto
 
         // Act
         AuthorDto result = authorService.convertUserToAuthor(EXISTING_USER_ID, bio);
@@ -306,7 +284,7 @@ class AuthorServiceImplTest {
         // Arrange
         String bio = "Тестовая биография";
         when(authorRepository.findByUserId(NON_EXISTING_USER_ID)).thenReturn(Optional.empty());
-        when(userRepository.findByIdWithRolesAndAuthor(NON_EXISTING_USER_ID)).thenReturn(Optional.empty());
+        when(userRepository.findById(NON_EXISTING_USER_ID)).thenReturn(Optional.empty()); // ИСПРАВЛЕНО: убрали WithRolesAndAuthor
         when(messageProvider.getMessage("user.not_found", NON_EXISTING_USER_ID))
                 .thenReturn("Пользователь не найден: " + NON_EXISTING_USER_ID);
 

@@ -27,4 +27,8 @@ public interface UserRepository extends CrudRepository<User, Long> {
     @EntityGraph(value = "User.withRolesAndAuthor", type = EntityGraph.EntityGraphType.LOAD)
     @Query("SELECT u FROM User u WHERE u.id = :id")
     Optional<User> findByIdWithRolesAndAuthor(@Param("id") Long id);
+
+    @EntityGraph(value = "User.withRoles", type = EntityGraph.EntityGraphType.LOAD)
+    @Query("SELECT u FROM User u WHERE u.id = :id")
+    Optional<User> findByIdWithRoles(@Param("id") Long id);
 }

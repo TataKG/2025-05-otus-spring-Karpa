@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.dto.AuthorDto;
+import ru.otus.hw.dto.UserDto;
 import ru.otus.hw.models.Author;
 import ru.otus.hw.models.User;
 
@@ -70,12 +71,29 @@ public class AuthorConverter {
 
         User user = author.getUser();
         if (user == null) {
-            throw new IllegalStateException("User should be loaded for author with ID: " + author.getId());
+            return new AuthorDto(
+                    author.getId(),
+                    null,
+                    author.getBio(),
+                    author.getCreatedAt(),
+                    0,
+                    new ArrayList<>()
+            );
         }
+
+        UserDto userDto = new UserDto(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.isEnabled(),
+                new HashSet<>(),
+                user.getCreatedAt(),
+                true
+        );
 
         return new AuthorDto(
                 author.getId(),
-                userConverter.toDto(user),
+                userDto,
                 author.getBio(),
                 author.getCreatedAt(),
                 0,

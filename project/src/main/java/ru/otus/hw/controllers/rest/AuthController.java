@@ -1,5 +1,10 @@
 package ru.otus.hw.controllers.rest;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +19,6 @@ import ru.otus.hw.dto.ApiResponse;
 import ru.otus.hw.dto.AuthorDto;
 import ru.otus.hw.dto.UserDto;
 import ru.otus.hw.exceptions.EntityAlreadyExistsException;
-import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.services.AuthorService;
 import ru.otus.hw.services.UserService;
 import ru.otus.hw.util.MessageProvider;
@@ -76,21 +80,30 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<UserDto>> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<ApiResponse<UserDto>> register(
+            @Valid @RequestBody RegisterRequest request) {
+
         try {
+            System.out.println("Registration attempt for: " + request.username());
+
             UserDto userDto = userService.createUser(
                     request.username(),
                     request.email(),
                     request.password(),
                     request.bio()
             );
+
+            System.out.println("Registration successful for: " + request.username());
             return ResponseEntity.status(HttpStatus.CREATED).body(
                     ApiResponse.success(userDto, messageProvider.getMessage("user.created"))
             );
         } catch (EntityAlreadyExistsException e) {
+            System.err.println("Registration failed - already exists: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
+            System.err.println("Registration failed for " + request.username() + ": " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error(messageProvider.getMessage("user.register_error")));
         }
@@ -103,11 +116,22 @@ public class AuthController {
     }
 
     public record RegisterRequest(
+            @NotBlank(message = "{user.username_empty}")
+            @Size(min = 3, max = 50, message = "{user.username_size}")
+            @Pattern(regexp = "[a-zA-Z0-9_]+", message = "{user.username_pattern}")
             String username,
+
+            @NotBlank(message = "{user.email_empty}")
+            @Email(message = "{user.email_invalid}")
             String email,
+
+            @NotBlank(message = "{user.password_empty}")
+            @Size(min = 6, max = 100, message = "{user.password_size}")
             String password,
-            String bio) {
-    }
+
+            @Size(max = 500, message = "{user.bio_max_length}")
+            String bio
+    ) {}
 
     public record LoginRequest(
             String username,

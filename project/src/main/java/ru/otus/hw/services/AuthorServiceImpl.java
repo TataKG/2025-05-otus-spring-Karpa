@@ -36,12 +36,10 @@ public class AuthorServiceImpl implements AuthorService {
                 );
             }
 
-            User user = userRepository.findByIdWithRolesAndAuthor(userId)
-                    .orElseThrow(() -> {
-                        return new EntityNotFoundException(
-                                messageProvider.getMessage("user.not_found", userId)
-                        );
-                    });
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            messageProvider.getMessage("user.not_found", userId)
+                    ));
 
             String authorBio = bio != null && !bio.trim().isEmpty() ?
                     bio.trim() : messageProvider.getMessage("author.default_bio");
@@ -49,11 +47,8 @@ public class AuthorServiceImpl implements AuthorService {
             Author author = new Author(user, authorBio);
             Author savedAuthor = authorRepository.save(author);
 
-            return authorRepository.findByIdWithUserAndRoles(savedAuthor.getId())
-                    .map(authorConverter::toDto)
-                    .orElseThrow(() -> new EntityNotFoundException(
-                            messageProvider.getMessage("author.not_found", savedAuthor.getId())
-                    ));
+            return authorConverter.toBasicDto(savedAuthor);
+
         } catch (Exception e) {
             System.err.println("Error creating author for user " + userId + ": " + e.getMessage());
             e.printStackTrace();

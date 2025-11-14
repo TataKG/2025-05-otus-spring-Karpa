@@ -11,6 +11,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import ru.otus.hw.converters.UserConverter;
 import ru.otus.hw.dto.AuthorDto;
 import ru.otus.hw.dto.UserDto;
+import ru.otus.hw.exceptions.EntityAlreadyExistsException;
+import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.models.User;
 import ru.otus.hw.repositories.UserRepository;
 import ru.otus.hw.util.MessageProvider;
@@ -83,20 +85,27 @@ class UserServiceImplTest {
         String password = "password123";
         String bio = "Биография нового пользователя";
 
+        User newUser = new User(username, email, "encodedPassword");
+        newUser.setId(FIRST_USER_ID);
+        newUser.addRole("USER");
+
+        UserDto newUserDto = new UserDto(FIRST_USER_ID, username, email, true,
+                Set.of("USER"), LocalDateTime.now(), true);
+
         when(userRepository.existsByUsername(username)).thenReturn(false);
         when(userRepository.existsByEmail(email)).thenReturn(false);
         when(userRepository.count()).thenReturn(5L); // Не первый пользователь
         when(passwordEncoder.encode(password)).thenReturn("encodedPassword");
-        when(userRepository.save(any(User.class))).thenReturn(testUser);
-        when(userRepository.findByIdWithRolesAndAuthor(FIRST_USER_ID)).thenReturn(Optional.of(testUser));
-        when(userConverter.toDto(testUser)).thenReturn(testUserDto);
+        when(userRepository.save(any(User.class))).thenReturn(newUser);
+        when(userRepository.findByUsernameWithRoles(username)).thenReturn(Optional.of(newUser));
+        when(userConverter.toDto(newUser)).thenReturn(newUserDto);
 
         // Act
         UserDto result = userService.createUser(username, email, password, bio);
 
         // Assert
         assertThat(result).isNotNull();
-        assertThat(result).isEqualTo(testUserDto);
+        assertThat(result).isEqualTo(newUserDto);
         verify(userRepository).save(any(User.class));
         verify(authorService).createAuthorForUser(FIRST_USER_ID, bio);
     }
@@ -123,7 +132,7 @@ class UserServiceImplTest {
         when(userRepository.count()).thenReturn(0L); // Первый пользователь
         when(passwordEncoder.encode(password)).thenReturn("encodedPassword");
         when(userRepository.save(any(User.class))).thenReturn(adminUser);
-        when(userRepository.findByIdWithRolesAndAuthor(FIRST_USER_ID)).thenReturn(Optional.of(adminUser));
+        when(userRepository.findByUsernameWithRoles(username)).thenReturn(Optional.of(adminUser));
         when(userConverter.toDto(adminUser)).thenReturn(adminUserDto);
 
         // Act
@@ -136,65 +145,108 @@ class UserServiceImplTest {
     }
 
     @Test
-    @DisplayName("Создание пользователя - пустое имя пользователя")
-    void createUser_ShouldThrowException_WhenUsernameIsEmpty() {
+    @DisplayName("Создание пользователя - имя пользователя уже существует")
+    void createUser_ShouldThrowException_WhenUsernameAlreadyExists() {
         // Arrange
-        String username = "   ";
-        String email = "test@example.com";
+        String username = "existing_user";
+        String email = "new@example.com";
         String password = "password123";
         String bio = "Биография пользователя";
+        String errorMessage = "Пользователь с таким именем уже существует";
 
-        when(messageProvider.getMessage("user.username_empty"))
-                .thenReturn("Имя пользователя не может быть пустым");
+        when(userRepository.existsByUsername(username)).thenReturn(true);
+        when(messageProvider.getMessage("user.already_exists.username", username))
+                .thenReturn(errorMessage);
 
         // Act & Assert
         assertThatThrownBy(() -> userService.createUser(username, email, password, bio))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Имя пользователя не может быть пустым");
+                .isInstanceOf(EntityAlreadyExistsException.class)
+                .hasMessage(errorMessage);
 
-        verify(userRepository, never()).existsByUsername(anyString());
         verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
-    @DisplayName("Создание пользователя - неверный формат email")
-    void createUser_ShouldThrowException_WhenEmailInvalid() {
+    @DisplayName("Создание пользователя - email уже существует")
+    void createUser_ShouldThrowException_WhenEmailAlreadyExists() {
         // Arrange
         String username = "new_user";
-        String email = "invalid-email";
+        String email = "existing@example.com";
         String password = "password123";
         String bio = "Биография пользователя";
+        String errorMessage = "Пользователь с таким email уже существует";
 
-        when(messageProvider.getMessage("user.email_invalid"))
-                .thenReturn("Некорректный формат email");
+        when(userRepository.existsByUsername(username)).thenReturn(false);
+        when(userRepository.existsByEmail(email)).thenReturn(true);
+        when(messageProvider.getMessage("user.already_exists.email", email))
+                .thenReturn(errorMessage);
 
         // Act & Assert
         assertThatThrownBy(() -> userService.createUser(username, email, password, bio))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Некорректный формат email");
+                .isInstanceOf(EntityAlreadyExistsException.class)
+                .hasMessage(errorMessage);
 
-        verify(userRepository, never()).existsByEmail(anyString());
         verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
-    @DisplayName("Создание пользователя - слишком короткий пароль")
-    void createUser_ShouldThrowException_WhenPasswordTooShort() {
+    @DisplayName("Создание пользователя - ошибка при создании автора")
+    void createUser_ShouldThrowException_WhenAuthorCreationFails() {
         // Arrange
         String username = "new_user";
-        String email = "test@example.com";
-        String password = "123";
-        String bio = "Биография пользователя";
+        String email = "new@example.com";
+        String password = "password123";
+        String bio = "Биография нового пользователя";
 
-        when(messageProvider.getMessage("user.password_min_length"))
-                .thenReturn("Пароль должен содержать не менее 6 символов");
+        User newUser = new User(username, email, "encodedPassword");
+        newUser.setId(FIRST_USER_ID);
+
+        when(userRepository.existsByUsername(username)).thenReturn(false);
+        when(userRepository.existsByEmail(email)).thenReturn(false);
+        when(userRepository.count()).thenReturn(5L);
+        when(passwordEncoder.encode(password)).thenReturn("encodedPassword");
+        when(userRepository.save(any(User.class))).thenReturn(newUser);
+        when(authorService.createAuthorForUser(FIRST_USER_ID, bio))
+                .thenThrow(new RuntimeException("Ошибка создания автора"));
 
         // Act & Assert
         assertThatThrownBy(() -> userService.createUser(username, email, password, bio))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Пароль должен содержать не менее 6 символов");
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Failed to create author for user");
 
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository).save(any(User.class));
+        verify(authorService).createAuthorForUser(FIRST_USER_ID, bio);
+    }
+
+    @Test
+    @DisplayName("Создание пользователя - пользователь не найден после сохранения")
+    void createUser_ShouldThrowException_WhenUserNotFoundAfterSave() {
+        // Arrange
+        String username = "new_user";
+        String email = "new@example.com";
+        String password = "password123";
+        String bio = "Биография нового пользователя";
+        String errorMessage = "Пользователь не найден";
+
+        User newUser = new User(username, email, "encodedPassword");
+        newUser.setId(FIRST_USER_ID);
+
+        when(userRepository.existsByUsername(username)).thenReturn(false);
+        when(userRepository.existsByEmail(email)).thenReturn(false);
+        when(userRepository.count()).thenReturn(5L);
+        when(passwordEncoder.encode(password)).thenReturn("encodedPassword");
+        when(userRepository.save(any(User.class))).thenReturn(newUser);
+        when(userRepository.findByUsernameWithRoles(username)).thenReturn(Optional.empty());
+        when(messageProvider.getMessage("user.not_found", FIRST_USER_ID))
+                .thenReturn(errorMessage);
+
+        // Act & Assert
+        assertThatThrownBy(() -> userService.createUser(username, email, password, bio))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage(errorMessage);
+
+        verify(userRepository).save(any(User.class));
+        verify(authorService).createAuthorForUser(FIRST_USER_ID, bio);
     }
 
     @Test
