@@ -5,10 +5,9 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public record CreateRecipeRequest(
+public record UpdateRecipeRequest(
         @NotBlank(message = "{recipe.title.required}")
         @Size(min = 2, max = 255, message = "{recipe.title.min_length}")
         String title,
@@ -28,8 +27,5 @@ public record CreateRecipeRequest(
 
         List<Long> inventoryIds,
 
-        boolean published) {
-    public CreateRecipeRequest {
-        inventoryIds = (inventoryIds != null) ? inventoryIds : new ArrayList<>();
-    }
-}
+        boolean published
+) {}

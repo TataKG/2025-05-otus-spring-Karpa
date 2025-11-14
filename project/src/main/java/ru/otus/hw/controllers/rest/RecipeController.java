@@ -1,5 +1,6 @@
 package ru.otus.hw.controllers.rest;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -114,11 +115,15 @@ public class RecipeController {
     }
 
     @PostMapping(value = {"", "/"})
-    public ResponseEntity<ApiResponse<RecipeDto>> createRecipe(@RequestBody CreateRecipeRequest request, Authentication authentication) {
+    public ResponseEntity<ApiResponse<RecipeDto>> createRecipe(
+            @Valid @RequestBody CreateRecipeRequest request,
+            Authentication authentication) {
         try {
             String username = authentication.getName();
             AuthorDto author = authorService.getAuthorByUsername(username)
-                    .orElseThrow(() -> new EntityNotFoundException(messageProvider.getMessage("author.not_found")));
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            messageProvider.getMessage("author.not_found")
+                    ));
 
             validateAuthorOwnership(request.authorId(), author.id());
 
@@ -141,9 +146,6 @@ public class RecipeController {
         } catch (SecurityException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error(e.getMessage()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error(messageProvider.getMessage("recipe.create.failed")));
@@ -153,7 +155,7 @@ public class RecipeController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<RecipeDto>> updateRecipe(
             @PathVariable Long id,
-            @RequestBody UpdateRecipeRequest request,
+            @Valid @RequestBody UpdateRecipeRequest request,
             Authentication authentication) {
 
         try {
@@ -171,15 +173,13 @@ public class RecipeController {
                     request.published()
             );
 
-            return ResponseEntity.ok(ApiResponse.success(updatedRecipe, messageProvider.getMessage("recipe.updated")));
+            return ResponseEntity.ok(ApiResponse.success(updatedRecipe,
+                    messageProvider.getMessage("recipe.updated")));
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (SecurityException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -385,17 +385,6 @@ public class RecipeController {
             }
         }
         return recipeService.getPublishedRecipesByAuthor(authorId);
-    }
-
-    public record UpdateRecipeRequest(
-            String title,
-            Long categoryId,
-            Long authorId,
-            List<String> ingredients,
-            String description,
-            List<Long> inventoryIds,
-            boolean published
-    ) {
     }
 
     public record RecipeFormData(

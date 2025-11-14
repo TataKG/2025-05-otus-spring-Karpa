@@ -234,33 +234,6 @@ class RecipeServiceImplTest {
     }
 
     @Test
-    @DisplayName("Создание рецепта - пустые ингредиенты")
-    void createRecipe_ShouldThrowException_WhenNoValidIngredients() {
-        // Arrange
-        String title = "Новый рецепт";
-        List<String> ingredients = List.of("", "   ");
-        String description = "Описание рецепта";
-        boolean published = true;
-
-        // Добавить моки для репозиториев
-        when(categoryRepository.findById(EXISTING_CATEGORY_ID))
-                .thenReturn(Optional.of(testCategory));
-        when(authorRepository.findById(EXISTING_AUTHOR_ID))
-                .thenReturn(Optional.of(testAuthor));
-
-        when(messageProvider.getMessage("recipe.ingredients.min.one"))
-                .thenReturn("Добавьте хотя бы один непустой ингредиент");
-
-        // Act & Assert
-        assertThatThrownBy(() -> recipeService.createRecipe(title, EXISTING_CATEGORY_ID, EXISTING_AUTHOR_ID,
-                ingredients, description, published))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Добавьте хотя бы один непустой ингредиент");
-
-        verify(recipeRepository, never()).save(any(Recipe.class));
-    }
-
-    @Test
     @DisplayName("Обновление рецепта - успешно")
     void updateRecipe_ShouldUpdateRecipe_WhenValidData() {
         // Arrange
@@ -284,6 +257,111 @@ class RecipeServiceImplTest {
         verify(recipeRepository).save(testRecipe);
         verify(recipeRepository).deleteIngredients(EXISTING_RECIPE_ID);
         verify(inventoryRepository).findAllById(inventoryIds);
+    }
+
+    @Test
+    @DisplayName("Обновление рецепта - пустые ингредиенты (бизнес-валидация)")
+    void updateRecipe_ShouldThrowException_WhenNoValidIngredients() {
+        // Arrange
+        List<String> ingredients = List.of("", "   ");
+        String description = "Обновленное описание";
+        List<Long> inventoryIds = List.of(EXISTING_INVENTORY_ID);
+        boolean published = true;
+
+        when(messageProvider.getMessage("recipe.ingredients.min.one"))
+                .thenReturn("Добавьте хотя бы один непустой ингредиент");
+
+        // Act & Assert
+        assertThatThrownBy(() -> recipeService.updateRecipe(EXISTING_RECIPE_ID, UPDATED_TITLE, EXISTING_CATEGORY_ID, EXISTING_AUTHOR_ID,
+                ingredients, description, inventoryIds, published))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Добавьте хотя бы один непустой ингредиент");
+
+        verify(recipeRepository, never()).save(any(Recipe.class));
+    }
+
+    @Test
+    @DisplayName("Обновление рецепта - null ингредиенты (бизнес-валидация)")
+    void updateRecipe_ShouldThrowException_WhenIngredientsNull() {
+        // Arrange
+        String description = "Обновленное описание";
+
+        when(messageProvider.getMessage("recipe.ingredients.min.one"))
+                .thenReturn("Добавьте хотя бы один непустой ингредиент");
+
+        // Act & Assert
+        assertThatThrownBy(() -> recipeService.updateRecipe(EXISTING_RECIPE_ID, UPDATED_TITLE, EXISTING_CATEGORY_ID, EXISTING_AUTHOR_ID,
+                null, description, List.of(EXISTING_INVENTORY_ID), true))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Добавьте хотя бы один непустой ингредиент");
+
+        verify(recipeRepository, never()).save(any(Recipe.class));
+    }
+
+    @Test
+    @DisplayName("Обновление рецепта - пустой список ингредиентов (бизнес-валидация)")
+    void updateRecipe_ShouldThrowException_WhenIngredientsEmpty() {
+        // Arrange
+        List<String> ingredients = List.of();
+        String description = "Обновленное описание";
+        List<Long> inventoryIds = List.of(EXISTING_INVENTORY_ID);
+        boolean published = true;
+
+        when(messageProvider.getMessage("recipe.ingredients.min.one"))
+                .thenReturn("Добавьте хотя бы один непустой ингредиент");
+
+        // Act & Assert
+        assertThatThrownBy(() -> recipeService.updateRecipe(EXISTING_RECIPE_ID, UPDATED_TITLE, EXISTING_CATEGORY_ID, EXISTING_AUTHOR_ID,
+                ingredients, description, inventoryIds, published))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Добавьте хотя бы один непустой ингредиент");
+
+        verify(recipeRepository, never()).save(any(Recipe.class));
+    }
+
+    @Test
+    @DisplayName("Обновление рецепта - рецепт не найден")
+    void updateRecipe_ShouldThrowException_WhenRecipeNotFound() {
+        // Arrange
+        List<String> ingredients = List.of("Ингредиент 1", "Ингредиент 2");
+        String description = "Описание рецепта";
+        List<Long> inventoryIds = List.of(EXISTING_INVENTORY_ID);
+        boolean published = true;
+
+        when(recipeRepository.findByIdWithBasicRelations(NON_EXISTING_RECIPE_ID)).thenReturn(Optional.empty());
+        when(messageProvider.getMessage("recipe.not_found", NON_EXISTING_RECIPE_ID))
+                .thenReturn("Рецепт не найден: " + NON_EXISTING_RECIPE_ID);
+
+        // Act & Assert
+        assertThatThrownBy(() -> recipeService.updateRecipe(NON_EXISTING_RECIPE_ID, UPDATED_TITLE, EXISTING_CATEGORY_ID,
+                EXISTING_AUTHOR_ID, ingredients, description, inventoryIds, published))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Рецепт не найден: " + NON_EXISTING_RECIPE_ID);
+
+        verify(recipeRepository, never()).save(any(Recipe.class));
+    }
+
+    @Test
+    @DisplayName("Обновление рецепта - категория не найдена")
+    void updateRecipe_ShouldThrowException_WhenCategoryNotFound() {
+        // Arrange
+        List<String> ingredients = List.of("Ингредиент 1", "Ингредиент 2");
+        String description = "Описание рецепта";
+        List<Long> inventoryIds = List.of(EXISTING_INVENTORY_ID);
+        boolean published = true;
+
+        when(recipeRepository.findByIdWithBasicRelations(EXISTING_RECIPE_ID)).thenReturn(Optional.of(testRecipe));
+        when(categoryRepository.findById(NON_EXISTING_CATEGORY_ID)).thenReturn(Optional.empty());
+        when(messageProvider.getMessage("category.not_found", NON_EXISTING_CATEGORY_ID))
+                .thenReturn("Категория не найдена: " + NON_EXISTING_CATEGORY_ID);
+
+        // Act & Assert
+        assertThatThrownBy(() -> recipeService.updateRecipe(EXISTING_RECIPE_ID, UPDATED_TITLE, NON_EXISTING_CATEGORY_ID,
+                EXISTING_AUTHOR_ID, ingredients, description, inventoryIds, published))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Категория не найдена: " + NON_EXISTING_CATEGORY_ID);
+
+        verify(recipeRepository, never()).save(any(Recipe.class));
     }
 
     @Test
@@ -589,27 +667,5 @@ class RecipeServiceImplTest {
         // Assert
         assertThat(result).isPresent();
         assertThat(result.get()).isEqualTo(testRecipeDto);
-    }
-
-    @Test
-    @DisplayName("Обновление рецепта - рецепт не найден")
-    void updateRecipe_ShouldThrowException_WhenRecipeNotFound() {
-        // Arrange
-        List<String> ingredients = List.of("Ингредиент 1", "Ингредиент 2");
-        String description = "Описание рецепта";
-        List<Long> inventoryIds = List.of(EXISTING_INVENTORY_ID);
-        boolean published = true;
-
-        when(recipeRepository.findByIdWithBasicRelations(NON_EXISTING_RECIPE_ID)).thenReturn(Optional.empty());
-        when(messageProvider.getMessage("recipe.not_found", NON_EXISTING_RECIPE_ID))
-                .thenReturn("Рецепт не найден: " + NON_EXISTING_RECIPE_ID);
-
-        // Act & Assert
-        assertThatThrownBy(() -> recipeService.updateRecipe(NON_EXISTING_RECIPE_ID, UPDATED_TITLE, EXISTING_CATEGORY_ID,
-                EXISTING_AUTHOR_ID, ingredients, description, inventoryIds, published))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("Рецепт не найден: " + NON_EXISTING_RECIPE_ID);
-
-        verify(recipeRepository, never()).save(any(Recipe.class));
     }
 }

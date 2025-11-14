@@ -66,9 +66,6 @@ public class AuthController {
                     new AuthUserResponse(true, author.user().username(), roles, author.bio(), isAdmin)
             ));
         } catch (Exception e) {
-            System.err.println("Error in getCurrentUser: " + e.getMessage());
-            e.printStackTrace();
-
             if (authentication != null && authentication.isAuthenticated()) {
                 return ResponseEntity.ok(ApiResponse.success(
                         new AuthUserResponse(true, authentication.getName(), List.of("USER"), null, false)
@@ -84,8 +81,6 @@ public class AuthController {
             @Valid @RequestBody RegisterRequest request) {
 
         try {
-            System.out.println("Registration attempt for: " + request.username());
-
             UserDto userDto = userService.createUser(
                     request.username(),
                     request.email(),
@@ -93,17 +88,13 @@ public class AuthController {
                     request.bio()
             );
 
-            System.out.println("Registration successful for: " + request.username());
             return ResponseEntity.status(HttpStatus.CREATED).body(
                     ApiResponse.success(userDto, messageProvider.getMessage("user.created"))
             );
         } catch (EntityAlreadyExistsException e) {
-            System.err.println("Registration failed - already exists: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            System.err.println("Registration failed for " + request.username() + ": " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error(messageProvider.getMessage("user.register_error")));
         }
@@ -131,7 +122,8 @@ public class AuthController {
 
             @Size(max = 500, message = "{user.bio_max_length}")
             String bio
-    ) {}
+    ) {
+    }
 
     public record LoginRequest(
             String username,

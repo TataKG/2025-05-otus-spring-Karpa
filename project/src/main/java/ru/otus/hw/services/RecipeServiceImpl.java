@@ -66,7 +66,7 @@ public class RecipeServiceImpl implements RecipeService {
                                                List<String> ingredients, String description,
                                                List<Long> inventoryIds, boolean published) {
 
-        validateRecipeData(title, categoryId, authorId, ingredients, description, true);
+        validateIngredientsBusinessRules(ingredients);
 
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -82,13 +82,9 @@ public class RecipeServiceImpl implements RecipeService {
 
         List<String> validIngredients = ingredients.stream()
                 .filter(ingredient -> ingredient != null && !ingredient.trim().isEmpty())
+                .map(String::trim)
                 .toList();
 
-        if (validIngredients.isEmpty()) {
-            throw new IllegalArgumentException(
-                    messageProvider.getMessage("recipe.ingredients.min.one")
-            );
-        }
         recipe.getIngredients().addAll(validIngredients);
         recipe.setPublished(published);
 
@@ -114,7 +110,8 @@ public class RecipeServiceImpl implements RecipeService {
                                   List<String> ingredients, String description,
                                   List<Long> inventoryIds, boolean published) {
         try {
-            validateRecipeData(title, categoryId, null, ingredients, description, false);
+
+            validateIngredientsBusinessRules(ingredients);
 
             Recipe recipe = recipeRepository.findByIdWithBasicRelations(id)
                     .orElseThrow(() -> new EntityNotFoundException(
@@ -131,30 +128,9 @@ public class RecipeServiceImpl implements RecipeService {
             recipe.setDescription(description.trim());
             recipe.setPublished(published);
 
-            recipeRepository.deleteIngredients(id);
+            updateRecipeIngredients(recipe, ingredients);
 
-            if (ingredients != null && !ingredients.isEmpty()) {
-                for (int i = 0; i < ingredients.size(); i++) {
-                    String ingredient = ingredients.get(i);
-                    if (ingredient != null && !ingredient.trim().isEmpty()) {
-                        recipeRepository.addIngredient(id, ingredient.trim(), i);
-                    }
-                }
-            }
-
-            recipe.getInventoryItems().clear();
-            if (inventoryIds != null && !inventoryIds.isEmpty()) {
-                List<Long> validInventoryIds = inventoryIds.stream()
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
-
-                if (!validInventoryIds.isEmpty()) {
-                    Iterable<Inventory> inventoryIterable = inventoryRepository.findAllById(validInventoryIds);
-                    List<Inventory> inventoryItems = new ArrayList<>();
-                    inventoryIterable.forEach(inventoryItems::add);
-                    recipe.getInventoryItems().addAll(inventoryItems);
-                }
-            }
+            updateRecipeInventory(recipe, inventoryIds);
 
             Recipe savedRecipe = recipeRepository.save(recipe);
             return recipeConverter.toDto(savedRecipe);
@@ -285,30 +261,48 @@ public class RecipeServiceImpl implements RecipeService {
         return recipeRepository.countByPublishedTrue();
     }
 
-    private void validateRecipeData(String title, Long categoryId, Long authorId,
-                                    List<String> ingredients, String description,
-                                    boolean isCreateOperation) {
-
-        if (title == null || title.trim().isEmpty()) {
-            throw new IllegalArgumentException(messageProvider.getMessage("recipe.title.required"));
-        }
-        if (title.trim().length() < 2) {
-            throw new IllegalArgumentException(messageProvider.getMessage("recipe.title.min_length"));
-        }
-        if (categoryId == null) {
-            throw new IllegalArgumentException(messageProvider.getMessage("recipe.category.required"));
-        }
-        if (isCreateOperation && authorId == null) {
-            throw new IllegalArgumentException(messageProvider.getMessage("author.id.null"));
-        }
-        if (description == null || description.trim().isEmpty()) {
-            throw new IllegalArgumentException(messageProvider.getMessage("recipe.description.required"));
-        }
-        if (description.trim().length() < 10) {
-            throw new IllegalArgumentException(messageProvider.getMessage("recipe.description.min_length"));
-        }
+    private void validateIngredientsBusinessRules(List<String> ingredients) {
         if (ingredients == null || ingredients.isEmpty()) {
-            throw new IllegalArgumentException(messageProvider.getMessage("recipe.ingredients.empty"));
+            throw new IllegalArgumentException(
+                    messageProvider.getMessage("recipe.ingredients.min.one")
+            );
+        }
+
+        // Проверяем, что есть хотя бы один непустой ингредиент
+        boolean hasValidIngredient = ingredients.stream()
+                .anyMatch(ingredient -> ingredient != null && !ingredient.trim().isEmpty());
+
+        if (!hasValidIngredient) {
+            throw new IllegalArgumentException(
+                    messageProvider.getMessage("recipe.ingredients.min.one")
+            );
+        }
+    }
+
+    private void updateRecipeIngredients(Recipe recipe, List<String> ingredients) {
+        recipeRepository.deleteIngredients(recipe.getId());
+
+        for (int i = 0; i < ingredients.size(); i++) {
+            String ingredient = ingredients.get(i);
+            if (ingredient != null && !ingredient.trim().isEmpty()) {
+                recipeRepository.addIngredient(recipe.getId(), ingredient.trim(), i);
+            }
+        }
+    }
+
+    private void updateRecipeInventory(Recipe recipe, List<Long> inventoryIds) {
+        recipe.getInventoryItems().clear();
+        if (inventoryIds != null && !inventoryIds.isEmpty()) {
+            List<Long> validInventoryIds = inventoryIds.stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            if (!validInventoryIds.isEmpty()) {
+                Iterable<Inventory> inventoryIterable = inventoryRepository.findAllById(validInventoryIds);
+                List<Inventory> inventoryItems = new ArrayList<>();
+                inventoryIterable.forEach(inventoryItems::add);
+                recipe.getInventoryItems().addAll(inventoryItems);
+            }
         }
     }
 }

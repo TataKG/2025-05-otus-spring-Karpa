@@ -1,5 +1,6 @@
 package ru.otus.hw.handler;
 
+import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,7 @@ import ru.otus.hw.exceptions.EntityAlreadyExistsException;
 import ru.otus.hw.exceptions.ValidationException;
 import ru.otus.hw.util.MessageProvider;
 
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -62,15 +64,42 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<?>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         String errorMessage = ex.getBindingResult().getFieldErrors().stream()
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                .map(error -> {
+                    String message = error.getDefaultMessage();
+                    if (message != null && message.startsWith("{") && message.endsWith("}")) {
+                        String messageKey = message.substring(1, message.length() - 1);
+                        return messageProvider.getMessage(messageKey);
+                    }
+                    return message;
+                })
+                .filter(Objects::nonNull)
                 .collect(Collectors.joining(", "));
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(errorMessage));
     }
+
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<?>> handleIllegalArgumentException(IllegalArgumentException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<?>> handleConstraintViolationException(ConstraintViolationException ex) {
+        String errorMessage = ex.getConstraintViolations().stream()
+                .map(violation -> {
+                    String message = violation.getMessage();
+                    if (message != null && message.startsWith("{") && message.endsWith("}")) {
+                        String messageKey = message.substring(1, message.length() - 1);
+                        return messageProvider.getMessage(messageKey);
+                    }
+                    return message;
+                })
+                .collect(Collectors.joining(", "));
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(errorMessage));
     }
 }
