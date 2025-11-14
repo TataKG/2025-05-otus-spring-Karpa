@@ -55,14 +55,14 @@ class RegistrationForm {
         if (this.username) {
             this.username.addEventListener('blur', () => {
                 const usernameValue = this.username.value.trim();
-                if (usernameValue.length >= 3 && this.username.checkValidity()) {
+                if (usernameValue.length >= 3) {
                     this.checkUsernameExists(usernameValue);
                 }
             });
 
             this.username.addEventListener('input', () => {
                 this.clearFieldStatus(this.usernameStatus, this.usernameError);
-                if (this.username.value.length >= 3 && this.username.checkValidity()) {
+                if (this.username.value.length >= 3) {
                     this.username.classList.remove('is-invalid');
                     this.username.classList.add('is-valid');
                 } else {
@@ -76,14 +76,14 @@ class RegistrationForm {
         if (this.email) {
             this.email.addEventListener('blur', () => {
                 const emailValue = this.email.value.trim();
-                if (emailValue.includes('@') && this.email.checkValidity()) {
+                if (emailValue.includes('@')) {
                     this.checkEmailExists(emailValue);
                 }
             });
 
             this.email.addEventListener('input', () => {
                 this.clearFieldStatus(this.emailStatus, this.emailError);
-                if (this.email.value.includes('@') && this.email.checkValidity()) {
+                if (this.email.value.includes('@')) {
                     this.email.classList.remove('is-invalid');
                     this.email.classList.add('is-valid');
                 } else {
@@ -223,17 +223,13 @@ class RegistrationForm {
     async handleSubmit(e) {
         e.preventDefault();
 
-        if (!this.form.checkValidity()) {
-            e.stopPropagation();
-            this.form.classList.add('was-validated');
-            return;
-        }
-
+        // Базовая проверка паролей на клиенте
         if (this.password.value !== this.confirmPassword.value) {
             this.showToast('Ошибка', 'Пароли не совпадают', 'error');
             return;
         }
 
+        // Проверка длины биографии на клиенте
         if (this.bio.value.length > 500) {
             this.showToast('Ошибка', 'Биография не должна превышать 500 символов', 'error');
             return;
@@ -259,33 +255,27 @@ class RegistrationForm {
                 body: JSON.stringify(formData)
             });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                let errorMessage = 'Ошибка при регистрации';
-
-                try {
-                    const errorResult = JSON.parse(errorText);
-                    errorMessage = errorResult.message || errorMessage;
-                } catch (e) {
-                    errorMessage = errorText || `HTTP error! status: ${response.status}`;
-                }
-
-                throw new Error(errorMessage);
-            }
-
             const result = await response.json();
 
-            if (result.success) {
+            if (response.ok && result.success) {
                 this.showToast('Успех', 'Регистрация прошла успешно! Теперь вы можете войти.', 'success');
                 setTimeout(() => {
                     window.location.href = '/login?registered=true';
                 }, 2000);
             } else {
+                // Отображаем ошибку с сервера
                 this.showToast('Ошибка', result.message || 'Ошибка при регистрации', 'error');
+
+                // Показываем ошибки для конкретных полей если они есть
+                if (result.message && result.message.includes('имя пользователя')) {
+                    this.showFieldError(this.usernameError, result.message);
+                } else if (result.message && result.message.includes('email')) {
+                    this.showFieldError(this.emailError, result.message);
+                }
             }
         } catch (error) {
             console.error('Registration error:', error);
-            this.showToast('Ошибка', error.message || 'Ошибка при регистрации. Попробуйте позже.', 'error');
+            this.showToast('Ошибка', 'Ошибка при регистрации. Попробуйте позже.', 'error');
         } finally {
             this.registerButton.disabled = false;
             this.registerButton.innerHTML = '🚀 Зарегистрироваться';

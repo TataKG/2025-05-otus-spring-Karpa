@@ -17,13 +17,28 @@ import ru.otus.hw.util.MessageProvider;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Тесты для RecipeServiceImpl")
 class RecipeServiceImplTest {
+
+    private static final Long EXISTING_RECIPE_ID = 1L;
+    private static final Long NON_EXISTING_RECIPE_ID = 999L;
+    private static final Long EXISTING_CATEGORY_ID = 1L;
+    private static final Long NON_EXISTING_CATEGORY_ID = 999L;
+    private static final Long EXISTING_AUTHOR_ID = 1L;
+    private static final Long NON_EXISTING_AUTHOR_ID = 999L;
+    private static final Long EXISTING_INVENTORY_ID = 1L;
+
+    private static final String BORSCH_TITLE = "Борщ украинский";
+    private static final String UPDATED_TITLE = "Обновленный борщ";
+    private static final String SEARCH_QUERY = "борщ";
 
     @Mock
     private RecipeRepository recipeRepository;
@@ -58,121 +73,117 @@ class RecipeServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        // Локальные переменные вместо полей класса
-        User testUser = new User("testuser", "test@example.com", "password");
-        testUser.setId(1L);
+        User testUser = new User("chef_ivan", "ivan@example.com", "password");
+        testUser.setId(EXISTING_AUTHOR_ID);
 
-        testCategory = new Category("Test Category", "Test Description");
-        testCategory.setId(1L);
+        testCategory = new Category("Супы", "Первые блюда");
+        testCategory.setId(EXISTING_CATEGORY_ID);
 
-        testAuthor = new Author(testUser, "Test bio");
-        testAuthor.setId(1L);
+        testAuthor = new Author(testUser, "Профессиональный шеф-повар");
+        testAuthor.setId(EXISTING_AUTHOR_ID);
 
-        testInventory = new Inventory("Test Inventory", "Test Description");
-        testInventory.setId(1L);
+        testInventory = new Inventory("Блендер", "Кухонный блендер");
+        testInventory.setId(EXISTING_INVENTORY_ID);
 
-        testRecipe = new Recipe("Test Recipe", testCategory, testAuthor, "Test Description");
-        testRecipe.setId(1L);
+        testRecipe = new Recipe(BORSCH_TITLE, testCategory, testAuthor, "Классический украинский борщ");
+        testRecipe.setId(EXISTING_RECIPE_ID);
         testRecipe.setPublished(true);
-        testRecipe.getIngredients().addAll(List.of("Ingredient 1", "Ingredient 2"));
-        // Создаем DTO с правильной структурой
-        var testCategoryDto = new CategoryDto(1L, "Test Category", "Test Description", LocalDateTime.now());
-        var testAuthorDto = new AuthorDto(1L,
-                new UserDto(1L, "testuser", "test@example.com", true,
-                        java.util.Set.of("USER"), LocalDateTime.now(), true),
-                "Test bio", LocalDateTime.now(), 5, List.of("USER"));
-        var testInventoryDto = new InventoryDto(1L, "Test Inventory", "Test Description", LocalDateTime.now());
+        testRecipe.getIngredients().addAll(List.of("Говядина - 500г", "Свекла - 2шт", "Капуста - 300г"));
 
-        testRecipeDto = new RecipeDto(1L, "Test Recipe", testCategoryDto, testAuthorDto,
-                List.of(testInventoryDto), List.of("Ingredient 1", "Ingredient 2"),
-                "Test Description", 3, true, LocalDateTime.now(), LocalDateTime.now());
+        CategoryDto testCategoryDto = new CategoryDto(EXISTING_CATEGORY_ID, "Супы", "Первые блюда", LocalDateTime.now());
+        UserDto testUserDto = new UserDto(EXISTING_AUTHOR_ID, "chef_ivan", "ivan@example.com", true,
+                Set.of("USER"), LocalDateTime.now(), true);
+        AuthorDto testAuthorDto = new AuthorDto(EXISTING_AUTHOR_ID, testUserDto,
+                "Профессиональный шеф-повар", LocalDateTime.now(), 5, List.of("USER"));
+        InventoryDto testInventoryDto = new InventoryDto(EXISTING_INVENTORY_ID, "Блендер", "Кухонный блендер", LocalDateTime.now());
 
-        testRecipeSummaryDto = new RecipeSummaryDto(1L, "Test Recipe", "Test Category",
-                "testuser", 3, true, LocalDateTime.now());
+        testRecipeDto = new RecipeDto(EXISTING_RECIPE_ID, BORSCH_TITLE, testCategoryDto, testAuthorDto,
+                List.of(testInventoryDto), List.of("Говядина - 500г", "Свекла - 2шт", "Капуста - 300г"),
+                "Классический украинский борщ", 3, true, LocalDateTime.now(), LocalDateTime.now());
+
+        testRecipeSummaryDto = new RecipeSummaryDto(EXISTING_RECIPE_ID, BORSCH_TITLE, "Супы",
+                "chef_ivan", 3, true, LocalDateTime.now());
     }
 
     @Test
     @DisplayName("Получение рецепта с деталями - успешно")
     void getRecipeWithDetails_ShouldReturnRecipe_WhenRecipeExists() {
-        // Given
-        Long recipeId = 1L;
+        // Arrange
         List<Comment> comments = List.of();
 
-        when(recipeRepository.findByIdWithAllRelations(recipeId)).thenReturn(Optional.of(testRecipe));
-        when(commentRepository.findByRecipeIdWithUser(recipeId)).thenReturn(comments);
+        when(recipeRepository.findByIdWithAllRelations(EXISTING_RECIPE_ID)).thenReturn(Optional.of(testRecipe));
+        when(commentRepository.findByRecipeIdWithUser(EXISTING_RECIPE_ID)).thenReturn(comments);
         when(recipeConverter.toDto(testRecipe)).thenReturn(testRecipeDto);
 
-        // When
-        RecipeDto result = recipeService.getRecipeWithDetails(recipeId);
+        // Act
+        RecipeDto result = recipeService.getRecipeWithDetails(EXISTING_RECIPE_ID);
 
-        // Then
-        assertNotNull(result);
-        assertEquals(testRecipeDto, result);
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(testRecipeDto);
     }
 
     @Test
     @DisplayName("Получение рецепта с деталями - рецепт не найден")
     void getRecipeWithDetails_ShouldThrowException_WhenRecipeNotFound() {
-        // Given
-        Long recipeId = 1L;
-        when(recipeRepository.findByIdWithAllRelations(recipeId)).thenReturn(Optional.empty());
-        when(messageProvider.getMessage("recipe.not_found", recipeId)).thenReturn("Recipe not found");
+        // Arrange
+        when(recipeRepository.findByIdWithAllRelations(NON_EXISTING_RECIPE_ID)).thenReturn(Optional.empty());
+        when(messageProvider.getMessage("recipe.not_found", NON_EXISTING_RECIPE_ID))
+                .thenReturn("Рецепт не найден: " + NON_EXISTING_RECIPE_ID);
 
-        // When & Then
-        assertThrows(EntityNotFoundException.class,
-                () -> recipeService.getRecipeWithDetails(recipeId));
+        // Act & Assert
+        assertThatThrownBy(() -> recipeService.getRecipeWithDetails(NON_EXISTING_RECIPE_ID))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Рецепт не найден: " + NON_EXISTING_RECIPE_ID);
     }
 
     @Test
     @DisplayName("Создание рецепта - успешное создание")
     void createRecipe_ShouldCreateRecipe_WhenValidData() {
-        // Given
-        String title = "Test Recipe";
-        Long categoryId = 1L;
-        Long authorId = 1L;
-        List<String> ingredients = List.of("Ingredient 1", "Ingredient 2");
-        String description = "Test Description";
+        // Arrange
+        String title = "Новый рецепт пасты";
+        List<String> ingredients = List.of("Спагетти - 200г", "Помидоры - 2шт", "Чеснок - 2 зубчика");
+        String description = "Простой рецепт пасты";
         boolean published = true;
 
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(testCategory));
-        when(authorRepository.findById(authorId)).thenReturn(Optional.of(testAuthor));
+        when(categoryRepository.findById(EXISTING_CATEGORY_ID)).thenReturn(Optional.of(testCategory));
+        when(authorRepository.findById(EXISTING_AUTHOR_ID)).thenReturn(Optional.of(testAuthor));
         when(recipeRepository.save(any(Recipe.class))).thenReturn(testRecipe);
         when(recipeConverter.toDto(testRecipe)).thenReturn(testRecipeDto);
 
-        // When
-        RecipeDto result = recipeService.createRecipe(title, categoryId, authorId, ingredients, description, published);
+        // Act
+        RecipeDto result = recipeService.createRecipe(title, EXISTING_CATEGORY_ID, EXISTING_AUTHOR_ID,
+                ingredients, description, published);
 
-        // Then
-        assertNotNull(result);
-        assertEquals(testRecipeDto, result);
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(testRecipeDto);
         verify(recipeRepository).save(any(Recipe.class));
     }
 
     @Test
     @DisplayName("Создание рецепта с инвентарем - успешное создание")
     void createRecipeWithInventory_ShouldCreateRecipeWithInventory_WhenValidData() {
-        // Given
-        String title = "Test Recipe";
-        Long categoryId = 1L;
-        Long authorId = 1L;
-        List<String> ingredients = List.of("Ingredient 1", "Ingredient 2");
-        String description = "Test Description";
-        List<Long> inventoryIds = List.of(1L);
+        // Arrange
+        String title = "Новый рецепт пасты";
+        List<String> ingredients = List.of("Спагетти - 200г", "Помидоры - 2шт", "Чеснок - 2 зубчика");
+        String description = "Простой рецепт пасты";
+        List<Long> inventoryIds = List.of(EXISTING_INVENTORY_ID);
         boolean published = true;
 
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(testCategory));
-        when(authorRepository.findById(authorId)).thenReturn(Optional.of(testAuthor));
+        when(categoryRepository.findById(EXISTING_CATEGORY_ID)).thenReturn(Optional.of(testCategory));
+        when(authorRepository.findById(EXISTING_AUTHOR_ID)).thenReturn(Optional.of(testAuthor));
         when(inventoryRepository.findAllById(inventoryIds)).thenReturn(List.of(testInventory));
         when(recipeRepository.save(any(Recipe.class))).thenReturn(testRecipe);
         when(recipeConverter.toDto(testRecipe)).thenReturn(testRecipeDto);
 
-        // When
-        RecipeDto result = recipeService.createRecipeWithInventory(title, categoryId, authorId,
+        // Act
+        RecipeDto result = recipeService.createRecipeWithInventory(title, EXISTING_CATEGORY_ID, EXISTING_AUTHOR_ID,
                 ingredients, description, inventoryIds, published);
 
-        // Then
-        assertNotNull(result);
-        assertEquals(testRecipeDto, result);
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(testRecipeDto);
         verify(recipeRepository).save(any(Recipe.class));
         verify(inventoryRepository).findAllById(inventoryIds);
     }
@@ -180,20 +191,21 @@ class RecipeServiceImplTest {
     @Test
     @DisplayName("Создание рецепта - категория не найдена")
     void createRecipe_ShouldThrowException_WhenCategoryNotFound() {
-        // Given
-        String title = "Test Recipe";
-        Long categoryId = 1L;
-        Long authorId = 1L;
-        List<String> ingredients = List.of("Ingredient 1", "Ingredient 2");
-        String description = "Test Description";
+        // Arrange
+        String title = "Новый рецепт";
+        List<String> ingredients = List.of("Ингредиент 1", "Ингредиент 2");
+        String description = "Описание рецепта";
         boolean published = true;
 
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.empty());
-        when(messageProvider.getMessage("category.not_found", categoryId)).thenReturn("Category not found");
+        when(categoryRepository.findById(NON_EXISTING_CATEGORY_ID)).thenReturn(Optional.empty());
+        when(messageProvider.getMessage("category.not_found", NON_EXISTING_CATEGORY_ID))
+                .thenReturn("Категория не найдена: " + NON_EXISTING_CATEGORY_ID);
 
-        // When & Then
-        assertThrows(EntityNotFoundException.class,
-                () -> recipeService.createRecipe(title, categoryId, authorId, ingredients, description, published));
+        // Act & Assert
+        assertThatThrownBy(() -> recipeService.createRecipe(title, NON_EXISTING_CATEGORY_ID, EXISTING_AUTHOR_ID,
+                ingredients, description, published))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Категория не найдена: " + NON_EXISTING_CATEGORY_ID);
 
         verify(recipeRepository, never()).save(any(Recipe.class));
     }
@@ -201,20 +213,22 @@ class RecipeServiceImplTest {
     @Test
     @DisplayName("Создание рецепта - автор не найден")
     void createRecipe_ShouldThrowException_WhenAuthorNotFound() {
-        // Given
-        String title = "Test Recipe";
-        Long categoryId = 1L;
-        Long authorId = 1L;
-        List<String> ingredients = List.of("Ingredient 1", "Ingredient 2");
-        String description = "Test Description";
+        // Arrange
+        String title = "Новый рецепт";
+        List<String> ingredients = List.of("Ингредиент 1", "Ингредиент 2");
+        String description = "Описание рецепта";
         boolean published = true;
 
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(testCategory));
-        when(authorRepository.findById(authorId)).thenReturn(Optional.empty());
+        when(categoryRepository.findById(EXISTING_CATEGORY_ID)).thenReturn(Optional.of(testCategory));
+        when(authorRepository.findById(NON_EXISTING_AUTHOR_ID)).thenReturn(Optional.empty());
+        when(messageProvider.getMessage("author.not_found", NON_EXISTING_AUTHOR_ID))
+                .thenReturn("Автор не найден: " + NON_EXISTING_AUTHOR_ID);
 
-        // When & Then
-        assertThrows(EntityNotFoundException.class,
-                () -> recipeService.createRecipe(title, categoryId, authorId, ingredients, description, published));
+        // Act & Assert
+        assertThatThrownBy(() -> recipeService.createRecipe(title, EXISTING_CATEGORY_ID, NON_EXISTING_AUTHOR_ID,
+                ingredients, description, published))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Автор не найден: " + NON_EXISTING_AUTHOR_ID);
 
         verify(recipeRepository, never()).save(any(Recipe.class));
     }
@@ -222,17 +236,26 @@ class RecipeServiceImplTest {
     @Test
     @DisplayName("Создание рецепта - пустые ингредиенты")
     void createRecipe_ShouldThrowException_WhenNoValidIngredients() {
-        // Given
-        String title = "Test Recipe";
-        Long categoryId = 1L;
-        Long authorId = 1L;
+        // Arrange
+        String title = "Новый рецепт";
         List<String> ingredients = List.of("", "   ");
-        String description = "Test Description";
+        String description = "Описание рецепта";
         boolean published = true;
 
-        // When & Then
-        assertThrows(IllegalArgumentException.class,
-                () -> recipeService.createRecipe(title, categoryId, authorId, ingredients, description, published));
+        // Добавить моки для репозиториев
+        when(categoryRepository.findById(EXISTING_CATEGORY_ID))
+                .thenReturn(Optional.of(testCategory));
+        when(authorRepository.findById(EXISTING_AUTHOR_ID))
+                .thenReturn(Optional.of(testAuthor));
+
+        when(messageProvider.getMessage("recipe.ingredients.min.one"))
+                .thenReturn("Добавьте хотя бы один непустой ингредиент");
+
+        // Act & Assert
+        assertThatThrownBy(() -> recipeService.createRecipe(title, EXISTING_CATEGORY_ID, EXISTING_AUTHOR_ID,
+                ingredients, description, published))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Добавьте хотя бы один непустой ингредиент");
 
         verify(recipeRepository, never()).save(any(Recipe.class));
     }
@@ -240,157 +263,147 @@ class RecipeServiceImplTest {
     @Test
     @DisplayName("Обновление рецепта - успешно")
     void updateRecipe_ShouldUpdateRecipe_WhenValidData() {
-        // Given
-        Long recipeId = 1L;
-        String title = "Updated Recipe";
-        Long categoryId = 1L;
-        Long authorId = 1L;
-        List<String> ingredients = List.of("Updated Ingredient 1", "Updated Ingredient 2");
-        String description = "Updated Description";
-        List<Long> inventoryIds = List.of(1L);
+        // Arrange
+        List<String> ingredients = List.of("Обновленный ингредиент 1", "Обновленный ингредиент 2");
+        String description = "Обновленное описание";
+        List<Long> inventoryIds = List.of(EXISTING_INVENTORY_ID);
         boolean published = true;
 
-        Category updatedCategory = new Category("Updated Category", "Updated Description");
-        updatedCategory.setId(2L);
-
-        when(recipeRepository.findByIdWithBasicRelations(recipeId)).thenReturn(Optional.of(testRecipe));
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(updatedCategory));
+        when(recipeRepository.findByIdWithBasicRelations(EXISTING_RECIPE_ID)).thenReturn(Optional.of(testRecipe));
+        when(categoryRepository.findById(EXISTING_CATEGORY_ID)).thenReturn(Optional.of(testCategory));
         when(inventoryRepository.findAllById(inventoryIds)).thenReturn(List.of(testInventory));
         when(recipeRepository.save(testRecipe)).thenReturn(testRecipe);
         when(recipeConverter.toDto(testRecipe)).thenReturn(testRecipeDto);
 
-        // When
-        RecipeDto result = recipeService.updateRecipe(recipeId, title, categoryId, authorId,
+        // Act
+        RecipeDto result = recipeService.updateRecipe(EXISTING_RECIPE_ID, UPDATED_TITLE, EXISTING_CATEGORY_ID, EXISTING_AUTHOR_ID,
                 ingredients, description, inventoryIds, published);
 
-        // Then
-        assertNotNull(result);
+        // Assert
+        assertThat(result).isNotNull();
         verify(recipeRepository).save(testRecipe);
-        verify(recipeRepository).deleteIngredients(recipeId);
+        verify(recipeRepository).deleteIngredients(EXISTING_RECIPE_ID);
         verify(inventoryRepository).findAllById(inventoryIds);
     }
 
     @Test
     @DisplayName("Получение всех опубликованных рецептов - успешно")
     void getAllPublishedRecipes_ShouldReturnPublishedRecipes() {
-        // Given
+        // Arrange
         List<Recipe> recipes = List.of(testRecipe);
         when(recipeRepository.findPublishedRecipesWithBasicAssociations()).thenReturn(recipes);
         when(recipeConverter.toSummaryDto(testRecipe)).thenReturn(testRecipeSummaryDto);
 
-        // When
+        // Act
         List<RecipeSummaryDto> result = recipeService.getAllPublishedRecipes();
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testRecipeSummaryDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testRecipeSummaryDto);
     }
 
     @Test
     @DisplayName("Поиск опубликованных рецептов по названию - успешно")
     void searchPublishedRecipesByTitle_ShouldReturnMatchingRecipes() {
-        // Given
-        String searchTitle = "Test";
+        // Arrange
         List<Recipe> recipes = List.of(testRecipe);
-        when(recipeRepository.findPublishedByTitleContainingIgnoreCase(searchTitle)).thenReturn(recipes);
+        when(recipeRepository.findPublishedByTitleContainingIgnoreCase(SEARCH_QUERY)).thenReturn(recipes);
         when(recipeConverter.toSummaryDto(testRecipe)).thenReturn(testRecipeSummaryDto);
 
-        // When
-        List<RecipeSummaryDto> result = recipeService.searchPublishedRecipesByTitle(searchTitle);
+        // Act
+        List<RecipeSummaryDto> result = recipeService.searchPublishedRecipesByTitle(SEARCH_QUERY);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testRecipeSummaryDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testRecipeSummaryDto);
     }
 
     @Test
     @DisplayName("Поиск опубликованных рецептов по ингредиенту - успешно")
     void searchPublishedRecipesByIngredient_ShouldReturnMatchingRecipes() {
-        // Given
-        String searchIngredient = "Ingredient";
+        // Arrange
+        String searchIngredient = "говядина";
         List<Recipe> recipes = List.of(testRecipe);
         when(recipeRepository.findPublishedByIngredientContaining(searchIngredient)).thenReturn(recipes);
         when(recipeConverter.toSummaryDto(testRecipe)).thenReturn(testRecipeSummaryDto);
 
-        // When
+        // Act
         List<RecipeSummaryDto> result = recipeService.searchPublishedRecipesByIngredient(searchIngredient);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testRecipeSummaryDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testRecipeSummaryDto);
     }
 
     @Test
     @DisplayName("Публикация рецепта - успешно")
     void publishRecipe_ShouldPublishRecipe_WhenRecipeExists() {
-        // Given
-        Long recipeId = 1L;
+        // Arrange
         testRecipe.setPublished(false);
 
-        when(recipeRepository.findByIdWithBasicRelations(recipeId)).thenReturn(Optional.of(testRecipe));
+        when(recipeRepository.findByIdWithBasicRelations(EXISTING_RECIPE_ID)).thenReturn(Optional.of(testRecipe));
         when(recipeRepository.save(testRecipe)).thenReturn(testRecipe);
         when(recipeConverter.toDto(testRecipe)).thenReturn(testRecipeDto);
 
-        // When
-        RecipeDto result = recipeService.publishRecipe(recipeId);
+        // Act
+        RecipeDto result = recipeService.publishRecipe(EXISTING_RECIPE_ID);
 
-        // Then
-        assertNotNull(result);
-        assertTrue(testRecipe.isPublished());
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(testRecipe.isPublished()).isTrue();
         verify(recipeRepository).save(testRecipe);
     }
 
     @Test
     @DisplayName("Снятие с публикации рецепта - успешно")
     void unpublishRecipe_ShouldUnpublishRecipe_WhenRecipeExists() {
-        // Given
-        Long recipeId = 1L;
+        // Arrange
         testRecipe.setPublished(true);
 
-        when(recipeRepository.findByIdWithBasicRelations(recipeId)).thenReturn(Optional.of(testRecipe));
+        when(recipeRepository.findByIdWithBasicRelations(EXISTING_RECIPE_ID)).thenReturn(Optional.of(testRecipe));
         when(recipeRepository.save(testRecipe)).thenReturn(testRecipe);
         when(recipeConverter.toDto(testRecipe)).thenReturn(testRecipeDto);
 
-        // When
-        RecipeDto result = recipeService.unpublishRecipe(recipeId);
+        // Act
+        RecipeDto result = recipeService.unpublishRecipe(EXISTING_RECIPE_ID);
 
-        // Then
-        assertNotNull(result);
-        assertFalse(testRecipe.isPublished());
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(testRecipe.isPublished()).isFalse();
         verify(recipeRepository).save(testRecipe);
     }
 
     @Test
     @DisplayName("Удаление рецепта - успешно")
     void deleteRecipe_ShouldDeleteRecipe_WhenRecipeExists() {
-        // Given
-        Long recipeId = 1L;
-        when(recipeRepository.existsById(recipeId)).thenReturn(true);
+        // Arrange
+        when(recipeRepository.existsById(EXISTING_RECIPE_ID)).thenReturn(true);
 
-        // When
-        recipeService.deleteRecipe(recipeId);
+        // Act
+        recipeService.deleteRecipe(EXISTING_RECIPE_ID);
 
-        // Then
-        verify(commentRepository).deleteByRecipeId(recipeId);
-        verify(recipeRepository).deleteInventoryAssociations(recipeId);
-        verify(recipeRepository).deleteIngredients(recipeId);
-        verify(recipeRepository).deleteById(recipeId);
+        // Assert
+        verify(commentRepository).deleteByRecipeId(EXISTING_RECIPE_ID);
+        verify(recipeRepository).deleteInventoryAssociations(EXISTING_RECIPE_ID);
+        verify(recipeRepository).deleteIngredients(EXISTING_RECIPE_ID);
+        verify(recipeRepository).deleteById(EXISTING_RECIPE_ID);
     }
 
     @Test
     @DisplayName("Удаление рецепта - рецепт не найден")
     void deleteRecipe_ShouldThrowException_WhenRecipeNotFound() {
-        // Given
-        Long recipeId = 1L;
-        when(recipeRepository.existsById(recipeId)).thenReturn(false);
-        when(messageProvider.getMessage("recipe.not_found", recipeId)).thenReturn("Recipe not found");
+        // Arrange
+        when(recipeRepository.existsById(NON_EXISTING_RECIPE_ID)).thenReturn(false);
+        when(messageProvider.getMessage("recipe.not_found", NON_EXISTING_RECIPE_ID))
+                .thenReturn("Рецепт не найден: " + NON_EXISTING_RECIPE_ID);
 
-        // When & Then
-        assertThrows(EntityNotFoundException.class,
-                () -> recipeService.deleteRecipe(recipeId));
+        // Act & Assert
+        assertThatThrownBy(() -> recipeService.deleteRecipe(NON_EXISTING_RECIPE_ID))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Рецепт не найден: " + NON_EXISTING_RECIPE_ID);
 
         verify(commentRepository, never()).deleteByRecipeId(anyLong());
         verify(recipeRepository, never()).deleteInventoryAssociations(anyLong());
@@ -401,191 +414,202 @@ class RecipeServiceImplTest {
     @Test
     @DisplayName("Получение рецептов по автору - успешно")
     void getRecipesByAuthor_ShouldReturnAuthorRecipes() {
-        // Given
-        Long authorId = 1L;
+        // Arrange
         List<Recipe> recipes = List.of(testRecipe);
-        when(recipeRepository.findByAuthorIdWithDetails(authorId)).thenReturn(recipes);
+        when(recipeRepository.findByAuthorIdWithDetails(EXISTING_AUTHOR_ID)).thenReturn(recipes);
         when(recipeConverter.toSummaryDto(testRecipe)).thenReturn(testRecipeSummaryDto);
 
-        // When
-        List<RecipeSummaryDto> result = recipeService.getRecipesByAuthor(authorId);
+        // Act
+        List<RecipeSummaryDto> result = recipeService.getRecipesByAuthor(EXISTING_AUTHOR_ID);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testRecipeSummaryDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testRecipeSummaryDto);
     }
 
     @Test
     @DisplayName("Получение опубликованных рецептов по автору - успешно")
     void getPublishedRecipesByAuthor_ShouldReturnPublishedAuthorRecipes() {
-        // Given
-        Long authorId = 1L;
+        // Arrange
         List<Recipe> recipes = List.of(testRecipe);
-        when(recipeRepository.findPublishedByAuthorIdWithDetails(authorId)).thenReturn(recipes);
+        when(recipeRepository.findPublishedByAuthorIdWithDetails(EXISTING_AUTHOR_ID)).thenReturn(recipes);
         when(recipeConverter.toSummaryDto(testRecipe)).thenReturn(testRecipeSummaryDto);
 
-        // When
-        List<RecipeSummaryDto> result = recipeService.getPublishedRecipesByAuthor(authorId);
+        // Act
+        List<RecipeSummaryDto> result = recipeService.getPublishedRecipesByAuthor(EXISTING_AUTHOR_ID);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testRecipeSummaryDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testRecipeSummaryDto);
     }
 
     @Test
     @DisplayName("Поиск опубликованных рецептов по фильтрам - успешно")
     void findPublishedRecipesByFilters_ShouldReturnFilteredRecipes() {
-        // Given
-        String title = "Test";
-        Long categoryId = 1L;
-        Long authorId = 1L;
+        // Arrange
         List<Recipe> recipes = List.of(testRecipe);
-        when(recipeRepository.findPublishedByFilters(title, categoryId, authorId)).thenReturn(recipes);
+        when(recipeRepository.findPublishedByFilters(SEARCH_QUERY, EXISTING_CATEGORY_ID, EXISTING_AUTHOR_ID)).thenReturn(recipes);
         when(recipeConverter.toSummaryDto(testRecipe)).thenReturn(testRecipeSummaryDto);
 
-        // When
-        List<RecipeSummaryDto> result = recipeService.findPublishedRecipesByFilters(title, categoryId, authorId);
+        // Act
+        List<RecipeSummaryDto> result = recipeService.findPublishedRecipesByFilters(SEARCH_QUERY, EXISTING_CATEGORY_ID, EXISTING_AUTHOR_ID);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testRecipeSummaryDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testRecipeSummaryDto);
     }
 
     @Test
     @DisplayName("Поиск опубликованных рецептов с фильтрами - по поисковому запросу")
     void findPublishedRecipesWithFilters_ShouldReturnRecipesBySearch() {
-        // Given
-        String search = "Test";
+        // Arrange
         List<Recipe> recipes = List.of(testRecipe);
-        when(recipeRepository.findPublishedByTitleContainingIgnoreCase(search)).thenReturn(recipes);
+        when(recipeRepository.findPublishedByTitleContainingIgnoreCase(SEARCH_QUERY)).thenReturn(recipes);
         when(recipeConverter.toDto(testRecipe)).thenReturn(testRecipeDto);
 
-        // When
-        List<RecipeDto> result = recipeService.findPublishedRecipesWithFilters(search, null, null);
+        // Act
+        List<RecipeDto> result = recipeService.findPublishedRecipesWithFilters(SEARCH_QUERY, null, null);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testRecipeDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testRecipeDto);
     }
 
     @Test
     @DisplayName("Поиск опубликованных рецептов с фильтрами - по категории и автору")
     void findPublishedRecipesWithFilters_ShouldReturnRecipesByCategoryAndAuthor() {
-        // Given
-        Long categoryId = 1L;
-        Long authorId = 1L;
+        // Arrange
         List<Recipe> recipes = List.of(testRecipe);
-        when(recipeRepository.findPublishedByFilters(null, categoryId, authorId)).thenReturn(recipes);
+        when(recipeRepository.findPublishedByFilters(null, EXISTING_CATEGORY_ID, EXISTING_AUTHOR_ID)).thenReturn(recipes);
         when(recipeConverter.toDto(testRecipe)).thenReturn(testRecipeDto);
 
-        // When
-        List<RecipeDto> result = recipeService.findPublishedRecipesWithFilters(null, categoryId, authorId);
+        // Act
+        List<RecipeDto> result = recipeService.findPublishedRecipesWithFilters(null, EXISTING_CATEGORY_ID, EXISTING_AUTHOR_ID);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testRecipeDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testRecipeDto);
     }
 
     @Test
     @DisplayName("Получение недавних опубликованных рецептов - успешно")
     void getRecentPublishedRecipes_ShouldReturnRecentRecipes() {
-        // Given
+        // Arrange
         int limit = 5;
         List<Recipe> recipes = List.of(testRecipe);
         when(recipeRepository.findRecentPublishedRecipes(limit)).thenReturn(recipes);
         when(recipeConverter.toSummaryDto(testRecipe)).thenReturn(testRecipeSummaryDto);
 
-        // When
+        // Act
         List<RecipeSummaryDto> result = recipeService.getRecentPublishedRecipes(limit);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testRecipeSummaryDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testRecipeSummaryDto);
     }
 
     @Test
     @DisplayName("Получение популярных опубликованных рецептов - успешно")
     void getPopularPublishedRecipes_ShouldReturnPopularRecipes() {
-        // Given
+        // Arrange
         int limit = 5;
         List<Recipe> recipes = List.of(testRecipe);
         when(recipeRepository.findPopularPublishedRecipes(limit)).thenReturn(recipes);
         when(recipeConverter.toSummaryDto(testRecipe)).thenReturn(testRecipeSummaryDto);
 
-        // When
+        // Act
         List<RecipeSummaryDto> result = recipeService.getPopularPublishedRecipes(limit);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testRecipeSummaryDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testRecipeSummaryDto);
     }
 
     @Test
     @DisplayName("Получение количества опубликованных рецептов - успешно")
     void getPublishedRecipesCount_ShouldReturnCount() {
-        // Given
+        // Arrange
         long expectedCount = 10L;
         when(recipeRepository.countByPublishedTrue()).thenReturn(expectedCount);
 
-        // When
+        // Act
         long result = recipeService.getPublishedRecipesCount();
 
-        // Then
-        assertEquals(expectedCount, result);
+        // Assert
+        assertThat(result).isEqualTo(expectedCount);
     }
 
     @Test
     @DisplayName("Получение рецепта по ID - успешно")
     void getRecipeById_ShouldReturnRecipe_WhenRecipeExists() {
-        // Given
-        Long recipeId = 1L;
-        when(recipeRepository.findByIdWithBasicRelations(recipeId)).thenReturn(Optional.of(testRecipe));
+        // Arrange
+        when(recipeRepository.findByIdWithBasicRelations(EXISTING_RECIPE_ID)).thenReturn(Optional.of(testRecipe));
         when(recipeConverter.toDto(testRecipe)).thenReturn(testRecipeDto);
 
-        // When
-        Optional<RecipeDto> result = recipeService.getRecipeById(recipeId);
+        // Act
+        Optional<RecipeDto> result = recipeService.getRecipeById(EXISTING_RECIPE_ID);
 
-        // Then
-        assertTrue(result.isPresent());
-        assertEquals(testRecipeDto, result.get());
+        // Assert
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(testRecipeDto);
     }
 
     @Test
     @DisplayName("Получение рецепта по ID с базовыми отношениями - успешно")
     void getRecipeByIdWithBasicRelations_ShouldReturnRecipe_WhenRecipeExists() {
-        // Given
-        Long recipeId = 1L;
-        when(recipeRepository.findByIdWithBasicRelations(recipeId)).thenReturn(Optional.of(testRecipe));
+        // Arrange
+        when(recipeRepository.findByIdWithBasicRelations(EXISTING_RECIPE_ID)).thenReturn(Optional.of(testRecipe));
         when(recipeConverter.toDto(testRecipe)).thenReturn(testRecipeDto);
 
-        // When
-        Optional<RecipeDto> result = recipeService.getRecipeByIdWithBasicRelations(recipeId);
+        // Act
+        Optional<RecipeDto> result = recipeService.getRecipeByIdWithBasicRelations(EXISTING_RECIPE_ID);
 
-        // Then
-        assertTrue(result.isPresent());
-        assertEquals(testRecipeDto, result.get());
+        // Assert
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(testRecipeDto);
     }
 
     @Test
     @DisplayName("Получение рецепта по ID со всеми отношениями - успешно")
     void getRecipeByIdWithAllRelations_ShouldReturnRecipe_WhenRecipeExists() {
-        // Given
-        Long recipeId = 1L;
-        when(recipeRepository.findByIdWithAllRelations(recipeId)).thenReturn(Optional.of(testRecipe));
+        // Arrange
+        when(recipeRepository.findByIdWithAllRelations(EXISTING_RECIPE_ID)).thenReturn(Optional.of(testRecipe));
         when(recipeConverter.toDto(testRecipe)).thenReturn(testRecipeDto);
 
-        // When
-        Optional<RecipeDto> result = recipeService.getRecipeByIdWithAllRelations(recipeId);
+        // Act
+        Optional<RecipeDto> result = recipeService.getRecipeByIdWithAllRelations(EXISTING_RECIPE_ID);
 
-        // Then
-        assertTrue(result.isPresent());
-        assertEquals(testRecipeDto, result.get());
+        // Assert
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(testRecipeDto);
+    }
+
+    @Test
+    @DisplayName("Обновление рецепта - рецепт не найден")
+    void updateRecipe_ShouldThrowException_WhenRecipeNotFound() {
+        // Arrange
+        List<String> ingredients = List.of("Ингредиент 1", "Ингредиент 2");
+        String description = "Описание рецепта";
+        List<Long> inventoryIds = List.of(EXISTING_INVENTORY_ID);
+        boolean published = true;
+
+        when(recipeRepository.findByIdWithBasicRelations(NON_EXISTING_RECIPE_ID)).thenReturn(Optional.empty());
+        when(messageProvider.getMessage("recipe.not_found", NON_EXISTING_RECIPE_ID))
+                .thenReturn("Рецепт не найден: " + NON_EXISTING_RECIPE_ID);
+
+        // Act & Assert
+        assertThatThrownBy(() -> recipeService.updateRecipe(NON_EXISTING_RECIPE_ID, UPDATED_TITLE, EXISTING_CATEGORY_ID,
+                EXISTING_AUTHOR_ID, ingredients, description, inventoryIds, published))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Рецепт не найден: " + NON_EXISTING_RECIPE_ID);
+
+        verify(recipeRepository, never()).save(any(Recipe.class));
     }
 }

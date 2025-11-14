@@ -47,7 +47,7 @@ public class InventoryServiceImpl implements InventoryService {
 
         if (inventoryRepository.existsByName(trimmedName)) {
             throw new EntityAlreadyExistsException(
-                    messageProvider.getMessage("inventory.already_exists", trimmedName)
+                    messageProvider.getMessage("inventory.already.exists", trimmedName)
             );
         }
 
@@ -177,7 +177,7 @@ public class InventoryServiceImpl implements InventoryService {
     private void validateInventoryName(String name) {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException(
-                    messageProvider.getMessage("inventory.name_empty")
+                    messageProvider.getMessage("inventory.name.empty")
             );
         }
     }
@@ -185,7 +185,7 @@ public class InventoryServiceImpl implements InventoryService {
     private Inventory getInventoryEntity(Long id) {
         return inventoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        messageProvider.getMessage("inventory.not_found", id)
+                        messageProvider.getMessage("inventory.not.found", id)
                 ));
     }
 }

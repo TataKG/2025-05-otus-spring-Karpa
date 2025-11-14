@@ -41,6 +41,9 @@ public class UserController {
         } catch (EntityAlreadyExistsException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(ApiResponse.error(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error(messageProvider.getMessage("user.create.failed")));

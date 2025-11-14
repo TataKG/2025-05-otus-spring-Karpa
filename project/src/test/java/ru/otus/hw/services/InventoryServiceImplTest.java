@@ -11,6 +11,7 @@ import ru.otus.hw.converters.InventoryConverter;
 import ru.otus.hw.dto.InventoryDto;
 import ru.otus.hw.dto.InventoryWithUsageDto;
 import ru.otus.hw.exceptions.EntityAlreadyExistsException;
+import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.models.Inventory;
 import ru.otus.hw.repositories.InventoryRepository;
 import ru.otus.hw.util.MessageProvider;
@@ -20,14 +21,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Тесты для InventoryServiceImpl")
 class InventoryServiceImplTest {
+
+    private static final Long EXISTING_INVENTORY_ID = 1L;
+    private static final Long ANOTHER_INVENTORY_ID = 2L;
+    private static final Long NON_EXISTING_INVENTORY_ID = 999L;
+    private static final Long USED_INVENTORY_ID = 3L;
+    private static final Long EXISTING_RECIPE_ID = 1L;
+
+    private static final String OVEN_NAME = "Духовка";
+    private static final String BLENDER_NAME = "Блендер";
+    private static final String UPDATED_DESCRIPTION = "Обновленное описание";
 
     @Mock
     private InventoryRepository inventoryRepository;
@@ -47,46 +58,49 @@ class InventoryServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        testInventory = new Inventory("Test Inventory", "Test Description");
-        testInventory.setId(1L);
+        testInventory = new Inventory(OVEN_NAME, "Электрическая духовка");
+        testInventory.setId(EXISTING_INVENTORY_ID);
 
-        testInventoryDto = new InventoryDto(1L, "Test Inventory", "Test Description", LocalDateTime.now());
-        testInventoryWithUsageDto = new InventoryWithUsageDto(1L, "Test Inventory", "Test Description",
-                LocalDateTime.now(), true, 5L);
+        testInventoryDto = new InventoryDto(EXISTING_INVENTORY_ID, OVEN_NAME,
+                "Электрическая духовка", LocalDateTime.now());
+        testInventoryWithUsageDto = new InventoryWithUsageDto(EXISTING_INVENTORY_ID, OVEN_NAME,
+                "Электрическая духовка", LocalDateTime.now(), true, 5L);
     }
 
     @Test
     @DisplayName("Создание инвентаря - успешное создание")
     void createInventory_ShouldCreateInventory_WhenValidData() {
-        // Given
-        String name = "Test Inventory";
-        String description = "Test Description";
+        // Arrange
+        String name = BLENDER_NAME;
+        String description = "Кухонный блендер";
 
         when(inventoryRepository.existsByName(name)).thenReturn(false);
         when(inventoryRepository.save(any(Inventory.class))).thenReturn(testInventory);
         when(inventoryConverter.toDto(testInventory)).thenReturn(testInventoryDto);
 
-        // When
+        // Act
         InventoryDto result = inventoryService.createInventory(name, description);
 
-        // Then
-        assertNotNull(result);
-        assertEquals(testInventoryDto, result);
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(testInventoryDto);
         verify(inventoryRepository).save(any(Inventory.class));
     }
 
     @Test
     @DisplayName("Создание инвентаря - инвентарь уже существует")
     void createInventory_ShouldThrowException_WhenInventoryExists() {
-        // Given
-        String name = "Test Inventory";
-        String description = "Test Description";
+        // Arrange
+        String description = "Электрическая духовка";
 
-        when(inventoryRepository.existsByName(name)).thenReturn(true);
+        when(inventoryRepository.existsByName(OVEN_NAME)).thenReturn(true);
+        when(messageProvider.getMessage("inventory.already.exists", OVEN_NAME))
+                .thenReturn("Инвентарь с названием Духовка уже существует");
 
-        // When & Then
-        assertThrows(EntityAlreadyExistsException.class,
-                () -> inventoryService.createInventory(name, description));
+        // Act & Assert
+        assertThatThrownBy(() -> inventoryService.createInventory(OVEN_NAME, description))
+                .isInstanceOf(EntityAlreadyExistsException.class)
+                .hasMessage("Инвентарь с названием Духовка уже существует");
 
         verify(inventoryRepository, never()).save(any(Inventory.class));
     }
@@ -94,12 +108,35 @@ class InventoryServiceImplTest {
     @Test
     @DisplayName("Создание инвентаря - пустое имя")
     void createInventory_ShouldThrowException_WhenNameIsEmpty() {
-        // Given
+        // Arrange
         String name = "   ";
-        String description = "Test Description";
-        // When & Then
-        assertThrows(IllegalArgumentException.class,
-                () -> inventoryService.createInventory(name, description));
+        String description = "Описание инвентаря";
+
+        when(messageProvider.getMessage("inventory.name.empty"))
+                .thenReturn("Название инвентаря не может быть пустым");
+
+        // Act & Assert
+        assertThatThrownBy(() -> inventoryService.createInventory(name, description))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Название инвентаря не может быть пустым");
+
+        verify(inventoryRepository, never()).existsByName(anyString());
+        verify(inventoryRepository, never()).save(any(Inventory.class));
+    }
+
+    @Test
+    @DisplayName("Создание инвентаря - null имя")
+    void createInventory_ShouldThrowException_WhenNameIsNull() {
+        // Arrange
+        String description = "Описание инвентаря";
+
+        when(messageProvider.getMessage("inventory.name.empty"))
+                .thenReturn("Название инвентаря не может быть пустым");
+
+        // Act & Assert
+        assertThatThrownBy(() -> inventoryService.createInventory(null, description))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Название инвентаря не может быть пустым");
 
         verify(inventoryRepository, never()).existsByName(anyString());
         verify(inventoryRepository, never()).save(any(Inventory.class));
@@ -108,183 +145,214 @@ class InventoryServiceImplTest {
     @Test
     @DisplayName("Получение инвентаря по ID - инвентарь найден")
     void getInventoryById_ShouldReturnInventory_WhenInventoryExists() {
-        // Given
-        Long inventoryId = 1L;
-        when(inventoryRepository.findById(inventoryId)).thenReturn(Optional.of(testInventory));
+        // Arrange
+        when(inventoryRepository.findById(EXISTING_INVENTORY_ID)).thenReturn(Optional.of(testInventory));
         when(inventoryConverter.toDto(testInventory)).thenReturn(testInventoryDto);
 
-        // When
-        Optional<InventoryDto> result = inventoryService.getInventoryById(inventoryId);
+        // Act
+        Optional<InventoryDto> result = inventoryService.getInventoryById(EXISTING_INVENTORY_ID);
 
-        // Then
-        assertTrue(result.isPresent());
-        assertEquals(testInventoryDto, result.get());
+        // Assert
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(testInventoryDto);
     }
 
     @Test
     @DisplayName("Получение инвентаря по ID с рецептами - инвентарь найден")
     void getInventoryByIdWithRecipes_ShouldReturnInventory_WhenInventoryExists() {
-        // Given
-        Long inventoryId = 1L;
-        when(inventoryRepository.findById(inventoryId)).thenReturn(Optional.of(testInventory));
+        // Arrange
+        when(inventoryRepository.findById(EXISTING_INVENTORY_ID)).thenReturn(Optional.of(testInventory));
         when(inventoryConverter.toDto(testInventory)).thenReturn(testInventoryDto);
 
-        // When
-        Optional<InventoryDto> result = inventoryService.getInventoryByIdWithRecipes(inventoryId);
+        // Act
+        Optional<InventoryDto> result = inventoryService.getInventoryByIdWithRecipes(EXISTING_INVENTORY_ID);
 
-        // Then
-        assertTrue(result.isPresent());
-        assertEquals(testInventoryDto, result.get());
+        // Assert
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(testInventoryDto);
     }
 
     @Test
     @DisplayName("Получение инвентаря по ID - инвентарь не найден")
     void getInventoryById_ShouldReturnEmpty_WhenInventoryNotExists() {
-        // Given
-        Long inventoryId = 1L;
-        when(inventoryRepository.findById(inventoryId)).thenReturn(Optional.empty());
+        // Arrange
+        when(inventoryRepository.findById(NON_EXISTING_INVENTORY_ID)).thenReturn(Optional.empty());
 
-        // When
-        Optional<InventoryDto> result = inventoryService.getInventoryById(inventoryId);
+        // Act
+        Optional<InventoryDto> result = inventoryService.getInventoryById(NON_EXISTING_INVENTORY_ID);
 
-        // Then
-        assertFalse(result.isPresent());
+        // Assert
+        assertThat(result).isEmpty();
     }
 
     @Test
     @DisplayName("Поиск инвентаря по имени - с поисковым запросом")
     void getInventoryByNameContaining_ShouldReturnMatchingInventory_WhenSearchQueryProvided() {
-        // Given
-        String searchName = "Test";
+        // Arrange
+        String searchName = "духов";
         List<Inventory> inventoryList = List.of(testInventory);
         when(inventoryRepository.findByNameContainingIgnoreCase(searchName)).thenReturn(inventoryList);
         when(inventoryConverter.toDto(testInventory)).thenReturn(testInventoryDto);
 
-        // When
+        // Act
         List<InventoryDto> result = inventoryService.getInventoryByNameContaining(searchName);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testInventoryDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testInventoryDto);
     }
 
     @Test
     @DisplayName("Поиск инвентаря по имени - без поискового запроса")
     void getInventoryByNameContaining_ShouldReturnAllInventory_WhenNoSearchQuery() {
-        // Given
+        // Arrange
         List<Inventory> inventoryList = List.of(testInventory);
         when(inventoryRepository.findAllByOrderByNameAsc()).thenReturn(inventoryList);
         when(inventoryConverter.toDto(testInventory)).thenReturn(testInventoryDto);
 
-        // When
+        // Act
         List<InventoryDto> result = inventoryService.getInventoryByNameContaining(null);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testInventoryDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testInventoryDto);
     }
 
     @Test
     @DisplayName("Получение всего инвентаря - успешно")
     void getAllInventory_ShouldReturnAllInventory() {
-        // Given
+        // Arrange
         List<Inventory> inventoryList = List.of(testInventory);
         when(inventoryRepository.findAllByOrderByNameAsc()).thenReturn(inventoryList);
         when(inventoryConverter.toDto(testInventory)).thenReturn(testInventoryDto);
 
-        // When
+        // Act
         List<InventoryDto> result = inventoryService.getAllInventory();
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testInventoryDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testInventoryDto);
     }
 
     @Test
     @DisplayName("Получение инвентаря по списку имен - успешно")
     void getInventoryByNames_ShouldReturnMatchingInventory() {
-        // Given
-        List<String> names = List.of("Test Inventory");
+        // Arrange
+        List<String> names = List.of(OVEN_NAME);
         List<Inventory> inventoryList = List.of(testInventory);
         when(inventoryRepository.findByNames(names)).thenReturn(inventoryList);
         when(inventoryConverter.toDto(testInventory)).thenReturn(testInventoryDto);
 
-        // When
+        // Act
         List<InventoryDto> result = inventoryService.getInventoryByNames(names);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testInventoryDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testInventoryDto);
     }
 
     @Test
     @DisplayName("Получение инвентаря по ID рецепта - успешно")
     void getInventoryByRecipeId_ShouldReturnInventoryForRecipe() {
-        // Given
-        Long recipeId = 1L;
+        // Arrange
         List<Inventory> inventoryList = List.of(testInventory);
-        when(inventoryRepository.findByRecipeId(recipeId)).thenReturn(inventoryList);
+        when(inventoryRepository.findByRecipeId(EXISTING_RECIPE_ID)).thenReturn(inventoryList);
         when(inventoryConverter.toDto(testInventory)).thenReturn(testInventoryDto);
 
-        // When
-        List<InventoryDto> result = inventoryService.getInventoryByRecipeId(recipeId);
+        // Act
+        List<InventoryDto> result = inventoryService.getInventoryByRecipeId(EXISTING_RECIPE_ID);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testInventoryDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testInventoryDto);
     }
 
     @Test
     @DisplayName("Обновление инвентаря - успешно")
     void updateInventory_ShouldUpdateInventory_WhenInventoryExists() {
-        // Given
-        Long inventoryId = 1L;
-        String newDescription = "Updated Description";
-        Inventory updatedInventory = new Inventory("Test Inventory", newDescription);
-        updatedInventory.setId(1L);
-        InventoryDto updatedInventoryDto = new InventoryDto(1L, "Test Inventory", newDescription, LocalDateTime.now());
+        // Arrange
+        Inventory updatedInventory = new Inventory(OVEN_NAME, UPDATED_DESCRIPTION);
+        updatedInventory.setId(EXISTING_INVENTORY_ID);
+        InventoryDto updatedInventoryDto = new InventoryDto(EXISTING_INVENTORY_ID, OVEN_NAME,
+                UPDATED_DESCRIPTION, LocalDateTime.now());
 
-        when(inventoryRepository.findById(inventoryId)).thenReturn(Optional.of(testInventory));
+        when(inventoryRepository.findById(EXISTING_INVENTORY_ID)).thenReturn(Optional.of(testInventory));
         when(inventoryRepository.save(testInventory)).thenReturn(updatedInventory);
         when(inventoryConverter.toDto(updatedInventory)).thenReturn(updatedInventoryDto);
-        // When
-        InventoryDto result = inventoryService.updateInventory(inventoryId, newDescription);
 
-        // Then
-        assertNotNull(result);
-        assertEquals(newDescription, result.description());
+        // Act
+        InventoryDto result = inventoryService.updateInventory(EXISTING_INVENTORY_ID, UPDATED_DESCRIPTION);
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.description()).isEqualTo(UPDATED_DESCRIPTION);
         verify(inventoryRepository).save(testInventory);
+    }
+
+    @Test
+    @DisplayName("Обновление инвентаря - инвентарь не найден")
+    void updateInventory_ShouldThrowException_WhenInventoryNotFound() {
+        // Arrange
+        when(inventoryRepository.findById(NON_EXISTING_INVENTORY_ID)).thenReturn(Optional.empty());
+        when(messageProvider.getMessage("inventory.not.found", NON_EXISTING_INVENTORY_ID))
+                .thenReturn("Инвентарь не найден");
+
+        // Act & Assert
+        assertThatThrownBy(() -> inventoryService.updateInventory(NON_EXISTING_INVENTORY_ID, UPDATED_DESCRIPTION))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Инвентарь не найден");
+
+        verify(inventoryRepository, never()).save(any(Inventory.class));
     }
 
     @Test
     @DisplayName("Удаление инвентаря - успешно, когда не используется")
     void deleteInventory_ShouldDeleteInventory_WhenNotUsedInRecipes() {
-        // Given
-        Long inventoryId = 1L;
-        when(inventoryRepository.findById(inventoryId)).thenReturn(Optional.of(testInventory));
-        when(inventoryRepository.isUsedInRecipes(inventoryId)).thenReturn(false);
-        // When
-        inventoryService.deleteInventory(inventoryId);
+        // Arrange
+        when(inventoryRepository.findById(EXISTING_INVENTORY_ID)).thenReturn(Optional.of(testInventory));
+        when(inventoryRepository.isUsedInRecipes(EXISTING_INVENTORY_ID)).thenReturn(false);
 
-        // Then
+        // Act
+        inventoryService.deleteInventory(EXISTING_INVENTORY_ID);
+
+        // Assert
         verify(inventoryRepository).delete(testInventory);
     }
 
     @Test
     @DisplayName("Удаление инвентаря - ошибка, когда используется в рецептах")
     void deleteInventory_ShouldThrowException_WhenUsedInRecipes() {
-        // Given
-        Long inventoryId = 1L;
-        when(inventoryRepository.findById(inventoryId)).thenReturn(Optional.of(testInventory));
-        when(inventoryRepository.isUsedInRecipes(inventoryId)).thenReturn(true);
-        // When & Then
-        assertThrows(IllegalStateException.class,
-                () -> inventoryService.deleteInventory(inventoryId));
+        // Arrange
+        when(inventoryRepository.findById(USED_INVENTORY_ID)).thenReturn(Optional.of(testInventory));
+        when(inventoryRepository.isUsedInRecipes(USED_INVENTORY_ID)).thenReturn(true);
+        when(messageProvider.getMessage("inventory.delete_used_error"))
+                .thenReturn("Невозможно удалить инвентарь, так как он используется в рецептах");
+
+        // Act & Assert
+        assertThatThrownBy(() -> inventoryService.deleteInventory(USED_INVENTORY_ID))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Невозможно удалить инвентарь, так как он используется в рецептах");
+
+        verify(inventoryRepository, never()).delete(any(Inventory.class));
+    }
+
+    @Test
+    @DisplayName("Удаление инвентаря - инвентарь не найден")
+    void deleteInventory_ShouldThrowException_WhenInventoryNotFound() {
+        // Arrange
+        when(inventoryRepository.findById(NON_EXISTING_INVENTORY_ID)).thenReturn(Optional.empty());
+        when(messageProvider.getMessage("inventory.not.found", NON_EXISTING_INVENTORY_ID))
+                .thenReturn("Инвентарь не найден");
+
+        // Act & Assert
+        assertThatThrownBy(() -> inventoryService.deleteInventory(NON_EXISTING_INVENTORY_ID))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Инвентарь не найден");
 
         verify(inventoryRepository, never()).delete(any(Inventory.class));
     }
@@ -292,150 +360,161 @@ class InventoryServiceImplTest {
     @Test
     @DisplayName("Проверка использования инвентаря в рецептах - используется")
     void isInventoryUsedInRecipes_ShouldReturnTrue_WhenInventoryUsed() {
-        // Given
-        Long inventoryId = 1L;
-        when(inventoryRepository.isUsedInRecipes(inventoryId)).thenReturn(true);
+        // Arrange
+        when(inventoryRepository.isUsedInRecipes(USED_INVENTORY_ID)).thenReturn(true);
 
-        // When
-        boolean result = inventoryService.isInventoryUsedInRecipes(inventoryId);
+        // Act
+        boolean result = inventoryService.isInventoryUsedInRecipes(USED_INVENTORY_ID);
 
-        // Then
-        assertTrue(result);
+        // Assert
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("Проверка использования инвентаря в рецептах - не используется")
+    void isInventoryUsedInRecipes_ShouldReturnFalse_WhenInventoryNotUsed() {
+        // Arrange
+        when(inventoryRepository.isUsedInRecipes(EXISTING_INVENTORY_ID)).thenReturn(false);
+
+        // Act
+        boolean result = inventoryService.isInventoryUsedInRecipes(EXISTING_INVENTORY_ID);
+
+        // Assert
+        assertThat(result).isFalse();
     }
 
     @Test
     @DisplayName("Получение количества рецептов по инвентарю - успешно")
     void getRecipeCountByInventory_ShouldReturnCount() {
-        // Given
-        Long inventoryId = 1L;
+        // Arrange
         long expectedCount = 5L;
-        when(inventoryRepository.countRecipesByInventoryId(inventoryId)).thenReturn(expectedCount);
+        when(inventoryRepository.countRecipesByInventoryId(EXISTING_INVENTORY_ID)).thenReturn(expectedCount);
 
-        // When
-        long result = inventoryService.getRecipeCountByInventory(inventoryId);
+        // Act
+        long result = inventoryService.getRecipeCountByInventory(EXISTING_INVENTORY_ID);
 
-        // Then
-        assertEquals(expectedCount, result);
+        // Assert
+        assertThat(result).isEqualTo(expectedCount);
     }
 
     @Test
     @DisplayName("Получение неиспользуемого инвентаря - успешно")
     void getUnusedInventory_ShouldReturnUnusedInventory() {
-        // Given
+        // Arrange
         List<Inventory> unusedInventory = List.of(testInventory);
         when(inventoryRepository.findUnusedInventory()).thenReturn(unusedInventory);
         when(inventoryConverter.toDto(testInventory)).thenReturn(testInventoryDto);
 
-        // When
+        // Act
         List<InventoryDto> result = inventoryService.getUnusedInventory();
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testInventoryDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testInventoryDto);
     }
 
     @Test
     @DisplayName("Получение инвентаря с информацией об использовании - успешно")
     void getInventoryWithUsage_ShouldReturnInventoryWithUsage() {
-        // Given
+        // Arrange
         List<Inventory> inventoryList = List.of(testInventory);
         when(inventoryRepository.findAllByOrderByNameAsc()).thenReturn(inventoryList);
         when(inventoryConverter.toDto(testInventory)).thenReturn(testInventoryDto);
-        when(inventoryRepository.countRecipesByInventoryId(1L)).thenReturn(5L);
+        when(inventoryRepository.countRecipesByInventoryId(EXISTING_INVENTORY_ID)).thenReturn(5L);
         when(inventoryConverter.toDtoWithUsageFromDto(testInventoryDto, 5L)).thenReturn(testInventoryWithUsageDto);
 
-        // When
+        // Act
         List<InventoryWithUsageDto> result = inventoryService.getInventoryWithUsage();
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testInventoryWithUsageDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testInventoryWithUsageDto);
     }
 
     @Test
     @DisplayName("Получение инвентаря с информацией об использовании опубликованных рецептов - пустой список")
     void getInventoryWithPublishedUsage_ShouldReturnEmptyList() {
-        // When
+        // Act
         List<InventoryWithUsageDto> result = inventoryService.getInventoryWithPublishedUsage();
 
-        // Then
-        assertTrue(result.isEmpty());
+        // Assert
+        assertThat(result).isEmpty();
     }
 
     @Test
     @DisplayName("Получение статуса использования инвентаря - успешно")
     void getInventoryUsageStatus_ShouldReturnUsageStatus() {
-        // Given
-        List<Long> inventoryIds = List.of(1L, 2L);
-        when(inventoryRepository.isUsedInRecipes(1L)).thenReturn(true);
-        when(inventoryRepository.isUsedInRecipes(2L)).thenReturn(false);
+        // Arrange
+        List<Long> inventoryIds = List.of(EXISTING_INVENTORY_ID, ANOTHER_INVENTORY_ID);
+        when(inventoryRepository.isUsedInRecipes(EXISTING_INVENTORY_ID)).thenReturn(true);
+        when(inventoryRepository.isUsedInRecipes(ANOTHER_INVENTORY_ID)).thenReturn(false);
 
-        // When
+        // Act
         Map<Long, Boolean> result = inventoryService.getInventoryUsageStatus(inventoryIds);
 
-        // Then
-        assertEquals(2, result.size());
-        assertTrue(result.get(1L));
-        assertFalse(result.get(2L));
+        // Assert
+        assertThat(result).hasSize(2);
+        assertThat(result.get(EXISTING_INVENTORY_ID)).isTrue();
+        assertThat(result.get(ANOTHER_INVENTORY_ID)).isFalse();
     }
 
     @Test
     @DisplayName("Получение инвентаря по ID для внутреннего использования - успешно")
     void getInventoryByIdsForInternalUse_ShouldReturnInventory_WhenIdsProvided() {
-        // Given
-        List<Long> inventoryIds = List.of(1L, 2L);
+        // Arrange
+        List<Long> inventoryIds = List.of(EXISTING_INVENTORY_ID, ANOTHER_INVENTORY_ID);
         List<Inventory> inventoryList = List.of(testInventory);
         when(inventoryRepository.findAllById(inventoryIds)).thenReturn(inventoryList);
         when(inventoryConverter.toDto(testInventory)).thenReturn(testInventoryDto);
 
-        // When
+        // Act
         List<InventoryDto> result = inventoryService.getInventoryByIdsForInternalUse(inventoryIds);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testInventoryDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testInventoryDto);
     }
 
     @Test
     @DisplayName("Получение инвентаря по ID для внутреннего использования - пустой список при null")
     void getInventoryByIdsForInternalUse_ShouldReturnEmptyList_WhenIdsNull() {
-        // When
+        // Act
         List<InventoryDto> result = inventoryService.getInventoryByIdsForInternalUse(null);
 
-        // Then
-        assertTrue(result.isEmpty());
+        // Assert
+        assertThat(result).isEmpty();
         verify(inventoryRepository, never()).findAllById(any());
     }
 
     @Test
     @DisplayName("Получение инвентаря по ID для внутреннего использования - пустой список при пустом списке")
     void getInventoryByIdsForInternalUse_ShouldReturnEmptyList_WhenIdsEmpty() {
-        // When
+        // Act
         List<InventoryDto> result = inventoryService.getInventoryByIdsForInternalUse(List.of());
 
-        // Then
-        assertTrue(result.isEmpty());
+        // Assert
+        assertThat(result).isEmpty();
         verify(inventoryRepository, never()).findAllById(any());
     }
 
     @Test
     @DisplayName("Получение инвентаря по имени с рецептами - успешно")
     void getInventoryByNameContainingWithRecipes_ShouldReturnInventory() {
-        // Given
-        String searchName = "Test";
+        // Arrange
+        String searchName = "духов";
         List<Inventory> inventoryList = List.of(testInventory);
         when(inventoryRepository.findByNameContainingIgnoreCase(searchName)).thenReturn(inventoryList);
         when(inventoryConverter.toDto(testInventory)).thenReturn(testInventoryDto);
 
-        // When
+        // Act
         List<InventoryDto> result = inventoryService.getInventoryByNameContainingWithRecipes(searchName);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testInventoryDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testInventoryDto);
     }
 }

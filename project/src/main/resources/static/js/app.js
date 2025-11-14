@@ -76,7 +76,6 @@ class CookbookApp extends BaseApiClient {
             'comment-delete-confirm-title': 'Подтверждение удаления',
             'comment-delete-confirm-message': 'Вы уверены, что хотите удалить этот комментарий?',
             'comment-delete-confirm-warning': 'Это действие нельзя отменить.',
-            'comment-validation-empty': 'Комментарий не может быть пустым',
             'comment-placeholder': 'Введите ваш комментарий...',
             'comment-add': 'Добавить комментарий',
             'comment-add-button': 'Добавить комментарий',
@@ -728,11 +727,6 @@ class CookbookApp extends BaseApiClient {
         const textarea = commentCard.querySelector('.edit-comment-textarea');
         const newContent = textarea.value.trim();
 
-        if (!newContent) {
-            CommonUtils.showToast(this.messages['comment-validation-empty'], 'error');
-            return;
-        }
-
         const saveBtn = commentCard.querySelector('.save-edit-btn');
         const originalText = saveBtn.innerHTML;
         saveBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span> ${this.messages['common-saving']}`;
@@ -851,10 +845,6 @@ class CookbookApp extends BaseApiClient {
 
     async addNewComment(recipeId) {
         const content = document.getElementById('newCommentContent').value.trim();
-        if (!content) {
-            CommonUtils.showToast(this.messages['comment-validation-empty'], 'error');
-            return;
-        }
 
         const addBtn = document.getElementById('addCommentBtn');
         const originalText = addBtn.innerHTML;

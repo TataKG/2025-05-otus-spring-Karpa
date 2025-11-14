@@ -20,15 +20,26 @@ import ru.otus.hw.util.MessageProvider;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Тесты для CommentServiceImpl")
 class CommentServiceImplTest {
+
+    private static final Long EXISTING_USER_ID = 1L;
+    private static final Long ANOTHER_USER_ID = 2L;
+    private static final Long EXISTING_RECIPE_ID = 1L;
+    private static final Long NON_EXISTING_RECIPE_ID = 999L;
+    private static final Long EXISTING_COMMENT_ID = 1L;
+    private static final Long NON_EXISTING_COMMENT_ID = 999L;
+
+    private static final String EXISTING_USERNAME = "test_user";
+    private static final String NON_EXISTING_USERNAME = "nonexistent";
 
     @Mock
     private CommentRepository commentRepository;
@@ -56,60 +67,55 @@ class CommentServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        testUser = new User("testuser", "test@example.com", "password");
-        testUser.setId(1L);
+        testUser = new User(EXISTING_USERNAME, "test@example.com", "password");
+        testUser.setId(EXISTING_USER_ID);
 
-        testRecipe = new Recipe("Test Recipe", new Category("Test Category", "Desc"),
-                new Author(testUser, "Bio"), "Test Description");
-        testRecipe.setId(1L);
+        testRecipe = new Recipe("Тестовый рецепт", new Category("Тестовая категория", "Описание"), new Author(testUser, "Биография"), "Тестовое описание");
+        testRecipe.setId(EXISTING_RECIPE_ID);
         testRecipe.setPublished(true);
 
-        testComment = new Comment("Test comment content", testUser, testRecipe);
-        testComment.setId(1L);
+        testComment = new Comment("Тестовый комментарий", testUser, testRecipe);
+        testComment.setId(EXISTING_COMMENT_ID);
 
-        testUserDto = new UserDto(1L, "testuser", "test@example.com", true,
-                java.util.Set.of("USER"), LocalDateTime.now(), true);
+        testUserDto = new UserDto(EXISTING_USER_ID, EXISTING_USERNAME, "test@example.com", true, Set.of("USER"), LocalDateTime.now(), true);
 
-        testCommentDto = new CommentDto(1L, "Test comment content", testUserDto,
-                1L, LocalDateTime.now(), LocalDateTime.now(), true, true);
+        testCommentDto = new CommentDto(EXISTING_COMMENT_ID, "Тестовый комментарий", testUserDto, EXISTING_RECIPE_ID, LocalDateTime.now(), LocalDateTime.now(), true, true);
     }
 
     @Test
     @DisplayName("Создание комментария для рецепта - успешное создание")
     void createCommentForRecipe_ShouldCreateComment_WhenValidData() {
-        // Given
-        String content = "Test comment content";
-        String username = "testuser";
-        Long recipeId = 1L;
+        // Arrange
+        String content = "Тестовый комментарий";
+        String username = EXISTING_USERNAME;
+        Long recipeId = EXISTING_RECIPE_ID;
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
         when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(testRecipe));
         when(commentRepository.save(any(Comment.class))).thenReturn(testComment);
         when(commentConverter.toDto(testComment, testUser.getId())).thenReturn(testCommentDto);
 
-        // When
+        // Act
         CommentDto result = commentService.createCommentForRecipe(content, username, recipeId);
 
-        // Then
-        assertNotNull(result);
-        assertEquals(testCommentDto, result);
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(testCommentDto);
         verify(commentRepository).save(any(Comment.class));
     }
 
     @Test
     @DisplayName("Создание комментария - пользователь не найден")
     void createCommentForRecipe_ShouldThrowException_WhenUserNotFound() {
-        // Given
-        String content = "Test comment content";
-        String username = "nonexistent";
-        Long recipeId = 1L;
+        // Arrange
+        String content = "Тестовый комментарий";
+        String username = NON_EXISTING_USERNAME;
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
-        when(messageProvider.getMessage("user.not_found")).thenReturn("User not found");
+        when(messageProvider.getMessage("user.not_found")).thenReturn("Пользователь не найден");
 
-        // When & Then
-        assertThrows(EntityNotFoundException.class,
-                () -> commentService.createCommentForRecipe(content, username, recipeId));
+        // Act & Assert
+        assertThatThrownBy(() -> commentService.createCommentForRecipe(content, username, EXISTING_RECIPE_ID)).isInstanceOf(EntityNotFoundException.class).hasMessage("Пользователь не найден");
 
         verify(commentRepository, never()).save(any(Comment.class));
     }
@@ -117,17 +123,17 @@ class CommentServiceImplTest {
     @Test
     @DisplayName("Создание комментария - рецепт не найден")
     void createCommentForRecipe_ShouldThrowException_WhenRecipeNotFound() {
-        // Given
-        String content = "Test comment content";
-        String username = "testuser";
-        Long recipeId = 1L;
+        // Arrange
+        String content = "Тестовый комментарий";
+        String username = EXISTING_USERNAME;
+        Long recipeId = NON_EXISTING_RECIPE_ID;
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
         when(recipeRepository.findById(recipeId)).thenReturn(Optional.empty());
+        when(messageProvider.getMessage("recipe.not_found", recipeId)).thenReturn("Рецепт не найден: " + recipeId);
 
-        // When & Then
-        assertThrows(EntityNotFoundException.class,
-                () -> commentService.createCommentForRecipe(content, username, recipeId));
+        // Act & Assert
+        assertThatThrownBy(() -> commentService.createCommentForRecipe(content, username, recipeId)).isInstanceOf(EntityNotFoundException.class).hasMessage("Рецепт не найден: " + recipeId);
 
         verify(commentRepository, never()).save(any(Comment.class));
     }
@@ -135,18 +141,21 @@ class CommentServiceImplTest {
     @Test
     @DisplayName("Создание комментария - рецепт не опубликован")
     void createCommentForRecipe_ShouldThrowException_WhenRecipeNotPublished() {
-        // Given
-        String content = "Test comment content";
-        String username = "testuser";
-        Long recipeId = 1L;
+        // Arrange
+        String content = "Тестовый комментарий";
+        String username = EXISTING_USERNAME;
+        Long recipeId = EXISTING_RECIPE_ID;
         testRecipe.setPublished(false);
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
         when(recipeRepository.findById(recipeId)).thenReturn(Optional.of(testRecipe));
+        when(messageProvider.getMessage("comment.unpublished_recipe"))
+                .thenReturn("Нельзя комментировать неопубликованные рецепты");
 
-        // When & Then
-        assertThrows(IllegalStateException.class,
-                () -> commentService.createCommentForRecipe(content, username, recipeId));
+        // Act & Assert
+        assertThatThrownBy(() -> commentService.createCommentForRecipe(content, username, recipeId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Нельзя комментировать неопубликованные рецепты");
 
         verify(commentRepository, never()).save(any(Comment.class));
     }
@@ -154,9 +163,9 @@ class CommentServiceImplTest {
     @Test
     @DisplayName("Получение комментариев для рецепта - успешно для авторизованного пользователя")
     void getCommentsForRecipe_ShouldReturnComments_WhenRecipePublishedAndUserAuthenticated() {
-        // Given
-        Long recipeId = 1L;
-        String username = "testuser";
+        // Arrange
+        Long recipeId = EXISTING_RECIPE_ID;
+        String username = EXISTING_USERNAME;
         List<Comment> comments = List.of(testComment);
 
         when(recipeRepository.existsByIdAndPublishedTrue(recipeId)).thenReturn(true);
@@ -164,90 +173,107 @@ class CommentServiceImplTest {
         when(commentRepository.findByRecipeIdWithUser(recipeId)).thenReturn(comments);
         when(commentConverter.toDto(testComment, testUser.getId())).thenReturn(testCommentDto);
 
-        // When
+        // Act
         List<CommentDto> result = commentService.getCommentsForRecipe(recipeId, username);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testCommentDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testCommentDto);
     }
 
     @Test
     @DisplayName("Получение комментариев для рецепта - успешно для анонимного пользователя")
     void getCommentsForRecipe_ShouldReturnComments_WhenRecipePublishedAndUserAnonymous() {
-        // Given
-        Long recipeId = 1L;
+        // Arrange
+        Long recipeId = EXISTING_RECIPE_ID;
         List<Comment> comments = List.of(testComment);
 
         when(recipeRepository.existsByIdAndPublishedTrue(recipeId)).thenReturn(true);
         when(commentRepository.findByRecipeIdWithUser(recipeId)).thenReturn(comments);
         when(commentConverter.toDto(testComment, null)).thenReturn(testCommentDto);
 
-        // When
+        // Act
         List<CommentDto> result = commentService.getCommentsForRecipe(recipeId, null);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testCommentDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testCommentDto);
     }
 
     @Test
     @DisplayName("Получение комментариев для рецепта - пустой список, когда рецепт не опубликован")
     void getCommentsForRecipe_ShouldReturnEmptyList_WhenRecipeNotPublished() {
-        // Given
-        Long recipeId = 1L;
-        String username = "testuser";
+        // Arrange
+        Long recipeId = EXISTING_RECIPE_ID;
 
         when(recipeRepository.existsByIdAndPublishedTrue(recipeId)).thenReturn(false);
 
-        // When
-        List<CommentDto> result = commentService.getCommentsForRecipe(recipeId, username);
+        // Act
+        List<CommentDto> result = commentService.getCommentsForRecipe(recipeId, EXISTING_USERNAME);
 
-        // Then
-        assertTrue(result.isEmpty());
+        // Assert
+        assertThat(result).isEmpty();
         verify(commentRepository, never()).findByRecipeIdWithUser(anyLong());
     }
 
     @Test
     @DisplayName("Обновление комментария - успешно, когда пользователь является владельцем")
     void updateComment_ShouldUpdateComment_WhenUserIsOwner() {
-        // Given
-        Long commentId = 1L;
-        String newContent = "Updated comment content";
-        Long currentUserId = 1L;
+        // Arrange
+        Long commentId = EXISTING_COMMENT_ID;
+        String newContent = "Обновленный комментарий";
+        Long currentUserId = EXISTING_USER_ID;
         Comment updatedComment = new Comment(newContent, testUser, testRecipe);
-        updatedComment.setId(1L);
-        CommentDto updatedCommentDto = new CommentDto(1L, newContent, testUserDto,
-                1L, LocalDateTime.now(), LocalDateTime.now(), true, true);
+        updatedComment.setId(EXISTING_COMMENT_ID);
+        CommentDto updatedCommentDto = new CommentDto(EXISTING_COMMENT_ID, newContent, testUserDto, EXISTING_RECIPE_ID, LocalDateTime.now(), LocalDateTime.now(), true, true);
 
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(testComment));
         when(commentRepository.save(testComment)).thenReturn(updatedComment);
         when(commentConverter.toDto(updatedComment, currentUserId)).thenReturn(updatedCommentDto);
 
-        // When
+        // Act
         CommentDto result = commentService.updateComment(commentId, newContent, currentUserId);
 
-        // Then
-        assertNotNull(result);
-        assertEquals(newContent, result.content());
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.content()).isEqualTo(newContent);
         verify(commentRepository).save(testComment);
     }
 
     @Test
     @DisplayName("Обновление комментария - ошибка, когда пользователь не является владельцем")
     void updateComment_ShouldThrowException_WhenUserIsNotOwner() {
-        // Given
-        Long commentId = 1L;
-        String newContent = "Updated comment content";
-        Long currentUserId = 2L; // Другой пользователь
+        // Arrange
+        Long commentId = EXISTING_COMMENT_ID;
+        String newContent = "Обновленный комментарий";
+        // Другой пользователь
 
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(testComment));
+        when(messageProvider.getMessage("comment.edit_denied"))
+                .thenReturn("Вы можете редактировать только свои комментарии");
 
-        // When & Then
-        assertThrows(SecurityException.class,
-                () -> commentService.updateComment(commentId, newContent, currentUserId));
+        // Act & Assert
+        assertThatThrownBy(() -> commentService.updateComment(commentId, newContent, ANOTHER_USER_ID))
+                .isInstanceOf(SecurityException.class)
+                .hasMessage("Вы можете редактировать только свои комментарии");
+
+        verify(commentRepository, never()).save(any(Comment.class));
+    }
+
+    @Test
+    @DisplayName("Обновление комментария - комментарий не найден")
+    void updateComment_ShouldThrowException_WhenCommentNotFound() {
+        // Arrange
+        Long commentId = NON_EXISTING_COMMENT_ID;
+        String newContent = "Обновленный комментарий";
+
+        when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
+        when(messageProvider.getMessage("comment.not_found", commentId)).thenReturn("Комментарий не найден: " + commentId);
+
+        // Act & Assert
+        assertThatThrownBy(() -> commentService.updateComment(commentId, newContent, EXISTING_USER_ID)).isInstanceOf(EntityNotFoundException.class).hasMessage("Комментарий не найден: " + commentId);
 
         verify(commentRepository, never()).save(any(Comment.class));
     }
@@ -255,31 +281,48 @@ class CommentServiceImplTest {
     @Test
     @DisplayName("Удаление комментария - успешно, когда пользователь является владельцем")
     void deleteComment_ShouldDeleteComment_WhenUserIsOwner() {
-        // Given
-        Long commentId = 1L;
-        Long currentUserId = 1L;
+        // Arrange
+        Long commentId = EXISTING_COMMENT_ID;
 
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(testComment));
 
-        // When
-        commentService.deleteComment(commentId, currentUserId);
+        // Act
+        commentService.deleteComment(commentId, EXISTING_USER_ID);
 
-        // Then
+        // Assert
         verify(commentRepository).delete(testComment);
     }
 
     @Test
     @DisplayName("Удаление комментария - ошибка, когда пользователь не является владельцем")
     void deleteComment_ShouldThrowException_WhenUserIsNotOwner() {
-        // Given
-        Long commentId = 1L;
-        Long currentUserId = 2L; // Другой пользователь
+        // Arrange
+        Long commentId = EXISTING_COMMENT_ID;
 
+        // Другой пользователь
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(testComment));
+        when(messageProvider.getMessage("comment.delete_denied"))
+                .thenReturn("Вы можете удалять только свои комментарии");
 
-        // When & Then
-        assertThrows(SecurityException.class,
-                () -> commentService.deleteComment(commentId, currentUserId));
+        // Act & Assert
+        assertThatThrownBy(() -> commentService.deleteComment(commentId, ANOTHER_USER_ID))
+                .isInstanceOf(SecurityException.class)
+                .hasMessage("Вы можете удалять только свои комментарии");
+
+        verify(commentRepository, never()).delete(any(Comment.class));
+    }
+
+    @Test
+    @DisplayName("Удаление комментария - комментарий не найден")
+    void deleteComment_ShouldThrowException_WhenCommentNotFound() {
+        // Arrange
+        Long commentId = NON_EXISTING_COMMENT_ID;
+
+        when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
+        when(messageProvider.getMessage("comment.not_found", commentId)).thenReturn("Комментарий не найден: " + commentId);
+
+        // Act & Assert
+        assertThatThrownBy(() -> commentService.deleteComment(commentId, EXISTING_USER_ID)).isInstanceOf(EntityNotFoundException.class).hasMessage("Комментарий не найден: " + commentId);
 
         verify(commentRepository, never()).delete(any(Comment.class));
     }
@@ -287,92 +330,126 @@ class CommentServiceImplTest {
     @Test
     @DisplayName("Получение комментария по ID - комментарий найден")
     void getCommentById_ShouldReturnComment_WhenCommentExists() {
-        // Given
-        Long commentId = 1L;
+        // Arrange
+        Long commentId = EXISTING_COMMENT_ID;
         when(commentRepository.findByIdWithUserAndRecipe(commentId)).thenReturn(Optional.of(testComment));
         when(commentConverter.toDto(testComment)).thenReturn(testCommentDto);
 
-        // When
+        // Act
         Optional<CommentDto> result = commentService.getCommentById(commentId);
 
-        // Then
-        assertTrue(result.isPresent());
-        assertEquals(testCommentDto, result.get());
+        // Assert
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(testCommentDto);
+    }
+
+    @Test
+    @DisplayName("Получение комментария по ID - комментарий не найден")
+    void getCommentById_ShouldReturnEmpty_WhenCommentNotExists() {
+        // Arrange
+        Long commentId = NON_EXISTING_COMMENT_ID;
+        when(commentRepository.findByIdWithUserAndRecipe(commentId)).thenReturn(Optional.empty());
+
+        // Act
+        Optional<CommentDto> result = commentService.getCommentById(commentId);
+
+        // Assert
+        assertThat(result).isEmpty();
     }
 
     @Test
     @DisplayName("Получение комментария по ID с текущим пользователем - комментарий найден")
     void getCommentByIdWithCurrentUser_ShouldReturnComment_WhenCommentExists() {
-        // Given
-        Long commentId = 1L;
-        Long currentUserId = 1L;
+        // Arrange
+        Long commentId = EXISTING_COMMENT_ID;
+        Long currentUserId = EXISTING_USER_ID;
         when(commentRepository.findByIdWithUserAndRecipe(commentId)).thenReturn(Optional.of(testComment));
         when(commentConverter.toDto(testComment, currentUserId)).thenReturn(testCommentDto);
 
-        // When
+        // Act
         Optional<CommentDto> result = commentService.getCommentById(commentId, currentUserId);
 
-        // Then
-        assertTrue(result.isPresent());
-        assertEquals(testCommentDto, result.get());
+        // Assert
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(testCommentDto);
     }
 
     @Test
     @DisplayName("Получение комментариев пользователя - успешно")
     void getCommentsByUser_ShouldReturnUserComments() {
-        // Given
-        Long userId = 1L;
+        // Arrange
+        Long userId = EXISTING_USER_ID;
         List<Comment> comments = List.of(testComment);
         when(commentRepository.findByUserId(userId)).thenReturn(comments);
         when(commentConverter.toDto(testComment)).thenReturn(testCommentDto);
 
-        // When
+        // Act
         List<CommentDto> result = commentService.getCommentsByUser(userId);
 
-        // Then
-        assertFalse(result.isEmpty());
-        assertEquals(1, result.size());
-        assertEquals(testCommentDto, result.get(0));
+        // Assert
+        assertThat(result).isNotEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0)).isEqualTo(testCommentDto);
     }
 
     @Test
     @DisplayName("Получение количества комментариев для рецепта - успешно")
     void getCommentCountForRecipe_ShouldReturnCount() {
-        // Given
-        Long recipeId = 1L;
+        // Arrange
+        Long recipeId = EXISTING_RECIPE_ID;
         int expectedCount = 5;
         when(commentRepository.countByRecipeId(recipeId)).thenReturn(expectedCount);
 
-        // When
+        // Act
         int result = commentService.getCommentCountForRecipe(recipeId);
 
-        // Then
-        assertEquals(expectedCount, result);
+        // Assert
+        assertThat(result).isEqualTo(expectedCount);
     }
 
     @Test
     @DisplayName("Получение ID пользователя по имени - успешно")
     void getUserIdByUsername_ShouldReturnUserId_WhenUserExists() {
-        // Given
-        String username = "testuser";
+        // Arrange
+        String username = EXISTING_USERNAME;
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(testUser));
 
-        // When
+        // Act
         Long result = commentService.getUserIdByUsername(username);
 
-        // Then
-        assertEquals(testUser.getId(), result);
+        // Assert
+        assertThat(result).isEqualTo(testUser.getId());
     }
 
     @Test
     @DisplayName("Получение ID пользователя по имени - пользователь не найден")
     void getUserIdByUsername_ShouldThrowException_WhenUserNotFound() {
-        // Given
-        String username = "nonexistent";
+        // Arrange
+        String username = NON_EXISTING_USERNAME;
         when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+        when(messageProvider.getMessage("user.not_found")).thenReturn("Пользователь не найден");
 
-        // When & Then
-        assertThrows(EntityNotFoundException.class,
-                () -> commentService.getUserIdByUsername(username));
+        // Act & Assert
+        assertThatThrownBy(() -> commentService.getUserIdByUsername(username)).isInstanceOf(EntityNotFoundException.class).hasMessage("Пользователь не найден");
+    }
+
+    @Test
+    @DisplayName("Создание комментария - пустой контент")
+    void createCommentForRecipe_ShouldThrowException_WhenContentIsEmpty() {
+        // Arrange
+        String content = "   ";
+
+        when(messageProvider.getMessage("comment.content.empty"))
+                .thenReturn("Текст комментария не может быть пустым");
+
+        // Act & Assert
+        assertThatThrownBy(() -> commentService.createCommentForRecipe(
+                content,
+                EXISTING_USERNAME,
+                EXISTING_RECIPE_ID))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Текст комментария не может быть пустым");
+
+        verify(commentRepository, never()).save(any(Comment.class));
     }
 }

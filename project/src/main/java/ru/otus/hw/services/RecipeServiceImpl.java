@@ -85,9 +85,10 @@ public class RecipeServiceImpl implements RecipeService {
                 .toList();
 
         if (validIngredients.isEmpty()) {
-            throw new IllegalArgumentException(messageProvider.getMessage("recipe.ingredients.empty"));
+            throw new IllegalArgumentException(
+                    messageProvider.getMessage("recipe.ingredients.min.one")
+            );
         }
-
         recipe.getIngredients().addAll(validIngredients);
         recipe.setPublished(published);
 
@@ -307,13 +308,7 @@ public class RecipeServiceImpl implements RecipeService {
             throw new IllegalArgumentException(messageProvider.getMessage("recipe.description.min_length"));
         }
         if (ingredients == null || ingredients.isEmpty()) {
-            throw new IllegalArgumentException(messageProvider.getMessage("recipe.ingredients.required"));
-        }
-
-        boolean hasValidIngredients = ingredients.stream()
-                .anyMatch(ingredient -> ingredient != null && !ingredient.trim().isEmpty());
-        if (!hasValidIngredients) {
-            throw new IllegalArgumentException(messageProvider.getMessage("recipe.ingredients.min_one"));
+            throw new IllegalArgumentException(messageProvider.getMessage("recipe.ingredients.empty"));
         }
     }
 }

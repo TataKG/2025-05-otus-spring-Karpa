@@ -54,7 +54,7 @@ public class CommentController {
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(e.getMessage()));
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException | IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {

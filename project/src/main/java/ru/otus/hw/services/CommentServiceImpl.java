@@ -31,6 +31,12 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public CommentDto createCommentForRecipe(String content, String username, Long recipeId) {
+        if (content == null || content.trim().isEmpty()) {
+            throw new IllegalArgumentException(
+                    messageProvider.getMessage("comment.content.empty")
+            );
+        }
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException(
                         messageProvider.getMessage("user.not_found")
@@ -47,7 +53,7 @@ public class CommentServiceImpl implements CommentService {
             );
         }
 
-        Comment comment = new Comment(content, user, recipe);
+        Comment comment = new Comment(content.trim(), user, recipe);
         Comment savedComment = commentRepository.save(comment);
         return commentConverter.toDto(savedComment, user.getId());
     }
