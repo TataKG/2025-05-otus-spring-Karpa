@@ -28,4 +28,5 @@ public record UpdateRecipeRequest(
         List<Long> inventoryIds,
 
         boolean published
-) {}
+) {
+}

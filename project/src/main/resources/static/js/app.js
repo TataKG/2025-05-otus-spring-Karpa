@@ -1,12 +1,5 @@
 // app.js - для главной страницы
 class CookbookApp extends BaseApiClient {
-    handleLanguageChange() {
-        // Перезагружаем все данные при смене языка
-        this.loadCategories();
-        this.loadAuthors();
-        this.loadRecipes();
-    }
-
     constructor() {
         super('/api');
         this.messages = window.i18nMessages || this.getFallbackMessages();
@@ -22,12 +15,17 @@ class CookbookApp extends BaseApiClient {
         this.currentUserId = null;
         this.currentRecipeId = null;
 
-        // Слушаем события смены языка
         window.addEventListener('languageChange', () => {
-           this.handleLanguageChange();
+            this.handleLanguageChange();
         });
 
         this.init();
+    }
+
+    handleLanguageChange() {
+        this.loadCategories();
+        this.loadAuthors();
+        this.loadRecipes();
     }
 
     getFallbackMessages() {
@@ -93,24 +91,11 @@ class CookbookApp extends BaseApiClient {
     }
 
     async init() {
-        console.log('🚀 CookbookApp initialization started');
-
-        // Проверяем наличие необходимых DOM элементов
-        if (!document.getElementById('recipeModal')) {
-            console.error('❌ recipeModal not found in DOM');
-        }
-
-        if (!document.getElementById('commentsModal')) {
-            console.error('❌ commentsModal not found in DOM');
-        }
-
         await this.loadCurrentUser();
         await this.loadCategories();
         await this.loadAuthors();
         await this.loadRecipes();
         this.setupEventListeners();
-
-        console.log('✅ CookbookApp initialization completed');
     }
 
     async loadCurrentUser() {
@@ -123,11 +108,9 @@ class CookbookApp extends BaseApiClient {
                 const result = await response.json();
                 if (result.success && result.data && result.data.authenticated) {
                     this.currentUserId = result.data.id;
-                    console.log('Current user ID:', this.currentUserId);
                 }
             }
         } catch (error) {
-            console.log('Cannot determine current user:', error);
             this.currentUserId = null;
         }
     }
@@ -287,11 +270,8 @@ class CookbookApp extends BaseApiClient {
         document.querySelectorAll('.view-recipe').forEach(button => {
             button.addEventListener('click', (e) => {
                 const recipeId = e.target.closest('.view-recipe').dataset.recipeId;
-                console.log('🔍 View recipe button clicked, recipeId:', recipeId);
                 if (recipeId) {
                     this.loadRecipeDetails(recipeId);
-                } else {
-                    console.error('❌ Recipe ID not found');
                 }
             });
         });
@@ -309,32 +289,22 @@ class CookbookApp extends BaseApiClient {
 
     async loadRecipeDetails(recipeId) {
         try {
-            console.log('📥 Loading recipe details for:', recipeId);
             const response = await this.get(`/recipes/${recipeId}/detailed`);
 
-            console.log('📋 FULL Recipe details API response:', response);
-
             if (response.success) {
-                console.log('✅ Recipe details loaded successfully');
-
-                // Используем данные напрямую из response.data (RecipeDto)
                 const recipeData = response.data;
-                console.log('🎯 Final recipe data to display:', recipeData);
                 this.showRecipeModal(recipeData);
             } else {
-                console.error('❌ API error loading recipe details:', response);
                 CommonUtils.showToast(this.messages['error-loading-details'], 'error');
             }
         } catch (error) {
-            console.error('💥 Error loading recipe details:', error);
+            console.error('Error loading recipe details:', error);
             CommonUtils.showToast(this.messages['error-loading-details'], 'error');
         }
     }
 
     async loadRecipeComments(recipeId) {
         try {
-            console.log(`🔗 Loading comments for recipe ${recipeId}`);
-
             const response = await fetch(`${this.baseUrl}/recipes/${recipeId}/comments`, {
                 credentials: 'include',
                 headers: {
@@ -343,23 +313,18 @@ class CookbookApp extends BaseApiClient {
                 }
             });
 
-            console.log(`📨 Comments response status: ${response.status}`);
-
             if (!response.ok) {
                 if (response.status === 404 || response.status === 403) {
-                    console.log('Comments not available for this recipe');
                     return [];
                 }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const result = await response.json();
-            console.log(`✅ Comments loaded:`, result);
 
             if (result.success) {
                 return result.data || [];
             } else {
-                console.warn('API returned error for comments:', result.message);
                 return [];
             }
         } catch (error) {
@@ -369,11 +334,8 @@ class CookbookApp extends BaseApiClient {
     }
 
     showRecipeModal(recipe) {
-        console.log('📋 FULL Recipe data structure for modal:', recipe);
-
         const modalElement = document.getElementById('recipeModal');
         if (!modalElement) {
-            console.error('❌ recipeModal element not found');
             CommonUtils.showToast('Ошибка: модальное окно не найдено', 'error');
             return;
         }
@@ -381,29 +343,16 @@ class CookbookApp extends BaseApiClient {
         const modalTitle = document.getElementById('recipeModalTitle');
         const modalBody = document.getElementById('recipeModalBody');
 
-        if (!modalTitle || !modalBody) {
-            console.error('❌ Modal title or body not found');
-            return;
-        }
+        if (!modalTitle || !modalBody) return;
 
         modalTitle.textContent = `📖 ${CommonUtils.escapeHtml(recipe.title)}`;
 
-        // Используем данные напрямую из RecipeDto
         const categoryName = recipe.category ? recipe.category.name : 'Не указана';
         const authorName = recipe.author ? this.getAuthorDisplayName(recipe.author) : 'Неизвестен';
         const ingredients = recipe.ingredients || [];
         const description = recipe.description || 'Описание отсутствует';
         const inventoryItems = recipe.inventoryItems || [];
         const commentCount = recipe.commentCount || 0;
-
-        console.log('📊 Extracted data:', {
-            categoryName,
-            authorName,
-            ingredients,
-            description,
-            inventoryItems,
-            commentCount
-        });
 
         modalBody.innerHTML = `
             <div class="row">
@@ -469,9 +418,7 @@ class CookbookApp extends BaseApiClient {
         try {
             const modal = new bootstrap.Modal(modalElement);
             modal.show();
-            console.log('✅ Recipe modal shown successfully');
         } catch (error) {
-            console.error('❌ Error showing modal:', error);
             CommonUtils.showToast('Ошибка при открытии модального окна', 'error');
         }
     }
@@ -479,7 +426,6 @@ class CookbookApp extends BaseApiClient {
     getAuthorDisplayName(author) {
         if (!author) return 'Неизвестен';
 
-        // Пробуем разные пути к данным автора в AuthorDto
         if (author.username) {
             return author.username;
         } else if (author.name) {
@@ -537,7 +483,6 @@ class CookbookApp extends BaseApiClient {
             const comments = await this.loadRecipeComments(recipeId);
             this.displayComments(comments, modalBody, recipeId);
         } catch (error) {
-            console.error('Failed to load comments:', error);
             modalBody.innerHTML = `
                 <div class="alert alert-warning">
                     <p>${this.messages['error-loading-comments']}</p>
@@ -821,26 +766,21 @@ class CookbookApp extends BaseApiClient {
     }
 
     updateCommentsCount() {
-        // Обновляем счетчик в модальном окне комментариев
         const commentsCount = document.querySelectorAll('.comments-list .card').length;
         const modalBadge = document.querySelector(`#commentsModal .comments-badge`);
         if (modalBadge) {
             modalBadge.textContent = `💬 ${commentsCount} ${CommonUtils.getCommentText(commentsCount)}`;
         }
 
-        // Обновляем счетчик в таблице рецептов
         const tableBadge = document.querySelector(`.comments-badge[data-recipe-id="${this.currentRecipeId}"]`);
         if (tableBadge) {
             tableBadge.textContent = `💬 ${commentsCount}`;
         }
 
-        // Обновляем счетчик в модальном окне рецепта
         const recipeModalBadge = document.querySelector(`#recipeModal .comments-badge`);
         if (recipeModalBadge) {
             recipeModalBadge.textContent = `💬 ${commentsCount} ${CommonUtils.getCommentText(commentsCount)}`;
         }
-
-        console.log(`🔄 Updated comment count to ${commentsCount} for recipe ${this.currentRecipeId}`);
     }
 
     async addNewComment(recipeId) {
@@ -871,8 +811,6 @@ class CookbookApp extends BaseApiClient {
             const comments = await this.loadRecipeComments(recipeId);
             const modalBody = document.getElementById('commentsModalBody');
             this.displayComments(comments, modalBody, recipeId);
-
-            // Обновляем счетчик после успешной загрузки комментариев
             this.updateCommentsCount();
         } catch (error) {
             console.error('Failed to refresh comments:', error);

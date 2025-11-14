@@ -1,12 +1,7 @@
 // my-recipes.js - для страницы "Мои рецепты"
 class MyRecipesApp extends BaseApiClient {
-    handleLanguageChange() {
-        this.loadMyRecipes();
-    }
-
     constructor() {
         super('/api/recipes');
-        console.log("MyRecipesApp initialized");
         this.messages = window.i18nMessages || this.getFallbackMessages();
         this.currentFilter = 'all';
         this.currentUserRecipes = [];
@@ -16,6 +11,10 @@ class MyRecipesApp extends BaseApiClient {
         });
 
         this.init();
+    }
+
+    handleLanguageChange() {
+        this.loadMyRecipes();
     }
 
     getFallbackMessages() {
@@ -67,30 +66,24 @@ class MyRecipesApp extends BaseApiClient {
     }
 
     async init() {
-        console.log("MyRecipesApp init started");
         await this.loadMyRecipes();
         this.setupEventListeners();
     }
 
     async loadMyRecipes() {
         try {
-            console.log("Starting to load my recipes...");
             CommonUtils.showLoadingState('recipesTableBody', this.messages['recipes-loading'], 6);
 
             const response = await this.get('/my-recipes');
-            console.log("My recipes response:", response);
 
             if (response.success) {
-                console.log("Recipes loaded successfully:", response.data);
                 this.currentUserRecipes = response.data;
                 this.updateStatistics(response.data);
                 this.displayRecipes(response.data);
             } else {
-                console.error("API returned error:", response);
                 this.showError(this.messages['error-loading-recipes'] + ': ' + (response.message || 'Unknown error'));
             }
         } catch (error) {
-            console.error('Error loading my recipes:', error);
             const errorMessage = CommonUtils.handleApiError(error, this.messages['error-loading-recipes']);
             this.showError(errorMessage);
         }
@@ -149,7 +142,6 @@ class MyRecipesApp extends BaseApiClient {
         }
 
         tbody.innerHTML = recipes.map(recipe => {
-            // Используем данные напрямую из RecipeSummaryDto
             const categoryName = recipe.categoryName || 'Не указана';
             const authorName = recipe.authorName || 'Неизвестен';
             const commentCount = recipe.commentCount || 0;
@@ -217,7 +209,6 @@ class MyRecipesApp extends BaseApiClient {
         document.querySelectorAll('.view-recipe').forEach(button => {
             button.addEventListener('click', (e) => {
                 const recipeId = e.target.closest('.view-recipe').dataset.recipeId;
-                console.log("View recipe:", recipeId);
                 this.loadRecipeDetails(recipeId);
             });
         });
@@ -225,7 +216,6 @@ class MyRecipesApp extends BaseApiClient {
         document.querySelectorAll('.edit-recipe').forEach(button => {
             button.addEventListener('click', (e) => {
                 const recipeId = e.target.closest('.edit-recipe').dataset.recipeId;
-                console.log("Edit recipe:", recipeId);
                 this.editRecipe(recipeId);
             });
         });
@@ -233,7 +223,6 @@ class MyRecipesApp extends BaseApiClient {
         document.querySelectorAll('.publish-recipe').forEach(button => {
             button.addEventListener('click', (e) => {
                 const recipeId = e.target.closest('.publish-recipe').dataset.recipeId;
-                console.log("Publish recipe:", recipeId);
                 this.publishRecipe(recipeId);
             });
         });
@@ -242,7 +231,6 @@ class MyRecipesApp extends BaseApiClient {
             button.addEventListener('click', (e) => {
                 const recipeId = e.target.closest('.delete-recipe').dataset.recipeId;
                 const recipeTitle = e.target.closest('.delete-recipe').dataset.recipeTitle;
-                console.log("Delete recipe:", recipeId, recipeTitle);
                 this.showDeleteConfirmation(recipeId, recipeTitle);
             });
         });
@@ -255,12 +243,10 @@ class MyRecipesApp extends BaseApiClient {
                 const recipeTitle = e.target.closest('.comments-badge').dataset.recipeTitle;
 
                 if (!recipeId || recipeId === 'undefined') {
-                    console.error('Invalid recipeId:', recipeId);
                     CommonUtils.showToast('Неверный идентификатор рецепта', 'error');
                     return;
                 }
 
-                console.log("View comments for recipe:", recipeId, recipeTitle);
                 this.showCommentsModal(recipeId, recipeTitle);
             });
         });
@@ -268,7 +254,6 @@ class MyRecipesApp extends BaseApiClient {
 
     async loadRecipeDetails(recipeId) {
         try {
-            console.log("Loading detailed recipe:", recipeId);
             const response = await this.get(`/${recipeId}/detailed`);
 
             if (response.success) {
@@ -277,7 +262,6 @@ class MyRecipesApp extends BaseApiClient {
                 this.showError(this.messages['error-loading-details']);
             }
         } catch (error) {
-            console.error('Error loading recipe details:', error);
             const errorMessage = CommonUtils.handleApiError(error, this.messages['error-loading-details']);
             this.showError(errorMessage);
         }
@@ -285,8 +269,6 @@ class MyRecipesApp extends BaseApiClient {
 
     async loadRecipeComments(recipeId) {
         try {
-            console.log("Loading comments for recipe:", recipeId);
-
             const response = await fetch(`/api/recipes/${recipeId}/comments`, {
                 credentials: 'include',
                 headers: {
@@ -295,40 +277,31 @@ class MyRecipesApp extends BaseApiClient {
                 }
             });
 
-            console.log(`📨 Comments response status: ${response.status}`);
-
             if (!response.ok) {
                 if (response.status === 404 || response.status === 403) {
-                    console.log('Comments not available for this recipe');
                     return [];
                 }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const result = await response.json();
-            console.log(`✅ Comments loaded:`, result);
 
             if (result.success) {
                 return result.data || [];
             } else {
-                console.warn('API returned error for comments:', result.message);
                 return [];
             }
         } catch (error) {
-            console.error('Error loading recipe comments:', error);
             throw error;
         }
     }
 
     showRecipeModal(recipe) {
-        console.log("Recipe detailed data for modal:", recipe);
-
         const modalTitle = document.getElementById('recipeModalTitle');
         const modalBody = document.getElementById('recipeModalBody');
 
         modalTitle.textContent = `📖 ${CommonUtils.escapeHtml(recipe.title)}`;
 
-        // Используем данные напрямую из RecipeDto
         const categoryName = recipe.category ? recipe.category.name : 'Не указана';
         const authorName = recipe.author ? this.getAuthorDisplayName(recipe.author) : 'Неизвестен';
         const ingredients = recipe.ingredients || [];
@@ -395,7 +368,6 @@ class MyRecipesApp extends BaseApiClient {
                 const recipeTitle = commentsBadge.dataset.recipeTitle;
 
                 if (!recipeId || recipeId === 'undefined') {
-                    console.error('Invalid recipeId in modal badge:', recipeId);
                     CommonUtils.showToast('Неверный идентификатор рецепта', 'error');
                     return;
                 }
@@ -450,10 +422,7 @@ class MyRecipesApp extends BaseApiClient {
     }
 
     async showCommentsModal(recipeId, recipeTitle) {
-        console.log("showCommentsModal called with:", { recipeId, recipeTitle });
-
         if (!recipeId || recipeId === 'undefined') {
-            console.error('Invalid recipeId:', recipeId);
             CommonUtils.showToast('Неверный идентификатор рецепта', 'error');
             return;
         }
@@ -479,7 +448,6 @@ class MyRecipesApp extends BaseApiClient {
             const comments = await this.loadRecipeComments(recipeId);
             this.displayComments(comments, modalBody);
         } catch (error) {
-            console.error('Error loading comments:', error);
             modalBody.innerHTML = `
                 <div class="alert alert-danger">
                     <p>${this.messages['error-loading-comments']}</p>
@@ -527,19 +495,12 @@ class MyRecipesApp extends BaseApiClient {
     }
 
     editRecipe(recipeId) {
-        console.log("Edit recipe with ID:", recipeId);
-
-        // Проверяем, что recipeId валидный
         if (!recipeId || recipeId === 'undefined') {
-            console.error('Invalid recipe ID for editing:', recipeId);
             CommonUtils.showToast('Неверный идентификатор рецепта для редактирования', 'error');
             return;
         }
 
-        // Явно формируем URL
         const editUrl = `/recipe/edit/${recipeId}`;
-        console.log("Redirecting to:", editUrl);
-
         window.location.href = editUrl;
     }
 
@@ -564,7 +525,6 @@ class MyRecipesApp extends BaseApiClient {
 
     async deleteRecipe(recipeId) {
         try {
-            console.log("Deleting recipe:", recipeId);
             const response = await this.delete(`/${recipeId}`);
 
             if (response.success) {
@@ -578,8 +538,6 @@ class MyRecipesApp extends BaseApiClient {
                 CommonUtils.showToast(this.messages['delete-error'], 'error');
             }
         } catch (error) {
-            console.error('Error deleting recipe:', error);
-
             if (error.message.includes('404')) {
                 CommonUtils.showToast(this.messages['delete-success'], 'success');
                 this.currentUserRecipes = this.currentUserRecipes.filter(recipe => recipe.id != recipeId);
@@ -594,8 +552,6 @@ class MyRecipesApp extends BaseApiClient {
 
     async publishRecipe(recipeId) {
         try {
-            console.log("Publishing recipe:", recipeId);
-
             const publishButton = document.querySelector(`.publish-recipe[data-recipe-id="${recipeId}"]`);
             if (publishButton) {
                 const originalText = publishButton.innerHTML;
@@ -621,8 +577,6 @@ class MyRecipesApp extends BaseApiClient {
             }
 
         } catch (error) {
-            console.error('Error publishing recipe:', error);
-
             const publishButton = document.querySelector(`.publish-recipe[data-recipe-id="${recipeId}"]`);
             if (publishButton) {
                 publishButton.innerHTML = '📢 Опубликовать';
@@ -635,8 +589,6 @@ class MyRecipesApp extends BaseApiClient {
     }
 
     setupEventListeners() {
-        console.log("Event listeners setup");
-
         const filterAll = document.getElementById('filterAll');
         const filterPublished = document.getElementById('filterPublished');
         const filterDrafts = document.getElementById('filterDrafts');
@@ -658,12 +610,9 @@ class MyRecipesApp extends BaseApiClient {
     }
 }
 
-// Инициализация приложения
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("DOM Content Loaded - initializing MyRecipesApp");
     try {
         window.myRecipesApp = new MyRecipesApp();
-        console.log("MyRecipesApp initialized successfully");
     } catch (error) {
         console.error("Error initializing MyRecipesApp:", error);
     }

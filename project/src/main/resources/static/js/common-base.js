@@ -63,7 +63,6 @@ class CommonUtils {
     }
 
     static showToast(message, type = 'success') {
-        // Проверяем, что Bootstrap доступен
         if (typeof bootstrap === 'undefined') {
             console.warn('Bootstrap not available for toast');
             return;
@@ -129,7 +128,6 @@ class CommonUtils {
 
         if (errorMessage.includes('401')) {
             message = 'Требуется авторизация';
-            // Перенаправляем на страницу входа при 401
             setTimeout(() => {
                 window.location.href = '/login';
             }, 2000);
@@ -147,11 +145,9 @@ class CommonUtils {
         return message;
     }
 
-    // Универсальный метод для получения названия категории из разных структур данных
     static getCategoryName(recipe) {
         if (!recipe) return 'Не указана';
 
-        // Пробуем разные пути к данным категории
         if (recipe.categoryName) {
             return recipe.categoryName;
         } else if (recipe.category && recipe.category.name) {
@@ -164,11 +160,9 @@ class CommonUtils {
         return 'Не указана';
     }
 
-    // Универсальный метод для получения имени автора
     static getAuthorName(recipe) {
         if (!recipe) return 'Неизвестен';
 
-        // Пробуем разные пути к данным автора
         if (recipe.authorName) {
             return recipe.authorName;
         } else if (recipe.author && recipe.author.user && recipe.author.user.username) {
@@ -179,16 +173,14 @@ class CommonUtils {
             return recipe.author;
         }
 
-        return 'Неизвестен'; // Добавлен возврат по умолчанию
+        return 'Неизвестен';
     }
 
-    // Универсальный метод для получения количества комментариев
     static getCommentCount(recipe) {
         if (!recipe) return 0;
         return recipe.commentCount || recipe.commentsCount || (Array.isArray(recipe.comments) ? recipe.comments.length : 0);
     }
 
-    // Новый метод: проверка наличия DOM элемента
     static ensureElement(selector) {
         const element = typeof selector === 'string' ? document.querySelector(selector) : selector;
         if (!element) {
@@ -198,39 +190,45 @@ class CommonUtils {
     }
 }
 
-// Базовый класс для работы с API
 class BaseApiClient {
     constructor(baseUrl = '/api') {
         this.baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
         this.pendingRequests = new Map();
     }
 
-    async makeRequest(fullUrl, options) {
+    getHeaders() {
+        return {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        };
+    }
+
+    async makeRequest(url, options = {}) {
         try {
-            const response = await fetch(fullUrl, options);
-            console.log(`📨 API Response status: ${response.status} ${response.statusText}`);
+            const response = await fetch(url, {
+                credentials: 'include',
+                headers: this.getHeaders(),
+                ...options
+            });
+
+            const responseText = await response.text();
+            let data;
+
+            try {
+                data = responseText ? JSON.parse(responseText) : null;
+            } catch (parseError) {
+                console.error('Failed to parse response as JSON:', responseText);
+                throw new Error('Invalid response format from server');
+            }
 
             if (!response.ok) {
-                let errorMessage = `HTTP error! status: ${response.status}`;
-                try {
-                    const errorResult = await response.json();
-                    errorMessage = errorResult.message || errorMessage;
-                } catch (e) {
-                    // Ignore JSON parsing error
-                }
+                const errorMessage = data?.message || data?.error || `HTTP error ${response.status}`;
                 throw new Error(errorMessage);
             }
 
-            // Handle 204 No Content
-            if (response.status === 204) {
-                return { success: true };
-            }
-
-            const data = await response.json();
-            console.log(`✅ API Response data:`, data);
             return data;
         } catch (error) {
-            console.error(`💥 Fetch error for ${fullUrl}:`, error);
+            console.error(`API request failed for ${url}:`, error);
             throw error;
         }
     }
@@ -238,32 +236,18 @@ class BaseApiClient {
     async request(url, options = {}) {
         const fullUrl = url.startsWith('/') ? `${this.baseUrl}${url}` : `${this.baseUrl}/${url}`;
 
-        // Защита от дублирующихся запросов
         const requestKey = `${options.method || 'GET'}:${fullUrl}`;
         if (this.pendingRequests.has(requestKey)) {
-            console.log(`⚠️ Skipping duplicate request: ${requestKey}`);
             return this.pendingRequests.get(requestKey);
         }
 
-        console.log(`🔗 API ${options.method || 'GET'}: ${fullUrl}`);
-
-        const defaultOptions = {
-            credentials: 'include',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                ...options.headers
-            }
-        };
-
         try {
-            const requestPromise = this.makeRequest(fullUrl, { ...defaultOptions, ...options });
+            const requestPromise = this.makeRequest(fullUrl, options);
             this.pendingRequests.set(requestKey, requestPromise);
 
             const response = await requestPromise;
             return response;
         } catch (error) {
-            // Преобразуем ошибку для единообразной обработки
             if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
                 throw new Error('Ошибка сети. Проверьте подключение к интернету.');
             }
@@ -302,19 +286,15 @@ class BaseApiClient {
         return this.request(url, { method: 'DELETE' });
     }
 
-    // Новый метод: отмена всех pending запросов
     cancelAllRequests() {
         this.pendingRequests.clear();
-        console.log('🧹 All pending requests cancelled');
     }
 
-    // Новый метод: проверка наличия pending запросов
     hasPendingRequests() {
         return this.pendingRequests.size > 0;
     }
 }
 
-// Экспорты для использования в модульной системе
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { CommonUtils, BaseApiClient };
 }

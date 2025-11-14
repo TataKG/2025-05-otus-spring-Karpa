@@ -2,19 +2,11 @@ package ru.otus.hw.controllers.rest;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import ru.otus.hw.dto.*;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.services.AuthorService;
@@ -28,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/recipes")
@@ -66,6 +59,7 @@ public class RecipeController {
 
             return ResponseEntity.ok(ApiResponse.success(formData));
         } catch (Exception e) {
+            log.error("Failed to load create form data", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error(messageProvider.getMessage("recipe.form_data.load_failed")));
         }
@@ -85,12 +79,15 @@ public class RecipeController {
 
             return ResponseEntity.ok(ApiResponse.success(formData));
         } catch (EntityNotFoundException e) {
+            log.warn("Recipe not found for editing: {}", id);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (SecurityException e) {
+            log.warn("Security violation for recipe editing: {}", id);
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
+            log.error("Failed to load edit form data for recipe: {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error(messageProvider.getMessage("recipe.edit.form_data.load_failed")));
         }
@@ -103,10 +100,8 @@ public class RecipeController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(ApiResponse.error(messageProvider.getMessage("user.not_authenticated")));
             }
-
             String username = authentication.getName();
             List<RecipeSummaryDto> recipes = getRecipesForCurrentUser(username);
-
             return ResponseEntity.ok(ApiResponse.success(recipes));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -114,7 +109,7 @@ public class RecipeController {
         }
     }
 
-    @PostMapping(value = {"", "/"})
+    @PostMapping
     public ResponseEntity<ApiResponse<RecipeDto>> createRecipe(
             @Valid @RequestBody CreateRecipeRequest request,
             Authentication authentication) {
@@ -137,16 +132,27 @@ public class RecipeController {
                     request.published()
             );
 
+            String successMessage = request.published()
+                    ? messageProvider.getMessage("recipe.created.published")
+                    : messageProvider.getMessage("recipe.created.draft");
+
             return ResponseEntity.status(HttpStatus.CREATED).body(
-                    ApiResponse.success(recipeDto, messageProvider.getMessage("recipe.created"))
+                    ApiResponse.success(recipeDto, successMessage)
             );
         } catch (EntityNotFoundException e) {
+            log.warn("Entity not found during recipe creation", e);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (SecurityException e) {
+            log.warn("Security violation during recipe creation", e);
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            log.warn("Validation error during recipe creation", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
+            log.error("Failed to create recipe", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error(messageProvider.getMessage("recipe.create.failed")));
         }
@@ -173,15 +179,25 @@ public class RecipeController {
                     request.published()
             );
 
-            return ResponseEntity.ok(ApiResponse.success(updatedRecipe,
-                    messageProvider.getMessage("recipe.updated")));
+            String successMessage = request.published()
+                    ? messageProvider.getMessage("recipe.updated.published")
+                    : messageProvider.getMessage("recipe.updated.draft");
+
+            return ResponseEntity.ok(ApiResponse.success(updatedRecipe, successMessage));
         } catch (EntityNotFoundException e) {
+            log.warn("Recipe not found for update: {}", id);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (SecurityException e) {
+            log.warn("Security violation for recipe update: {}", id);
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error(e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            log.warn("Validation error during recipe update: {}", id, e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
+            log.error("Failed to update recipe: {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error(messageProvider.getMessage("recipe.update.failed")));
         }

@@ -10,7 +10,7 @@ class RecipeEditApp extends BaseApiClient {
         this.availableInventory = [];
         this.isInitialized = false;
         this.isRestoringData = false;
-        this.isSaving = false; // Флаг для отслеживания процесса сохранения
+        this.isSaving = false;
         this.init();
     }
 
@@ -24,7 +24,6 @@ class RecipeEditApp extends BaseApiClient {
             this.setupValidation();
             this.isInitialized = true;
         } catch (error) {
-            console.error('Initialization error:', error);
             this.showLoadError(this.getMessage('error.load_form') + error.message);
         }
     }
@@ -70,7 +69,6 @@ class RecipeEditApp extends BaseApiClient {
                 throw new Error(response.message || this.getMessage('error.load_form_data'));
             }
         } catch (error) {
-            console.error('Error loading form data:', error);
             throw new Error(this.getMessage('error.load_form') + error.message);
         }
     }
@@ -86,13 +84,6 @@ class RecipeEditApp extends BaseApiClient {
         this.inventoryItems = inventoryItems || [];
         this.availableInventory = [...this.inventoryItems];
 
-        console.log('📥 Данные формы получены:', {
-            categoriesCount: this.categories.length,
-            inventoryCount: this.inventoryItems.length,
-            recipe: recipe ? recipe.title : 'нет'
-        });
-
-        // Получаем authorId из различных возможных источников
         if (recipe && recipe.author && recipe.author.id) {
             this.authorId = recipe.author.id;
         } else if (formData.authorId) {
@@ -103,39 +94,30 @@ class RecipeEditApp extends BaseApiClient {
             throw new Error(this.getMessage('error.author_not_found'));
         }
 
-        // ВОССТАНОВЛЕНИЕ ДАННЫХ: проверяем, есть ли сохраненные данные
         const savedData = localStorage.getItem('pendingFormData');
         const languageChanged = localStorage.getItem('pendingLanguageChange');
 
         if (savedData && languageChanged === 'true') {
             this.isRestoringData = true;
-            console.log('🔄 Восстанавливаем данные формы после смены языка...');
-
-            // При восстановлении используем специальный метод
             this.populateWithRestoration(recipe, savedData);
         } else {
-            // Обычная загрузка
             this.populateNormal(recipe);
         }
 
-        // Обновляем UI
         document.getElementById('loadingSpinner').style.display = 'none';
         document.getElementById('recipeFormContainer').style.display = 'block';
         document.getElementById('errorAlert').style.display = 'none';
 
-        // Очищаем флаги после восстановления
         if (this.isRestoringData) {
             setTimeout(() => {
                 localStorage.removeItem('pendingFormData');
                 localStorage.removeItem('pendingLanguageChange');
                 this.isRestoringData = false;
-                console.log('✅ Данные формы восстановлены');
             }, 500);
         }
     }
 
     populateNormal(recipe) {
-        // Обычное заполнение формы
         if (recipe && recipe.title) {
             document.getElementById('title').value = recipe.title;
         }
@@ -152,9 +134,7 @@ class RecipeEditApp extends BaseApiClient {
     populateWithRestoration(recipe, savedData) {
         try {
             const formData = JSON.parse(savedData);
-            console.log('📋 Восстанавливаем сохраненные данные:', formData);
 
-            // 1. Восстанавливаем основные поля
             if (document.getElementById('title')) {
                 document.getElementById('title').value = formData.title || '';
             }
@@ -163,17 +143,14 @@ class RecipeEditApp extends BaseApiClient {
                 document.getElementById('description').value = formData.description || '';
             }
 
-            // 2. Заполняем категории СРАЗУ с восстановлением значения
             this.populateCategoriesWithRestore(formData.category);
 
-            // 3. Восстанавливаем ингредиенты
             if (formData.ingredients && Array.isArray(formData.ingredients)) {
                 this.populateIngredients(formData.ingredients);
             } else {
                 this.populateIngredients([]);
             }
 
-            // 4. Восстанавливаем инвентарь
             if (formData.selectedInventory && Array.isArray(formData.selectedInventory)) {
                 this.selectedInventory = formData.selectedInventory;
                 this.updateAvailableInventory();
@@ -184,65 +161,46 @@ class RecipeEditApp extends BaseApiClient {
             }
 
         } catch (error) {
-            console.error('❌ Ошибка при восстановлении данных:', error);
-            // В случае ошибки восстанавливаем пустую форму
             this.populateNormal(recipe);
         }
     }
 
     populateCategories(selectedCategory) {
         const categorySelect = document.getElementById('category');
-        if (!categorySelect) {
-            console.error('❌ Элемент category не найден в DOM');
-            return;
-        }
+        if (!categorySelect) return;
 
-        // Очищаем select
         categorySelect.innerHTML = '';
 
-        // Добавляем пустую опцию
         const emptyOption = document.createElement('option');
         emptyOption.value = "";
         emptyOption.textContent = this.getMessage('recipe.category.placeholder');
         categorySelect.appendChild(emptyOption);
 
-        // Добавляем категории из БД
         if (this.categories && this.categories.length > 0) {
             this.categories.forEach(category => {
                 const option = document.createElement('option');
                 option.value = String(category.id);
                 option.textContent = category.name;
 
-                // Автоматически выбираем категорию если указана
                 if (selectedCategory && selectedCategory.id === category.id) {
                     option.selected = true;
                 }
                 categorySelect.appendChild(option);
             });
-
-            console.log('✅ Категории загружены в select:', this.categories.length, 'шт');
-        } else {
-            console.warn('⚠️ Нет категорий для загрузки в select');
         }
     }
 
     populateCategoriesWithRestore(savedCategoryId) {
         const categorySelect = document.getElementById('category');
-        if (!categorySelect) {
-            console.error('❌ Элемент category не найден в DOM');
-            return;
-        }
+        if (!categorySelect) return;
 
-        // Очищаем select
         categorySelect.innerHTML = '';
 
-        // Добавляем пустую опцию
         const emptyOption = document.createElement('option');
         emptyOption.value = "";
         emptyOption.textContent = this.getMessage('recipe.category.placeholder');
         categorySelect.appendChild(emptyOption);
 
-        // Добавляем категории из БД
         if (this.categories && this.categories.length > 0) {
             this.categories.forEach(category => {
                 const option = document.createElement('option');
@@ -251,26 +209,12 @@ class RecipeEditApp extends BaseApiClient {
                 categorySelect.appendChild(option);
             });
 
-            console.log('✅ Категории загружены в select:', this.categories.length, 'шт');
-
-            // НЕМЕДЛЕННО восстанавливаем сохраненное значение
             if (savedCategoryId) {
                 const categoryIdStr = String(savedCategoryId);
                 setTimeout(() => {
                     categorySelect.value = categoryIdStr;
-                    console.log('🎯 Категория восстановлена:', categoryIdStr, '->', categorySelect.value);
-
-                    // Дополнительная проверка через небольшой таймаут
-                    setTimeout(() => {
-                        if (categorySelect.value !== categoryIdStr) {
-                            console.warn('⚠️ Категория не установилась, пробуем снова...');
-                            categorySelect.value = categoryIdStr;
-                        }
-                    }, 50);
                 }, 0);
             }
-        } else {
-            console.warn('⚠️ Нет категорий для загрузки в select');
         }
     }
 
@@ -281,17 +225,14 @@ class RecipeEditApp extends BaseApiClient {
         container.innerHTML = '';
 
         if (ingredients && ingredients.length > 0) {
-            // Добавляем существующие ингредиенты
             ingredients.forEach((ingredient, index) => {
                 const row = this.createIngredientRow(ingredient, index === 0);
                 container.appendChild(row);
             });
 
-            // Добавляем одну пустую строку для нового ввода ПОСЛЕ существующих
             const emptyRow = this.createIngredientRow('', false);
             container.appendChild(emptyRow);
         } else {
-            // Для нового рецепта - одна пустая строка
             container.appendChild(this.createIngredientRow('', true));
         }
 
@@ -533,7 +474,6 @@ class RecipeEditApp extends BaseApiClient {
                 }
             });
 
-            // Добавляем обработчик для автоматического добавления нового поля при вводе
             container.addEventListener('keydown', (e) => {
                 if (e.target.classList.contains('ingredient-input')) {
                     this.handleIngredientKeydown(e);
@@ -547,8 +487,6 @@ class RecipeEditApp extends BaseApiClient {
         const lastRow = rows[rows.length - 1];
         const lastInput = lastRow.querySelector('.ingredient-input');
 
-        // Автоматически добавляем новое поле, если в текущем последнем поле есть текст
-        // и это поле действительно последнее
         if (input === lastInput && input.value.trim() !== '') {
             this.addIngredientField();
         }
@@ -560,12 +498,10 @@ class RecipeEditApp extends BaseApiClient {
         const lastRow = rows[rows.length - 1];
         const lastInput = lastRow.querySelector('.ingredient-input');
 
-        // Автоматическое добавление при нажатии Enter или Tab в последнем поле
         if ((e.key === 'Enter' || e.key === 'Tab') && input === lastInput && input.value.trim() !== '') {
             e.preventDefault();
             this.addIngredientField();
 
-            // Фокус на новое поле с небольшой задержкой
             setTimeout(() => {
                 const newRows = document.querySelectorAll('.ingredient-row');
                 const newLastRow = newRows[newRows.length - 1];
@@ -580,12 +516,9 @@ class RecipeEditApp extends BaseApiClient {
     addIngredientField() {
         const container = document.getElementById('ingredientsContainer');
         if (container) {
-            // Всегда добавляем новую строку ПОСЛЕ существующих
             const newRow = this.createIngredientRow();
             container.appendChild(newRow);
             this.updateRemoveButtons();
-
-            console.log('✅ Добавлена новая строка для ингредиента. Всего строк:', document.querySelectorAll('.ingredient-row').length);
         }
     }
 
@@ -603,9 +536,6 @@ class RecipeEditApp extends BaseApiClient {
         const rows = document.querySelectorAll('.ingredient-row');
         const ingredientRemoveButtons = document.querySelectorAll('.remove-ingredient');
 
-        console.log('🔄 Обновление кнопок удаления. Всего строк:', rows.length);
-
-        // Скрываем кнопку удаления только у первой строки, если всего одна строка
         ingredientRemoveButtons.forEach((btn, index) => {
             if (rows.length === 1 && index === 0) {
                 btn.style.display = 'none';
@@ -713,7 +643,6 @@ class RecipeEditApp extends BaseApiClient {
     }
 
     async saveRecipe(publish) {
-        // Защита от повторного нажатия
         if (this.isSaving) {
             return;
         }
@@ -741,7 +670,6 @@ class RecipeEditApp extends BaseApiClient {
         };
 
         try {
-            // Сохраняем оригинальные тексты кнопок перед показом состояния сохранения
             this.originalSaveDraftText = document.getElementById('saveDraftBtn').innerHTML;
             this.originalPublishText = document.getElementById('publishBtn').innerHTML;
 
@@ -755,13 +683,8 @@ class RecipeEditApp extends BaseApiClient {
             }
 
             if (response && response.success) {
-                const message = this.recipeId ?
-                    (publish ? this.getMessage('recipe.updated_published') : this.getMessage('recipe.updated_draft')) :
-                    (publish ? this.getMessage('recipe.created_published') : this.getMessage('recipe.created_draft'));
+                this.showSuccess(response.message);
 
-                this.showSuccess(message);
-
-                // Увеличиваем задержку перед переходом для лучшего UX
                 setTimeout(() => {
                     window.location.href = '/my-recipes';
                 }, 2000);
@@ -770,10 +693,7 @@ class RecipeEditApp extends BaseApiClient {
                 throw new Error(errorMessage);
             }
         } catch (error) {
-            console.error('Error saving recipe:', error);
             this.showError(error.message || this.getMessage('error.save_failed'));
-
-            // Восстанавливаем кнопки при ошибке
             this.showSavingState(false);
         } finally {
             this.isSaving = false;
@@ -789,7 +709,6 @@ class RecipeEditApp extends BaseApiClient {
             if (show) {
                 saveDraftBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span> ${this.getMessage('common.saving')}`;
             } else {
-                // Восстанавливаем оригинальный текст
                 saveDraftBtn.innerHTML = this.originalSaveDraftText || `💾 ${this.getMessage('recipe.save_draft')}`;
             }
         }
@@ -799,7 +718,6 @@ class RecipeEditApp extends BaseApiClient {
             if (show) {
                 publishBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span> ${this.getMessage('common.publishing')}`;
             } else {
-                // Восстанавливаем оригинальный текст
                 publishBtn.innerHTML = this.originalPublishText || `🚀 ${this.getMessage('recipe.publish')}`;
             }
         }
@@ -814,21 +732,17 @@ class RecipeEditApp extends BaseApiClient {
     }
 }
 
-// Делаем app глобально доступной для функций
 let recipeApp;
-
 document.addEventListener('DOMContentLoaded', () => {
     try {
         recipeApp = new RecipeEditApp();
-        window.recipeApp = recipeApp; // Делаем глобально доступной
+        window.recipeApp = recipeApp;
     } catch (error) {
-        console.error('Failed to initialize RecipeEditApp:', error);
         const errorAlert = document.getElementById('errorAlert');
         const errorMessage = document.getElementById('errorMessage');
         const loadingSpinner = document.getElementById('loadingSpinner');
 
         if (errorAlert && errorMessage) {
-            // Используем прямое обращение к i18nMessages, так как this недоступен
             const errorMsg = (window.i18nMessages?.['error.initialization'] || 'Ошибка инициализации: ') + error.message;
             errorMessage.textContent = errorMsg;
             errorAlert.style.display = 'block';

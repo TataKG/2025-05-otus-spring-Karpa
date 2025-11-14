@@ -14,11 +14,14 @@
             <div class="row mb-4">
                 <div class="col">
                     <h1 class="text-primary mb-2" id="pageHeader">
-                        <span th:if="${isEdit}">✏️ <span th:text="#{myrecipes.edit}">Редактирование рецепта</span></span>
-                        <span th:unless="${isEdit}">➕ <span th:text="#{myrecipes.create_new}">Создание нового рецепта</span></span>
+                        <span th:if="${isEdit}">✏️ <span
+                                th:text="#{myrecipes.edit}">Редактирование рецепта</span></span>
+                        <span th:unless="${isEdit}">➕ <span
+                                th:text="#{myrecipes.create_new}">Создание нового рецепта</span></span>
                     </h1>
                     <p class="lead text-muted" id="pageDescription">
-                        <span th:if="${isEdit}" th:text="#{myrecipes.edit_description}">Внесите изменения в ваш рецепт</span>
+                        <span th:if="${isEdit}"
+                              th:text="#{myrecipes.edit_description}">Внесите изменения в ваш рецепт</span>
                         <span th:unless="${isEdit}" th:text="#{myrecipes.create_description}">Заполните информацию о новом рецепте</span>
                     </p>
                 </div>
@@ -40,46 +43,54 @@
 
                     <!-- Заголовок -->
                     <div class="mb-3">
-                        <label for="title" class="form-label fw-bold" th:text="#{recipes.table.name}">Название рецепта *</label>
+                        <label for="title" class="form-label fw-bold" th:text="#{recipes.table.name}">Название рецепта
+                            *</label>
                         <input type="text" class="form-control" id="title" required
                                th:placeholder="#{recipe.title.placeholder}">
-                        <div class="invalid-feedback" th:text="#{validation.required}">Пожалуйста, введите название рецепта</div>
+                        <div class="invalid-feedback" th:text="#{validation.required}">Пожалуйста, введите название
+                            рецепта
+                        </div>
                     </div>
 
                     <!-- Категория -->
                     <div class="mb-3">
-                        <label for="category" class="form-label fw-bold" th:text="#{recipe.category}">Категория *</label>
+                        <label for="category" class="form-label fw-bold" th:text="#{recipe.category}">Категория
+                            *</label>
                         <select class="form-select" id="category" required>
                             <option value="" th:text="#{recipe.category.placeholder}">Выберите категорию</option>
                         </select>
-                        <div class="invalid-feedback" th:text="#{validation.required}">Пожалуйста, выберите категорию</div>
+                        <div class="invalid-feedback" th:text="#{validation.required}">Пожалуйста, выберите категорию
+                        </div>
                     </div>
                 </div>
 
                 <!-- Ингредиенты -->
                 <div class="form-section">
                     <h5>🛒 <span th:text="#{recipe.ingredients}">Ингредиенты</span></h5>
-                    <p class="text-muted mb-3" th:text="#{recipe.ingredients.description}">Добавьте все необходимые ингредиенты для рецепта</p>
+                    <p class="text-muted mb-3" th:text="#{recipe.ingredients.description}">Добавьте все необходимые
+                        ингредиенты для рецепта</p>
 
                     <div id="ingredientsContainer">
                         <div class="ingredient-row input-group mb-2">
                             <input type="text" class="form-control ingredient-input"
                                    th:placeholder="#{recipe.ingredient.placeholder}">
-                            <button type="button" class="btn btn-outline-danger remove-ingredient" style="display: none;">🗑️</button>
+                            <button type="button" class="btn btn-outline-danger remove-ingredient"
+                                    style="display: none;">🗑️
+                            </button>
                         </div>
                     </div>
-
-                    <!-- Убрана кнопка "Добавить" - ингредиенты добавляются автоматически -->
                 </div>
 
                 <!-- Инвентарь -->
                 <div class="form-section">
                     <h5>🔧 <span th:text="#{recipe.inventory}">Необходимый инвентарь</span></h5>
-                    <p class="text-muted mb-3" th:text="#{recipe.inventory.description}">Выберите кухонный инвентарь из справочника</p>
+                    <p class="text-muted mb-3" th:text="#{recipe.inventory.description}">Выберите кухонный инвентарь из
+                        справочника</p>
 
                     <!-- Поиск и добавление инвентаря -->
                     <div class="mb-3">
-                        <label for="inventorySearch" class="form-label fw-bold" th:text="#{recipe.inventory.search}">🔍 Поиск инвентаря</label>
+                        <label for="inventorySearch" class="form-label fw-bold" th:text="#{recipe.inventory.search}">🔍
+                            Поиск инвентаря</label>
                         <div class="input-group">
                             <input type="text" class="form-control" id="inventorySearch"
                                    th:placeholder="#{recipe.inventory.search.placeholder}">
@@ -87,8 +98,11 @@
                                 ➕ <span th:text="#{action.add}">Добавить</span>
                             </button>
                         </div>
-                        <select class="form-select mt-2" id="inventorySelect" size="5" style="max-height: 200px; overflow-y: auto;">
-                            <option value="" disabled selected th:text="#{recipe.inventory.search.start}">Начните вводить для поиска инвентаря</option>
+                        <select class="form-select mt-2" id="inventorySelect" size="5"
+                                style="max-height: 200px; overflow-y: auto;">
+                            <option value="" disabled selected th:text="#{recipe.inventory.search.start}">Начните
+                                вводить для поиска инвентаря
+                            </option>
                         </select>
                         <div class="form-text" th:text="#{recipe.inventory.search.help}">
                             Введите название инвентаря, выберите из списка и нажмите "Добавить"
@@ -97,9 +111,12 @@
 
                     <!-- Выбранный инвентарь -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold" th:text="#{recipe.inventory.selected}">✅ Выбранный инвентарь</label>
+                        <label class="form-label fw-bold" th:text="#{recipe.inventory.selected}">✅ Выбранный
+                            инвентарь</label>
                         <div id="inventoryContainer" class="border rounded p-3 bg-light">
-                            <div class="text-muted" id="noInventorySelected" th:text="#{recipe.inventory.none}">Инвентарь не выбран</div>
+                            <div class="text-muted" id="noInventorySelected" th:text="#{recipe.inventory.none}">
+                                Инвентарь не выбран
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -108,10 +125,13 @@
                 <div class="form-section">
                     <h5>📝 <span th:text="#{recipe.description}">Описание рецепта</span></h5>
                     <div class="mb-3">
-                        <label for="description" class="form-label fw-bold" th:text="#{recipe.description}">Подробное описание *</label>
+                        <label for="description" class="form-label fw-bold" th:text="#{recipe.description}">Подробное
+                            описание *</label>
                         <textarea class="form-control" id="description" rows="6" required
                                   th:placeholder="#{recipe.description.placeholder}"></textarea>
-                        <div class="invalid-feedback" th:text="#{validation.required}">Пожалуйста, заполните описание рецепта</div>
+                        <div class="invalid-feedback" th:text="#{validation.required}">Пожалуйста, заполните описание
+                            рецепта
+                        </div>
                     </div>
                 </div>
 
@@ -153,46 +173,13 @@
 
 <script th:src="@{/js/recipe-edit.js}"></script>
 
+<!-- УБИРАЕМ ВСЕ СООБЩЕНИЯ ИЗ UI -->
 <script th:inline="javascript">
     window.i18nMessages = {
         ...window.i18nMessages,
-        // Error messages
-        'error.load_form': 'Ошибка загрузки формы: ',
-        'error.empty_response': 'Пустой ответ от сервера',
-        'error.load_form_data': 'Не удалось загрузить данные формы',
-        'error.form_data_empty': 'Данные формы пусты',
-        'error.author_not_found': 'Автор не найден. Пожалуйста, войдите в систему.',
-        'error.save_unknown': 'Неизвестная ошибка при сохранении рецепта',
-        'error.save_failed': 'Не удалось сохранить рецепта',
-        'error.initialization': 'Ошибка инициализации: ',
-
-        // Inventory messages
-        'inventory.select_required': 'Пожалуйста, выберите инвентарь из списка',
-        'inventory.not_found': 'Выбранный инвентарь не найден',
-        'inventory.already_added': 'Этот инвентарь уже добавлен',
-        'inventory.added': 'Инвентарь "{name}" добавлен',
-        'inventory.removed': 'Инвентарь удален',
-        'inventory.remove': 'Удалить инвентарь',
-        'inventory.search.no_results': 'Ничего не найдено для "{searchTerm}"',
-
-        // Validation messages
-        'validation.title.required': 'Название рецепта обязательно для заполнения',
-        'validation.category.required': 'Пожалуйста, выберите категорию',
-        'validation.ingredients.required': 'Добавьте хотя бы один ингредиент',
-        'validation.description.required': 'Описание рецепта обязательно для заполнения',
-
-        // Success messages
-        'recipe.updated_published': 'Рецепт успешно обновлен и опубликован',
-        'recipe.updated_draft': 'Рецепт успешно сохранен как черновик',
-        'recipe.created_published': 'Рецепт успешно создан и опубликован',
-        'recipe.created_draft': 'Рецепт успешно сохранен как черновик',
-        'recipe.inventory.none': 'Инвентарь не выбран',
-        'recipe.category.placeholder': 'Выберите категорию...',
-        'recipe.ingredient.placeholder': 'Например, Мука 200г...',
-
-        // Common
-        'common.saving': 'Сохранение...',
-        'common.publishing': 'Публикация...'
+        // ТОЛЬКО ТЕХНИЧЕСКИЕ СООБЩЕНИЯ, которые не приходят с бэкенда
+        'common.saving': /*[[#{common.saving}]]*/ 'Сохранение...',
+        'common.publishing': /*[[#{common.publishing}]]*/ 'Публикация...'
     };
 </script>
 
@@ -223,30 +210,5 @@
         transform: scale(1.1);
     }
 </style>
-<script th:inline="javascript">
-    /*<![CDATA[*/
-    window.collectFormData = function() {
-        const title = document.getElementById('title')?.value || '';
-        const category = document.getElementById('category')?.value || '';
-        const description = document.getElementById('description')?.value || '';
-
-        // Собираем ингредиенты
-        const ingredients = Array.from(document.querySelectorAll('.ingredient-input'))
-            .map(input => input.value.trim())
-            .filter(val => val !== '');
-
-        // Собираем инвентарь (используем текущее состояние из app)
-        const selectedInventory = window.recipeApp?.selectedInventory || [];
-
-        return {
-            title,
-            category,
-            description,
-            ingredients,
-            selectedInventory
-        };
-    };
-    /*]]>*/
-</script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 package ru.otus.hw.services;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.converters.RecipeConverter;
@@ -16,6 +17,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -66,17 +68,25 @@ public class RecipeServiceImpl implements RecipeService {
                                                List<String> ingredients, String description,
                                                List<Long> inventoryIds, boolean published) {
 
+        log.debug("Creating recipe with title: {}, category: {}, author: {}", title, categoryId, authorId);
+
         validateIngredientsBusinessRules(ingredients);
 
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        messageProvider.getMessage("category.not_found", categoryId)
-                ));
+                .orElseThrow(() -> {
+                    log.warn("Category not found: {}", categoryId);
+                    return new EntityNotFoundException(
+                            messageProvider.getMessage("category.not_found", categoryId)
+                    );
+                });
 
         Author author = authorRepository.findById(authorId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        messageProvider.getMessage("author.not_found", authorId)
-                ));
+                .orElseThrow(() -> {
+                    log.warn("Author not found: {}", authorId);
+                    return new EntityNotFoundException(
+                            messageProvider.getMessage("author.not_found", authorId)
+                    );
+                });
 
         Recipe recipe = new Recipe(title.trim(), category, author, description.trim());
 
@@ -97,10 +107,13 @@ public class RecipeServiceImpl implements RecipeService {
                 List<Inventory> inventoryItems = new ArrayList<>();
                 inventoryRepository.findAllById(validInventoryIds).forEach(inventoryItems::add);
                 recipe.getInventoryItems().addAll(inventoryItems);
+                log.debug("Added {} inventory items to recipe", inventoryItems.size());
             }
         }
 
         Recipe savedRecipe = recipeRepository.save(recipe);
+        log.info("Recipe created successfully with id: {}", savedRecipe.getId());
+
         return recipeConverter.toDto(savedRecipe);
     }
 
@@ -109,36 +122,42 @@ public class RecipeServiceImpl implements RecipeService {
     public RecipeDto updateRecipe(Long id, String title, Long categoryId, Long authorId,
                                   List<String> ingredients, String description,
                                   List<Long> inventoryIds, boolean published) {
-        try {
 
-            validateIngredientsBusinessRules(ingredients);
+        log.debug("Updating recipe with id: {}", id);
 
-            Recipe recipe = recipeRepository.findByIdWithBasicRelations(id)
-                    .orElseThrow(() -> new EntityNotFoundException(
+        validateIngredientsBusinessRules(ingredients);
+
+        Recipe recipe = recipeRepository.findByIdWithBasicRelations(id)
+                .orElseThrow(() -> {
+                    log.warn("Recipe not found for update: {}", id);
+                    return new EntityNotFoundException(
                             messageProvider.getMessage("recipe.not_found", id)
-                    ));
+                    );
+                });
 
-            Category category = categoryRepository.findById(categoryId)
-                    .orElseThrow(() -> new EntityNotFoundException(
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> {
+                    log.warn("Category not found for update: {}", categoryId);
+                    return new EntityNotFoundException(
                             messageProvider.getMessage("category.not_found", categoryId)
-                    ));
+                    );
+                });
 
-            recipe.setTitle(title.trim());
-            recipe.setCategory(category);
-            recipe.setDescription(description.trim());
-            recipe.setPublished(published);
+        recipe.setTitle(title.trim());
+        recipe.setCategory(category);
+        recipe.setDescription(description.trim());
+        recipe.setPublished(published);
 
-            updateRecipeIngredients(recipe, ingredients);
+        updateRecipeIngredients(recipe, ingredients);
 
-            updateRecipeInventory(recipe, inventoryIds);
+        updateRecipeInventory(recipe, inventoryIds);
 
-            Recipe savedRecipe = recipeRepository.save(recipe);
-            return recipeConverter.toDto(savedRecipe);
-        } catch (Exception e) {
-            System.err.println("Error updating recipe: " + e.getMessage());
-            throw e;
-        }
+        Recipe savedRecipe = recipeRepository.save(recipe);
+        log.info("Recipe updated successfully with id: {}", savedRecipe.getId());
+
+        return recipeConverter.toDto(savedRecipe);
     }
+
 
     @Override
     public Optional<RecipeDto> getRecipeByIdWithAllRelations(Long id) {
