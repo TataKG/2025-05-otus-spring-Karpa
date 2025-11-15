@@ -14,7 +14,7 @@ import jakarta.persistence.EntityNotFoundException;
 import ru.otus.hw.dto.ApiResponse;
 import ru.otus.hw.exceptions.EntityAlreadyExistsException;
 import ru.otus.hw.exceptions.ValidationException;
-import ru.otus.hw.util.MessageProvider;
+import ru.otus.hw.utils.MessageProvider;
 
 import java.util.Objects;
 import java.util.stream.Collectors;

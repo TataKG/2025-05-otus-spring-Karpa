@@ -1,4 +1,4 @@
-package ru.otus.hw.security;
+package ru.otus.hw.config;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

@@ -11,7 +11,7 @@ import ru.otus.hw.models.Author;
 import ru.otus.hw.models.User;
 import ru.otus.hw.repositories.AuthorRepository;
 import ru.otus.hw.repositories.UserRepository;
-import ru.otus.hw.util.MessageProvider;
+import ru.otus.hw.utils.MessageProvider;
 
 import java.util.List;
 import java.util.Optional;

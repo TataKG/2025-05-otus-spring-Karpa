@@ -15,7 +15,7 @@ import ru.otus.hw.models.*;
 import ru.otus.hw.repositories.CommentRepository;
 import ru.otus.hw.repositories.RecipeRepository;
 import ru.otus.hw.repositories.UserRepository;
-import ru.otus.hw.util.MessageProvider;
+import ru.otus.hw.utils.MessageProvider;
 
 import java.time.LocalDateTime;
 import java.util.List;

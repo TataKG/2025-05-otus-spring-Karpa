@@ -18,7 +18,7 @@ import ru.otus.hw.dto.ApiResponse;
 import ru.otus.hw.dto.AuthorDto;
 import ru.otus.hw.dto.UserDto;
 import ru.otus.hw.services.AuthorService;
-import ru.otus.hw.util.MessageProvider;
+import ru.otus.hw.utils.MessageProvider;
 
 import java.time.LocalDateTime;
 import java.util.Collections;

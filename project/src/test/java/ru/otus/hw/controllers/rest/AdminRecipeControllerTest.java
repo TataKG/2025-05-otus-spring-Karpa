@@ -21,7 +21,7 @@ import ru.otus.hw.dto.InventoryDto;
 import ru.otus.hw.dto.RecipeDto;
 import ru.otus.hw.dto.UserDto;
 import ru.otus.hw.services.RecipeService;
-import ru.otus.hw.util.MessageProvider;
+import ru.otus.hw.utils.MessageProvider;
 
 import java.time.LocalDateTime;
 import java.util.Collections;

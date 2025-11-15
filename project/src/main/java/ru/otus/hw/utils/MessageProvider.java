@@ -1,4 +1,4 @@
-package ru.otus.hw.util;
+package ru.otus.hw.utils;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;

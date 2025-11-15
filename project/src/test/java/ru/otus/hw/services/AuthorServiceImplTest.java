@@ -18,7 +18,7 @@ import ru.otus.hw.models.Recipe;
 import ru.otus.hw.models.User;
 import ru.otus.hw.repositories.AuthorRepository;
 import ru.otus.hw.repositories.UserRepository;
-import ru.otus.hw.util.MessageProvider;
+import ru.otus.hw.utils.MessageProvider;
 
 import java.time.LocalDateTime;
 import java.util.List;

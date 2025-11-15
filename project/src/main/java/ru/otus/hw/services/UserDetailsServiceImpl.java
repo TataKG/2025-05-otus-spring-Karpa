@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.models.User;
 import ru.otus.hw.repositories.UserRepository;
-import ru.otus.hw.util.MessageProvider;
+import ru.otus.hw.utils.MessageProvider;
 
 import java.util.List;
 import java.util.stream.Collectors;

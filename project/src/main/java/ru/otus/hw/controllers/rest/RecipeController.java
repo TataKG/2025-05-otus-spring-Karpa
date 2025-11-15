@@ -14,7 +14,7 @@ import ru.otus.hw.services.CategoryService;
 import ru.otus.hw.services.CommentService;
 import ru.otus.hw.services.InventoryService;
 import ru.otus.hw.services.RecipeService;
-import ru.otus.hw.util.MessageProvider;
+import ru.otus.hw.utils.MessageProvider;
 
 import java.util.ArrayList;
 import java.util.List;

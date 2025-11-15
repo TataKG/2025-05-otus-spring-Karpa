@@ -12,7 +12,7 @@ import ru.otus.hw.dto.*;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.models.*;
 import ru.otus.hw.repositories.*;
-import ru.otus.hw.util.MessageProvider;
+import ru.otus.hw.utils.MessageProvider;
 
 import java.time.LocalDateTime;
 import java.util.List;

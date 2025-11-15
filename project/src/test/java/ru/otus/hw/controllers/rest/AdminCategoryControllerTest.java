@@ -19,7 +19,7 @@ import ru.otus.hw.dto.CategoryDto;
 import ru.otus.hw.exceptions.EntityAlreadyExistsException;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.services.CategoryService;
-import ru.otus.hw.util.MessageProvider;
+import ru.otus.hw.utils.MessageProvider;
 
 import java.time.LocalDateTime;
 import java.util.Collections;

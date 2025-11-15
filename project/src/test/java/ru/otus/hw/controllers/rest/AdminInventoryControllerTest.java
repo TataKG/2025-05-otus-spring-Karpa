@@ -20,7 +20,7 @@ import ru.otus.hw.dto.InventoryWithUsageDto;
 import ru.otus.hw.exceptions.EntityAlreadyExistsException;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.services.InventoryService;
-import ru.otus.hw.util.MessageProvider;
+import ru.otus.hw.utils.MessageProvider;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
