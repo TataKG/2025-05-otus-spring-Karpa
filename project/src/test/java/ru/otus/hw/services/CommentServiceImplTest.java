@@ -442,7 +442,6 @@ class CommentServiceImplTest {
         when(messageProvider.getMessage("comment.content.empty"))
                 .thenReturn("Текст комментария не может быть пустым");
 
-        // Act & Assert
         assertThatThrownBy(() -> commentService.createCommentForRecipe(
                 content,
                 EXISTING_USERNAME,

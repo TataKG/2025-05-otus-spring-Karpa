@@ -65,25 +65,32 @@ class CommonUtils {
     static showToast(message, type = 'success') {
         if (typeof bootstrap === 'undefined') {
             console.warn('Bootstrap not available for toast');
+            alert(message); // Fallback
             return;
         }
 
-        const toastElement = type === 'success'
-            ? document.getElementById('successToast')
-            : document.getElementById('errorToast');
+        const toastId = type === 'success' ? 'successToast' : 'errorToast';
+        const messageId = type === 'success' ? 'successToastMessage' : 'errorToastMessage';
 
-        const toastMessage = type === 'success'
-            ? document.getElementById('successToastMessage')
-            : document.getElementById('errorToastMessage');
+        const toastElement = document.getElementById(toastId);
+        const toastMessage = document.getElementById(messageId);
 
-        if (toastMessage && toastElement) {
-            toastMessage.textContent = message;
-            try {
-                const toast = new bootstrap.Toast(toastElement);
-                toast.show();
-            } catch (error) {
-                console.error('Error showing toast:', error);
-            }
+        if (!toastElement || !toastMessage) {
+            console.error('Toast elements not found');
+            alert(message); // Fallback
+            return;
+        }
+
+        // Устанавливаем сообщение
+        toastMessage.textContent = message;
+
+        try {
+            // Создаем экземпляр тоста и показываем
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+        } catch (error) {
+            console.error('Error showing toast:', error);
+            alert(message); // Fallback
         }
     }
 
@@ -223,12 +230,34 @@ class BaseApiClient {
 
             if (!response.ok) {
                 const errorMessage = data?.message || data?.error || `HTTP error ${response.status}`;
+
+                // АВТОМАТИЧЕСКИ ПОКАЗЫВАЕМ СООБЩЕНИЕ ОБ ОШИБКЕ
+                if (data?.message) {
+                    CommonUtils.showToast(data.message, 'error');
+                } else {
+                    CommonUtils.showToast(errorMessage, 'error');
+                }
+
                 throw new Error(errorMessage);
+            }
+
+            // АВТОМАТИЧЕСКИ ПОКАЗЫВАЕМ УСПЕШНЫЕ СООБЩЕНИЯ
+            if (data?.success && data?.message) {
+                CommonUtils.showToast(data.message, 'success');
             }
 
             return data;
         } catch (error) {
             console.error(`API request failed for ${url}:`, error);
+
+            // ПОКАЗЫВАЕМ СООБЩЕНИЕ ОБ ОШИБКЕ СЕТИ
+            if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                CommonUtils.showToast('Ошибка сети. Проверьте подключение к интернету.', 'error');
+            } else if (!error.message.includes('HTTP error')) {
+                // Показываем только если это не HTTP ошибка (они уже показаны выше)
+                CommonUtils.showToast(error.message || 'Произошла ошибка', 'error');
+            }
+
             throw error;
         }
     }

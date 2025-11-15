@@ -1,5 +1,8 @@
 package ru.otus.hw.controllers.rest;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +34,7 @@ public class CommentController {
     @PostMapping
     public ResponseEntity<ApiResponse<CommentDto>> createComment(
             @PathVariable Long recipeId,
-            @RequestBody CreateCommentRequest request,
+            @Valid @RequestBody CreateCommentRequest request,
             Authentication authentication) {
 
         try {
@@ -86,7 +89,7 @@ public class CommentController {
     public ResponseEntity<ApiResponse<CommentDto>> updateComment(
             @PathVariable Long recipeId,
             @PathVariable Long commentId,
-            @RequestBody UpdateCommentRequest request,
+            @Valid @RequestBody UpdateCommentRequest request,
             Authentication authentication) {
 
         try {
@@ -151,9 +154,17 @@ public class CommentController {
         }
     }
 
-    public record CreateCommentRequest(String content) {
+    public record CreateCommentRequest(
+            @NotBlank(message = "{comment.content.required}")
+            @Size(min = 1, max = 1000, message = "{comment.content.length}")
+            String content
+    ) {
     }
 
-    public record UpdateCommentRequest(String content) {
+    public record UpdateCommentRequest(
+            @NotBlank(message = "{comment.content.required}")
+            @Size(min = 1, max = 1000, message = "{comment.content.length}")
+            String content
+    ) {
     }
 }

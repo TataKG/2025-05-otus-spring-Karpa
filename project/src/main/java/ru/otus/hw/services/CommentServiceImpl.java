@@ -31,7 +31,8 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public CommentDto createCommentForRecipe(String content, String username, Long recipeId) {
-        if (content == null || content.trim().isEmpty()) {
+        String trimmedContent = content.trim();
+        if (trimmedContent.isEmpty()) {
             throw new IllegalArgumentException(
                     messageProvider.getMessage("comment.content.empty")
             );
@@ -86,6 +87,13 @@ public class CommentServiceImpl implements CommentService {
         if (!comment.getUser().getId().equals(currentUserId)) {
             throw new SecurityException(
                     messageProvider.getMessage("comment.edit_denied")
+            );
+        }
+
+        String trimmedContent = content.trim();
+        if (trimmedContent.isEmpty()) {
+            throw new IllegalArgumentException(
+                    messageProvider.getMessage("comment.content.empty")
             );
         }
 

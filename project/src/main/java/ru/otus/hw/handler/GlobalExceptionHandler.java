@@ -1,5 +1,6 @@
 package ru.otus.hw.handler;
 
+import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -74,9 +75,12 @@ public class GlobalExceptionHandler {
         log.warn("Validation error: {}", ex.getMessage());
 
         String errorMessage = ex.getBindingResult().getFieldErrors().stream()
-                .map(this::getValidationErrorMessage)
+                .map(FieldError::getDefaultMessage)
                 .filter(Objects::nonNull)
+                .distinct()
                 .collect(Collectors.joining(", "));
+
+        log.warn("Validation errors: {}", errorMessage);
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(errorMessage));
@@ -94,10 +98,9 @@ public class GlobalExceptionHandler {
         log.warn("Constraint violation: {}", ex.getMessage());
 
         String errorMessage = ex.getConstraintViolations().stream()
-                .map(violation -> {
-                    String message = violation.getMessage();
-                    return resolveMessageFromTemplate(message);
-                })
+                .map(ConstraintViolation::getMessage)
+                .filter(Objects::nonNull)
+                .distinct()
                 .collect(Collectors.joining(", "));
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
