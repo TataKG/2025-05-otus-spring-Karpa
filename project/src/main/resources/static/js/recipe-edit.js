@@ -1,4 +1,4 @@
-// recipe-edit.js - для страницы создания/редактирования рецептов
+// recipe-edit.js - улучшенная обработка ошибок валидации с бэкенда
 class RecipeEditApp extends BaseApiClient {
     constructor() {
         super('/api/recipes');
@@ -9,7 +9,6 @@ class RecipeEditApp extends BaseApiClient {
         this.selectedInventory = [];
         this.availableInventory = [];
         this.isInitialized = false;
-        this.isRestoringData = false;
         this.isSaving = false;
         this.init();
     }
@@ -18,10 +17,7 @@ class RecipeEditApp extends BaseApiClient {
         this.showLoadingState();
         try {
             await this.loadFormData();
-            this.setupIngredientHandlers();
-            this.setupInventoryHandlers();
-            this.setupFormHandlers();
-            this.setupValidation();
+            this.setupEventHandlers();
             this.isInitialized = true;
         } catch (error) {
             this.showLoadError(this.getMessage('error.load_form') + error.message);
@@ -34,13 +30,13 @@ class RecipeEditApp extends BaseApiClient {
 
     showLoadingState() {
         document.getElementById('loadingSpinner').style.display = 'block';
-        document.getElementById('recipeFormContainer').style.display = 'none';
+        document.getElementById('recipeForm').style.display = 'none';
         document.getElementById('errorAlert').style.display = 'none';
     }
 
     showLoadError(message) {
         document.getElementById('loadingSpinner').style.display = 'none';
-        document.getElementById('recipeFormContainer').style.display = 'none';
+        document.getElementById('recipeForm').style.display = 'none';
         document.getElementById('errorAlert').style.display = 'block';
         document.getElementById('errorMessage').textContent = message;
     }
@@ -48,33 +44,24 @@ class RecipeEditApp extends BaseApiClient {
     async loadFormData() {
         try {
             const isEdit = window.location.pathname.includes('/edit/');
-            let url;
-
-            if (isEdit) {
-                const recipeId = window.location.pathname.split('/').pop();
-                this.recipeId = recipeId;
-                url = `/edit-form-data/${recipeId}`;
-            } else {
-                url = '/create-form-data';
-            }
+            const url = isEdit
+                ? `/edit-form-data/${window.location.pathname.split('/').pop()}`
+                : '/create-form-data';
 
             const response = await this.get(url);
-            if (!response) {
-                throw new Error(this.getMessage('error.empty_response'));
+
+            if (!response?.success) {
+                throw new Error(response?.message || this.getMessage('error.load_form_data'));
             }
 
-            if (response.success) {
-                this.populateForm(response.data);
-            } else {
-                throw new Error(response.message || this.getMessage('error.load_form_data'));
-            }
+            this.populateForm(response.data);
         } catch (error) {
             throw new Error(this.getMessage('error.load_form') + error.message);
         }
     }
 
     populateForm(formData) {
-        if (!formData) {
+        if (!formData?.recipe) {
             throw new Error(this.getMessage('error.form_data_empty'));
         }
 
@@ -83,139 +70,47 @@ class RecipeEditApp extends BaseApiClient {
         this.categories = categories || [];
         this.inventoryItems = inventoryItems || [];
         this.availableInventory = [...this.inventoryItems];
+        this.authorId = recipe.author?.id;
 
-        if (recipe && recipe.author && recipe.author.id) {
-            this.authorId = recipe.author.id;
-        } else if (formData.authorId) {
-            this.authorId = formData.authorId;
-        } else if (formData.currentAuthorId) {
-            this.authorId = formData.currentAuthorId;
-        } else {
+        if (!this.authorId) {
             throw new Error(this.getMessage('error.author_not_found'));
         }
 
-        const savedData = localStorage.getItem('pendingFormData');
-        const languageChanged = localStorage.getItem('pendingLanguageChange');
+        // Заполняем форму данными
+        document.getElementById('authorId').value = this.authorId;
 
-        if (savedData && languageChanged === 'true') {
-            this.isRestoringData = true;
-            this.populateWithRestoration(recipe, savedData);
-        } else {
-            this.populateNormal(recipe);
-        }
-
-        document.getElementById('loadingSpinner').style.display = 'none';
-        document.getElementById('recipeFormContainer').style.display = 'block';
-        document.getElementById('errorAlert').style.display = 'none';
-
-        if (this.isRestoringData) {
-            setTimeout(() => {
-                localStorage.removeItem('pendingFormData');
-                localStorage.removeItem('pendingLanguageChange');
-                this.isRestoringData = false;
-            }, 500);
-        }
-    }
-
-    populateNormal(recipe) {
-        if (recipe && recipe.title) {
+        if (recipe.title) {
             document.getElementById('title').value = recipe.title;
         }
 
-        if (recipe && recipe.description) {
+        if (recipe.description) {
             document.getElementById('description').value = recipe.description;
         }
 
-        this.populateCategories(recipe?.category);
-        this.populateIngredients(recipe?.ingredients || []);
-        this.populateInventory(recipe?.inventoryItems || []);
-    }
+        this.populateCategories(recipe.category);
+        this.populateIngredients(recipe.ingredients || []);
+        this.populateInventory(recipe.inventoryItems || []);
 
-    populateWithRestoration(recipe, savedData) {
-        try {
-            const formData = JSON.parse(savedData);
-
-            if (document.getElementById('title')) {
-                document.getElementById('title').value = formData.title || '';
-            }
-
-            if (document.getElementById('description')) {
-                document.getElementById('description').value = formData.description || '';
-            }
-
-            this.populateCategoriesWithRestore(formData.category);
-
-            if (formData.ingredients && Array.isArray(formData.ingredients)) {
-                this.populateIngredients(formData.ingredients);
-            } else {
-                this.populateIngredients([]);
-            }
-
-            if (formData.selectedInventory && Array.isArray(formData.selectedInventory)) {
-                this.selectedInventory = formData.selectedInventory;
-                this.updateAvailableInventory();
-                this.renderSelectedInventory();
-                this.renderInventorySelect();
-            } else {
-                this.populateInventory([]);
-            }
-
-        } catch (error) {
-            this.populateNormal(recipe);
-        }
+        // Показываем форму
+        document.getElementById('loadingSpinner').style.display = 'none';
+        document.getElementById('recipeForm').style.display = 'block';
     }
 
     populateCategories(selectedCategory) {
         const categorySelect = document.getElementById('category');
         if (!categorySelect) return;
 
-        categorySelect.innerHTML = '';
+        categorySelect.innerHTML = '<option value="">' + this.getMessage('recipe.category.placeholder') + '</option>';
 
-        const emptyOption = document.createElement('option');
-        emptyOption.value = "";
-        emptyOption.textContent = this.getMessage('recipe.category.placeholder');
-        categorySelect.appendChild(emptyOption);
-
-        if (this.categories && this.categories.length > 0) {
-            this.categories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = String(category.id);
-                option.textContent = category.name;
-
-                if (selectedCategory && selectedCategory.id === category.id) {
-                    option.selected = true;
-                }
-                categorySelect.appendChild(option);
-            });
-        }
-    }
-
-    populateCategoriesWithRestore(savedCategoryId) {
-        const categorySelect = document.getElementById('category');
-        if (!categorySelect) return;
-
-        categorySelect.innerHTML = '';
-
-        const emptyOption = document.createElement('option');
-        emptyOption.value = "";
-        emptyOption.textContent = this.getMessage('recipe.category.placeholder');
-        categorySelect.appendChild(emptyOption);
-
-        if (this.categories && this.categories.length > 0) {
-            this.categories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = String(category.id);
-                option.textContent = category.name;
-                categorySelect.appendChild(option);
-            });
-
-            if (savedCategoryId) {
-                const categoryIdStr = String(savedCategoryId);
-                setTimeout(() => {
-                    categorySelect.value = categoryIdStr;
-                }, 0);
+        this.categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            if (selectedCategory && selectedCategory.id === category.id) {
+                option.selected = true;
             }
-        }
+            categorySelect.appendChild(option);
+        });
     }
 
     populateIngredients(ingredients) {
@@ -224,41 +119,91 @@ class RecipeEditApp extends BaseApiClient {
 
         container.innerHTML = '';
 
-        if (ingredients && ingredients.length > 0) {
-            ingredients.forEach((ingredient, index) => {
-                const row = this.createIngredientRow(ingredient, index === 0);
-                container.appendChild(row);
-            });
+        const ingredientsToShow = ingredients.length > 0 ? ingredients : [''];
 
-            const emptyRow = this.createIngredientRow('', false);
-            container.appendChild(emptyRow);
-        } else {
-            container.appendChild(this.createIngredientRow('', true));
-        }
+        ingredientsToShow.forEach((ingredient, index) => {
+            const row = this.createIngredientRow(ingredient, index === 0);
+            container.appendChild(row);
+        });
 
         this.updateRemoveButtons();
     }
 
     populateInventory(selectedInventory) {
-        this.selectedInventory = [];
-
-        if (selectedInventory && selectedInventory.length > 0) {
-            selectedInventory.forEach(item => {
-                const fullInventoryItem = this.inventoryItems.find(inv => inv.id === item.id);
-                if (fullInventoryItem) {
-                    this.selectedInventory.push(fullInventoryItem);
-                }
-            });
-        }
+        this.selectedInventory = selectedInventory.filter(item =>
+            this.inventoryItems.some(inv => inv.id === item.id)
+        );
 
         this.updateAvailableInventory();
         this.renderSelectedInventory();
         this.renderInventorySelect();
     }
 
-    updateAvailableInventory() {
-        const selectedIds = this.selectedInventory.map(item => item.id);
-        this.availableInventory = this.inventoryItems.filter(item => !selectedIds.includes(item.id));
+    setupEventHandlers() {
+        this.setupFormHandler();
+        this.setupIngredientHandlers();
+        this.setupInventoryHandlers();
+        this.setupFieldValidation();
+    }
+
+    setupFormHandler() {
+        const form = document.getElementById('recipeForm');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const isPublish = e.submitter?.value === 'true';
+                this.saveRecipe(isPublish);
+            });
+        }
+    }
+
+    setupFieldValidation() {
+        // Базовая подсветка полей при вводе
+        const fields = ['title', 'category', 'description'];
+        fields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('input', () => {
+                    field.classList.remove('is-invalid');
+                    field.classList.remove('is-valid');
+                });
+            }
+        });
+
+        // Подсветка ингредиентов
+        const ingredientsContainer = document.getElementById('ingredientsContainer');
+        if (ingredientsContainer) {
+            ingredientsContainer.addEventListener('input', (e) => {
+                if (e.target.classList.contains('ingredient-input')) {
+                    e.target.classList.remove('is-invalid');
+                    e.target.classList.remove('is-valid');
+                }
+            });
+        }
+    }
+
+    setupIngredientHandlers() {
+        const container = document.getElementById('ingredientsContainer');
+        if (!container) return;
+
+        container.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-ingredient')) {
+                this.removeIngredientField(e.target);
+            }
+        });
+
+        container.addEventListener('input', (e) => {
+            if (e.target.classList.contains('ingredient-input')) {
+                this.handleIngredientInput(e.target);
+            }
+        });
+
+        container.addEventListener('keydown', (e) => {
+            if (e.target.classList.contains('ingredient-input') && e.key === 'Enter') {
+                e.preventDefault();
+                this.handleIngredientEnter(e.target);
+            }
+        });
     }
 
     setupInventoryHandlers() {
@@ -270,20 +215,9 @@ class RecipeEditApp extends BaseApiClient {
             searchInput.addEventListener('input', (e) => {
                 this.filterInventoryOptions(e.target.value);
             });
-
-            searchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.addSelectedInventory();
-                }
-            });
         }
 
         if (select) {
-            select.addEventListener('change', () => {
-                this.updateAddButtonState();
-            });
-
             select.addEventListener('dblclick', () => {
                 this.addSelectedInventory();
             });
@@ -296,6 +230,68 @@ class RecipeEditApp extends BaseApiClient {
         }
     }
 
+    // Методы для работы с ингредиентами
+    createIngredientRow(value = '', isFirst = false) {
+        const row = document.createElement('div');
+        row.className = 'ingredient-row input-group mb-2';
+        row.innerHTML = `
+            <input type="text" class="form-control ingredient-input" name="ingredients"
+                   value="${CommonUtils.escapeHtml(value)}"
+                   placeholder="${this.getMessage('recipe.ingredient.placeholder')}">
+            <button type="button" class="btn btn-outline-danger remove-ingredient"
+                    ${isFirst ? 'style="display: none;"' : ''}>🗑️</button>
+        `;
+        return row;
+    }
+
+    handleIngredientInput(input) {
+        const rows = document.querySelectorAll('.ingredient-row');
+        const lastInput = rows[rows.length - 1]?.querySelector('.ingredient-input');
+
+        if (input === lastInput && input.value.trim()) {
+            this.addIngredientField();
+        }
+    }
+
+    handleIngredientEnter(input) {
+        const rows = document.querySelectorAll('.ingredient-row');
+        const lastInput = rows[rows.length - 1]?.querySelector('.ingredient-input');
+
+        if (input === lastInput && input.value.trim()) {
+            this.addIngredientField();
+            setTimeout(() => {
+                const newRows = document.querySelectorAll('.ingredient-row');
+                newRows[newRows.length - 1]?.querySelector('.ingredient-input')?.focus();
+            }, 10);
+        }
+    }
+
+    addIngredientField() {
+        const container = document.getElementById('ingredientsContainer');
+        if (container) {
+            container.appendChild(this.createIngredientRow());
+            this.updateRemoveButtons();
+        }
+    }
+
+    removeIngredientField(button) {
+        const rows = document.querySelectorAll('.ingredient-row');
+        if (rows.length > 1) {
+            button.closest('.ingredient-row').remove();
+            this.updateRemoveButtons();
+        }
+    }
+
+    updateRemoveButtons() {
+        const rows = document.querySelectorAll('.ingredient-row');
+        const buttons = document.querySelectorAll('.remove-ingredient');
+
+        buttons.forEach((btn, index) => {
+            btn.style.display = rows.length === 1 && index === 0 ? 'none' : 'block';
+        });
+    }
+
+    // Методы для работы с инвентарем
     filterInventoryOptions(searchTerm) {
         const select = document.getElementById('inventorySelect');
         if (!select) return;
@@ -303,99 +299,61 @@ class RecipeEditApp extends BaseApiClient {
         const searchLower = searchTerm.toLowerCase().trim();
         select.innerHTML = '';
 
-        if (!searchTerm) {
-            this.availableInventory.forEach(inventory => {
+        const filtered = searchTerm
+            ? this.availableInventory.filter(item =>
+                item.name.toLowerCase().includes(searchLower) ||
+                item.description?.toLowerCase().includes(searchLower)
+              )
+            : this.availableInventory;
+
+        if (filtered.length > 0) {
+            filtered.forEach(item => {
                 const option = document.createElement('option');
-                option.value = inventory.id;
-                option.textContent = inventory.name;
-                if (inventory.description) {
-                    option.title = inventory.description;
-                }
+                option.value = item.id;
+                option.textContent = item.name;
+                option.title = item.description || '';
                 select.appendChild(option);
             });
         } else {
-            const filteredInventory = this.availableInventory.filter(inventory =>
-                inventory.name.toLowerCase().includes(searchLower) ||
-                (inventory.description && inventory.description.toLowerCase().includes(searchLower))
-            );
-
-            if (filteredInventory.length > 0) {
-                filteredInventory.forEach(inventory => {
-                    const option = document.createElement('option');
-                    option.value = inventory.id;
-                    option.textContent = inventory.name;
-                    if (inventory.description) {
-                        option.title = inventory.description;
-                    }
-                    select.appendChild(option);
-                });
-                select.selectedIndex = 0;
-            } else {
-                const noResultsOption = document.createElement('option');
-                noResultsOption.value = "";
-                noResultsOption.textContent = this.getMessage('inventory.search.no_results').replace('{searchTerm}', searchTerm);
-                noResultsOption.disabled = true;
-                select.appendChild(noResultsOption);
-            }
+            const option = document.createElement('option');
+            option.disabled = true;
+            option.textContent = this.getMessage('inventory.search.no_results');
+            select.appendChild(option);
         }
-
-        this.updateAddButtonState();
     }
 
     addSelectedInventory() {
         const select = document.getElementById('inventorySelect');
-        const searchInput = document.getElementById('inventorySearch');
-
-        if (!select || !select.value) {
-            this.showError(this.getMessage('inventory.select_required'));
-            return;
-        }
-
         const selectedId = parseInt(select.value);
+
         if (!selectedId) return;
 
-        const selectedInventory = this.inventoryItems.find(item => item.id === selectedId);
-        if (!selectedInventory) {
-            this.showError(this.getMessage('inventory.not_found'));
-            return;
-        }
+        const inventory = this.inventoryItems.find(item => item.id === selectedId);
+        if (!inventory || this.selectedInventory.some(item => item.id === selectedId)) return;
 
-        if (this.selectedInventory.some(item => item.id === selectedId)) {
-            this.showError(this.getMessage('inventory.already_added'));
-            return;
-        }
-
-        this.selectedInventory.push(selectedInventory);
+        this.selectedInventory.push(inventory);
         this.updateAvailableInventory();
         this.renderSelectedInventory();
         this.renderInventorySelect();
 
-        if (searchInput) {
-            searchInput.value = '';
-        }
-
-        this.showSuccess(this.getMessage('inventory.added').replace('{name}', selectedInventory.name));
+        document.getElementById('inventorySearch').value = '';
     }
 
-    updateAddButtonState() {
-        const addButton = document.getElementById('addInventoryBtn');
-        const select = document.getElementById('inventorySelect');
+    removeInventory(inventoryId) {
+        this.selectedInventory = this.selectedInventory.filter(item => item.id !== inventoryId);
+        this.updateAvailableInventory();
+        this.renderSelectedInventory();
+        this.renderInventorySelect();
+    }
 
-        if (addButton && select) {
-            addButton.disabled = !select.value || select.options[select.selectedIndex]?.disabled;
-        }
+    updateAvailableInventory() {
+        const selectedIds = this.selectedInventory.map(item => item.id);
+        this.availableInventory = this.inventoryItems.filter(item => !selectedIds.includes(item.id));
     }
 
     renderInventorySelect() {
-        const select = document.getElementById('inventorySelect');
-        if (!select) return;
-
         const searchInput = document.getElementById('inventorySearch');
-        if (searchInput && searchInput.value) {
-            this.filterInventoryOptions(searchInput.value);
-        } else {
-            this.filterInventoryOptions('');
-        }
+        this.filterInventoryOptions(searchInput?.value || '');
     }
 
     renderSelectedInventory() {
@@ -407,320 +365,253 @@ class RecipeEditApp extends BaseApiClient {
             return;
         }
 
-        let html = '';
-        this.selectedInventory.forEach((inventory) => {
-            html += `
-                <div class="inventory-row d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
-                    <div class="flex-grow-1">
-                        <div class="fw-medium">${CommonUtils.escapeHtml(inventory.name)}</div>
-                        ${inventory.description ? `<div class="text-muted small">${CommonUtils.escapeHtml(inventory.description)}</div>` : ''}
-                    </div>
-                    <button type="button" class="btn btn-outline-danger btn-sm remove-inventory"
-                            data-inventory-id="${inventory.id}"
-                            title="${this.getMessage('inventory.remove')}">
-                        🗑️
-                    </button>
+        container.innerHTML = this.selectedInventory.map(inventory => `
+            <div class="inventory-row d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                <div class="flex-grow-1">
+                    <div class="fw-medium">${CommonUtils.escapeHtml(inventory.name)}</div>
+                    ${inventory.description ? `<div class="text-muted small">${CommonUtils.escapeHtml(inventory.description)}</div>` : ''}
                 </div>
-            `;
-        });
+                <button type="button" class="btn btn-outline-danger btn-sm remove-inventory"
+                        data-inventory-id="${inventory.id}">
+                    🗑️
+                </button>
+            </div>
+        `).join('');
 
-        container.innerHTML = html;
-
-        container.querySelectorAll('.remove-inventory').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const inventoryId = parseInt(e.target.closest('.remove-inventory').dataset.inventoryId);
-                this.removeInventory(inventoryId);
+        // Добавляем обработчики для кнопок удаления
+        container.querySelectorAll('.remove-inventory').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.removeInventory(parseInt(e.target.closest('.remove-inventory').dataset.inventoryId));
             });
         });
     }
 
-    removeInventory(inventoryId) {
-        this.selectedInventory = this.selectedInventory.filter(item => item.id !== inventoryId);
-        this.updateAvailableInventory();
-        this.renderSelectedInventory();
-        this.renderInventorySelect();
-        this.showSuccess(this.getMessage('inventory.removed'));
-    }
+    // Основной метод сохранения
+    async saveRecipe(publish) {
+        if (this.isSaving) return;
+        this.isSaving = true;
 
-    createIngredientRow(value = '', isFirst = false) {
-        const row = document.createElement('div');
-        row.className = 'ingredient-row input-group mb-2';
+        try {
+            this.showSavingState(true);
+            this.clearFieldErrors();
 
-        const escapedValue = CommonUtils.escapeHtml(value);
+            const formData = this.prepareFormData(publish);
+            const response = this.recipeId
+                ? await this.put(`/${this.recipeId}`, formData)
+                : await this.post('', formData);
 
-        row.innerHTML = `
-            <input type="text" class="form-control ingredient-input"
-                   value="${escapedValue}"
-                   placeholder="${this.getMessage('recipe.ingredient.placeholder')}">
-            <button type="button" class="btn btn-outline-danger remove-ingredient"
-                    ${isFirst && document.querySelectorAll('.ingredient-row').length === 1 ? 'style="display: none;"' : ''}>🗑️</button>
-        `;
-        return row;
-    }
-
-    setupIngredientHandlers() {
-        const container = document.getElementById('ingredientsContainer');
-
-        if (container) {
-            container.addEventListener('click', (e) => {
-                if (e.target.classList.contains('remove-ingredient')) {
-                    this.removeIngredientField(e.target);
-                }
-            });
-
-            container.addEventListener('input', (e) => {
-                if (e.target.classList.contains('ingredient-input')) {
-                    this.handleIngredientInput(e.target);
-                }
-            });
-
-            container.addEventListener('keydown', (e) => {
-                if (e.target.classList.contains('ingredient-input')) {
-                    this.handleIngredientKeydown(e);
-                }
-            });
-        }
-    }
-
-    handleIngredientInput(input) {
-        const rows = document.querySelectorAll('.ingredient-row');
-        const lastRow = rows[rows.length - 1];
-        const lastInput = lastRow.querySelector('.ingredient-input');
-
-        if (input === lastInput && input.value.trim() !== '') {
-            this.addIngredientField();
-        }
-    }
-
-    handleIngredientKeydown(e) {
-        const input = e.target;
-        const rows = document.querySelectorAll('.ingredient-row');
-        const lastRow = rows[rows.length - 1];
-        const lastInput = lastRow.querySelector('.ingredient-input');
-
-        if ((e.key === 'Enter' || e.key === 'Tab') && input === lastInput && input.value.trim() !== '') {
-            e.preventDefault();
-            this.addIngredientField();
-
-            setTimeout(() => {
-                const newRows = document.querySelectorAll('.ingredient-row');
-                const newLastRow = newRows[newRows.length - 1];
-                const newInput = newLastRow.querySelector('.ingredient-input');
-                if (newInput) {
-                    newInput.focus();
-                }
-            }, 10);
-        }
-    }
-
-    addIngredientField() {
-        const container = document.getElementById('ingredientsContainer');
-        if (container) {
-            const newRow = this.createIngredientRow();
-            container.appendChild(newRow);
-            this.updateRemoveButtons();
-        }
-    }
-
-    removeIngredientField(button) {
-        const row = button.closest('.ingredient-row');
-        const rows = document.querySelectorAll('.ingredient-row');
-
-        if (row && rows.length > 1) {
-            row.remove();
-            this.updateRemoveButtons();
-        }
-    }
-
-    updateRemoveButtons() {
-        const rows = document.querySelectorAll('.ingredient-row');
-        const ingredientRemoveButtons = document.querySelectorAll('.remove-ingredient');
-
-        ingredientRemoveButtons.forEach((btn, index) => {
-            if (rows.length === 1 && index === 0) {
-                btn.style.display = 'none';
+            if (response?.success) {
+                this.handleSaveSuccess(response, publish);
             } else {
-                btn.style.display = 'block';
+                throw new Error(response?.message || this.getMessage('error.save_unknown'));
             }
-        });
-    }
-
-    setupFormHandlers() {
-        const saveDraftBtn = document.getElementById('saveDraftBtn');
-        const publishBtn = document.getElementById('publishBtn');
-
-        if (saveDraftBtn) {
-            saveDraftBtn.addEventListener('click', () => {
-                this.saveRecipe(false);
-            });
-        }
-
-        if (publishBtn) {
-            publishBtn.addEventListener('click', () => {
-                this.saveRecipe(true);
-            });
+        } catch (error) {
+            this.handleSaveError(error);
+        } finally {
+            this.isSaving = false;
+            this.showSavingState(false);
         }
     }
 
-    setupValidation() {
-        const fields = ['title', 'category', 'description'];
-        fields.forEach(fieldId => {
-            const field = document.getElementById(fieldId);
-            if (field) {
-                field.addEventListener('blur', () => this.validateField(field));
-                field.addEventListener('input', () => {
-                    field.classList.remove('is-invalid');
-                });
-            }
-        });
-    }
-
-    validateField(field) {
-        let isValid = true;
-
-        if (field.tagName === 'SELECT') {
-            if (!field.value) {
-                isValid = false;
-            }
-        } else if (!field.value.trim()) {
-            isValid = false;
-        }
-
-        if (!isValid) {
-            field.classList.add('is-invalid');
-        } else {
-            field.classList.remove('is-invalid');
-        }
-
-        return isValid;
-    }
-
-    validateForm() {
-        let isValid = true;
-        const errors = [];
-
-        const title = document.getElementById('title');
-        const category = document.getElementById('category');
-        const description = document.getElementById('description');
-
-        if (!title.value.trim()) {
-            errors.push(this.getMessage('validation.title.required'));
-            isValid = false;
-        }
-
-        if (!category.value) {
-            errors.push(this.getMessage('validation.category.required'));
-            isValid = false;
-        }
-
-        const ingredients = this.getIngredients();
-        if (ingredients.length === 0) {
-            errors.push(this.getMessage('validation.ingredients.required'));
-            isValid = false;
-        }
-
-        if (!description.value.trim()) {
-            errors.push(this.getMessage('validation.description.required'));
-            isValid = false;
-        }
-
-        if (!isValid && errors.length > 0) {
-            this.showError(errors.join('\n'));
-        }
-
-        return isValid;
+    prepareFormData(publish) {
+        return {
+            title: document.getElementById('title').value.trim(),
+            categoryId: parseInt(document.getElementById('category').value),
+            authorId: this.authorId,
+            ingredients: this.getIngredients(),
+            description: document.getElementById('description').value.trim(),
+            inventoryIds: this.selectedInventory.map(item => item.id),
+            published: publish
+        };
     }
 
     getIngredients() {
-        const inputs = document.querySelectorAll('.ingredient-input');
-        return Array.from(inputs)
+        return Array.from(document.querySelectorAll('.ingredient-input'))
             .map(input => input.value.trim())
-            .filter(ingredient => ingredient !== '');
+            .filter(ingredient => ingredient);
     }
 
-    getSelectedInventory() {
-        return this.selectedInventory.map(item => item.id);
+    clearFieldErrors() {
+        // Очищаем ошибки со всех полей
+        document.querySelectorAll('.is-invalid').forEach(el => {
+            el.classList.remove('is-invalid');
+        });
+
+        // Очищаем сообщения об ошибках
+        document.querySelectorAll('.invalid-feedback').forEach(el => {
+            el.remove();
+        });
     }
 
-    async saveRecipe(publish) {
-        if (this.isSaving) {
-            return;
+    highlightFieldErrors(errorMessage) {
+        const errors = this.parseBackendErrors(errorMessage);
+
+        errors.forEach(error => {
+            this.highlightSpecificError(error);
+        });
+    }
+
+    parseBackendErrors(errorMessage) {
+        // Разбиваем сообщение на отдельные ошибки по запятым
+        return errorMessage.split(',').map(err => err.trim()).filter(err => err);
+    }
+
+    highlightSpecificError(errorText) {
+        // Сопоставляем текст ошибки с конкретными полями
+        if (errorText.includes('Название рецепта')) {
+            this.highlightTitleError(errorText);
+        } else if (errorText.includes('Описание')) {
+            this.highlightDescriptionError(errorText);
+        } else if (errorText.includes('ингредиент') || errorText.includes('Ингредиент')) {
+            this.highlightIngredientsError(errorText);
+        } else if (errorText.includes('Категория') || errorText.includes('категори')) {
+            this.highlightCategoryError(errorText);
+        }
+    }
+
+    highlightTitleError(errorText) {
+        const titleField = document.getElementById('title');
+        if (titleField) {
+            titleField.classList.add('is-invalid');
+            this.addFieldError(titleField, errorText);
+        }
+    }
+
+    highlightDescriptionError(errorText) {
+        const descriptionField = document.getElementById('description');
+        if (descriptionField) {
+            descriptionField.classList.add('is-invalid');
+            this.addFieldError(descriptionField, errorText);
+        }
+    }
+
+    highlightIngredientsError(errorText) {
+        const ingredientsContainer = document.getElementById('ingredientsContainer');
+        if (ingredientsContainer) {
+            // Подсвечиваем первый ингредиент или контейнер
+            const firstIngredient = ingredientsContainer.querySelector('.ingredient-input');
+            if (firstIngredient) {
+                firstIngredient.classList.add('is-invalid');
+                this.addFieldError(ingredientsContainer, errorText);
+            } else {
+                ingredientsContainer.classList.add('border', 'border-danger', 'rounded', 'p-2');
+                this.addFieldError(ingredientsContainer, errorText);
+            }
+        }
+    }
+
+    highlightCategoryError(errorText) {
+        const categoryField = document.getElementById('category');
+        if (categoryField) {
+            categoryField.classList.add('is-invalid');
+            this.addFieldError(categoryField, errorText);
+        }
+    }
+
+    addFieldError(field, errorText) {
+        // Удаляем старые сообщения об ошибках для этого поля
+        const existingError = field.parentNode.querySelector('.invalid-feedback');
+        if (existingError) {
+            existingError.remove();
         }
 
-        if (!this.validateForm()) {
-            return;
+        // Создаем новое сообщение об ошибке
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'invalid-feedback d-block';
+        errorDiv.textContent = errorText;
+
+        // Добавляем сообщение после поля
+        field.parentNode.appendChild(errorDiv);
+    }
+
+    handleSaveSuccess(response, publish) {
+        this.showSuccess(response.message);
+
+        setTimeout(() => {
+            window.location.href = '/my-recipes';
+        }, 1500);
+    }
+
+    handleSaveError(error) {
+        const errorMessage = error.message || this.getMessage('error.save_failed');
+
+        if (this.isValidationError(errorMessage)) {
+            // Показываем ошибки валидации с подсветкой полей
+            this.showValidationErrors(errorMessage);
+        } else {
+            // Показываем общую ошибку
+            this.showError(this.getMessage('error.save_failed') + ': ' + errorMessage);
         }
+    }
 
-        this.isSaving = true;
+    isValidationError(errorMessage) {
+        // Проверяем, содержит ли сообщение ошибки валидации
+        const validationKeywords = [
+            'обязательно', 'должен', 'минимум', 'максимум',
+            'required', 'must', 'minimum', 'maximum',
+            'символов', 'characters'
+        ];
 
-        const title = document.getElementById('title').value.trim();
-        const categoryId = parseInt(document.getElementById('category').value);
-        const description = document.getElementById('description').value.trim();
-        const ingredients = this.getIngredients();
-        const inventoryIds = this.getSelectedInventory();
+        return validationKeywords.some(keyword =>
+            errorMessage.toLowerCase().includes(keyword.toLowerCase())
+        );
+    }
 
-        const recipeData = {
-            title: title,
-            categoryId: categoryId,
-            authorId: this.authorId,
-            ingredients: ingredients,
-            description: description,
-            inventoryIds: Array.isArray(inventoryIds) ? inventoryIds : [],
-            published: publish
-        };
+    showValidationErrors(errorMessage) {
+        // Парсим и подсвечиваем ошибки валидации
+        this.highlightFieldErrors(errorMessage);
 
-        try {
-            this.originalSaveDraftText = document.getElementById('saveDraftBtn').innerHTML;
-            this.originalPublishText = document.getElementById('publishBtn').innerHTML;
+        // Показываем общее сообщение
+        const generalError = this.extractGeneralValidationMessage(errorMessage);
+        this.showError(generalError);
 
-            this.showSavingState(true);
+        // Прокручиваем к первой ошибке
+        this.scrollToFirstError();
+    }
 
-            let response;
-            if (this.recipeId) {
-                response = await this.put(`/${this.recipeId}`, recipeData);
-            } else {
-                response = await this.post('', recipeData);
+    extractGeneralValidationMessage(errorMessage) {
+        const errors = this.parseBackendErrors(errorMessage);
+        if (errors.length === 1) {
+            return errors[0];
+        } else {
+            return this.getMessage('validation.errors_found') + ' (' + errors.length + ')';
+        }
+    }
+
+    scrollToFirstError() {
+        const firstError = document.querySelector('.is-invalid');
+        if (firstError) {
+            firstError.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+
+            // Фокусируемся на поле с ошибкой
+            if (firstError.tagName === 'INPUT' || firstError.tagName === 'TEXTAREA' || firstError.tagName === 'SELECT') {
+                firstError.focus();
             }
-
-            if (response && response.success) {
-                this.showSuccess(response.message);
-
-                setTimeout(() => {
-                    window.location.href = '/my-recipes';
-                }, 2000);
-            } else {
-                const errorMessage = response?.message || response?.error || this.getMessage('error.save_unknown');
-                throw new Error(errorMessage);
-            }
-        } catch (error) {
-            this.showError(error.message || this.getMessage('error.save_failed'));
-            this.showSavingState(false);
-        } finally {
-            this.isSaving = false;
         }
     }
 
     showSavingState(show) {
-        const saveDraftBtn = document.getElementById('saveDraftBtn');
-        const publishBtn = document.getElementById('publishBtn');
+        const buttons = ['saveDraftBtn', 'publishBtn'];
 
-        if (saveDraftBtn) {
-            saveDraftBtn.disabled = show;
-            if (show) {
-                saveDraftBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span> ${this.getMessage('common.saving')}`;
-            } else {
-                saveDraftBtn.innerHTML = this.originalSaveDraftText || `💾 ${this.getMessage('recipe.save_draft')}`;
+        buttons.forEach(btnId => {
+            const button = document.getElementById(btnId);
+            if (button) {
+                button.disabled = show;
+                if (show) {
+                    const originalText = button.innerHTML;
+                    button.dataset.originalText = originalText;
+                    const savingText = btnId === 'publishBtn'
+                        ? this.getMessage('common.publishing')
+                        : this.getMessage('common.saving');
+                    button.innerHTML = `<span class="spinner-border spinner-border-sm"></span> ${savingText}`;
+                } else {
+                    button.innerHTML = button.dataset.originalText;
+                }
             }
-        }
-
-        if (publishBtn) {
-            publishBtn.disabled = show;
-            if (show) {
-                publishBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status"></span> ${this.getMessage('common.publishing')}`;
-            } else {
-                publishBtn.innerHTML = this.originalPublishText || `🚀 ${this.getMessage('recipe.publish')}`;
-            }
-        }
+        });
     }
 
     showSuccess(message) {
@@ -732,24 +623,26 @@ class RecipeEditApp extends BaseApiClient {
     }
 }
 
-let recipeApp;
+// Добавляем сообщения для обработки ошибок валидации
 document.addEventListener('DOMContentLoaded', () => {
+    // Расширяем i18nMessages
+    window.i18nMessages = {
+        ...window.i18nMessages,
+        'validation.errors_found': 'Обнаружены ошибки в форме',
+        'validation.check_fields': 'Пожалуйста, проверьте заполнение полей'
+    };
+
     try {
-        recipeApp = new RecipeEditApp();
-        window.recipeApp = recipeApp;
+        new RecipeEditApp();
     } catch (error) {
-        const errorAlert = document.getElementById('errorAlert');
+        console.error('Failed to initialize RecipeEditApp:', error);
+        const errorElement = document.getElementById('errorAlert');
         const errorMessage = document.getElementById('errorMessage');
-        const loadingSpinner = document.getElementById('loadingSpinner');
 
-        if (errorAlert && errorMessage) {
-            const errorMsg = (window.i18nMessages?.['error.initialization'] || 'Ошибка инициализации: ') + error.message;
-            errorMessage.textContent = errorMsg;
-            errorAlert.style.display = 'block';
-        }
-
-        if (loadingSpinner) {
-            loadingSpinner.style.display = 'none';
+        if (errorElement && errorMessage) {
+            errorMessage.textContent = error.message;
+            errorElement.style.display = 'block';
+            document.getElementById('loadingSpinner').style.display = 'none';
         }
     }
 });
