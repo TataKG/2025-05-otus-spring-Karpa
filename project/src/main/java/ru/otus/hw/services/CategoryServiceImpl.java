@@ -28,9 +28,8 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional
     public CategoryDto createCategory(String name, String description) {
-        validateCategoryName(name);
-        String trimmedName = name.trim();
 
+        String trimmedName = name.trim();
         checkCategoryExists(trimmedName);
 
         Category category = new Category(trimmedName, description != null ? description.trim() : null);
@@ -76,7 +75,6 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     public CategoryDto updateCategory(Long id, String name, String description) {
         Category category = getCategoryEntity(id);
-        validateCategoryName(name);
 
         if (!category.getName().equals(name) && categoryRepository.existsByName(name)) {
             throw new EntityAlreadyExistsException(
@@ -168,14 +166,6 @@ public class CategoryServiceImpl implements CategoryService {
                         categoryId -> categoryId,
                         categoryRepository::isUsedInRecipes
                 ));
-    }
-
-    private void validateCategoryName(String name) {
-        if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException(
-                    messageProvider.getMessage("category.name_empty")
-            );
-        }
     }
 
     private void checkCategoryExists(String name) {

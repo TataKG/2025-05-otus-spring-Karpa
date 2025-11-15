@@ -36,7 +36,7 @@ class CategoriesAdminApp extends BaseApiClient {
         console.log('CategoriesAdminApp initialized');
         await this.loadCategories();
         this.setupEventListeners();
-        this.setupCreateFormHandlers();
+        this.setupFormHandlers();
     }
 
     async loadCategories() {
@@ -102,10 +102,10 @@ class CategoriesAdminApp extends BaseApiClient {
             </tr>
         `).join('');
 
-        this.addEventListeners();
+        this.addTableEventListeners();
     }
 
-    addEventListeners() {
+    addTableEventListeners() {
         document.querySelectorAll('.edit-category').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const categoryId = e.target.closest('.edit-category').dataset.categoryId;
@@ -130,13 +130,6 @@ class CategoriesAdminApp extends BaseApiClient {
     }
 
     setupEventListeners() {
-        const createModal = document.getElementById('createCategoryModal');
-        if (createModal) {
-            createModal.addEventListener('hidden.bs.modal', () => {
-                this.resetCreateForm();
-            });
-        }
-
         // Обработчики для кнопок модальных окон
         const createBtn = document.getElementById('createCategoryBtn');
         if (createBtn) {
@@ -158,11 +151,26 @@ class CategoriesAdminApp extends BaseApiClient {
                 this.deleteCategory();
             });
         }
+
+        // Обработчики закрытия модальных окон
+        const createModal = document.getElementById('createCategoryModal');
+        if (createModal) {
+            createModal.addEventListener('hidden.bs.modal', () => {
+                this.resetCreateForm();
+            });
+        }
+
+        const editModal = document.getElementById('editCategoryModal');
+        if (editModal) {
+            editModal.addEventListener('hidden.bs.modal', () => {
+                this.clearValidationErrors('editCategoryForm');
+            });
+        }
     }
 
-    setupCreateFormHandlers() {
+    setupFormHandlers() {
+        // Обработчики для формы создания
         const createForm = document.getElementById('createCategoryForm');
-
         if (createForm) {
             createForm.addEventListener('input', (e) => {
                 if (e.target.id === 'categoryName') {
@@ -178,6 +186,24 @@ class CategoriesAdminApp extends BaseApiClient {
             });
         }
 
+        // Обработчики для формы редактирования
+        const editForm = document.getElementById('editCategoryForm');
+        if (editForm) {
+            editForm.addEventListener('input', (e) => {
+                if (e.target.id === 'editCategoryName') {
+                    e.target.classList.remove('is-invalid');
+                }
+            });
+
+            editForm.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.updateCategory();
+                }
+            });
+        }
+
+        // Сброс формы при открытии модального окна создания
         const createModal = document.getElementById('createCategoryModal');
         if (createModal) {
             createModal.addEventListener('show.bs.modal', () => {
@@ -190,10 +216,33 @@ class CategoriesAdminApp extends BaseApiClient {
         const form = document.getElementById('createCategoryForm');
         if (form) {
             form.reset();
-            const nameInput = document.getElementById('categoryName');
-            if (nameInput) {
-                nameInput.classList.remove('is-invalid');
-            }
+            this.clearValidationErrors('createCategoryForm');
+        }
+    }
+
+    clearValidationErrors(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        const invalidInputs = form.querySelectorAll('.is-invalid');
+        invalidInputs.forEach(input => {
+            input.classList.remove('is-invalid');
+        });
+
+        const invalidFeedbacks = form.querySelectorAll('.invalid-feedback');
+        invalidFeedbacks.forEach(feedback => {
+            feedback.textContent = '';
+        });
+    }
+
+    showFieldError(fieldId, message) {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+
+        field.classList.add('is-invalid');
+        const feedback = field.nextElementSibling;
+        if (feedback && feedback.classList.contains('invalid-feedback')) {
+            feedback.textContent = message;
         }
     }
 
@@ -205,10 +254,13 @@ class CategoriesAdminApp extends BaseApiClient {
         const name = nameInput.value.trim();
         const description = descriptionInput.value.trim();
 
+        // Очищаем предыдущие ошибки
+        this.clearValidationErrors('createCategoryForm');
+
+        // Базовая валидация на клиенте
         if (!name) {
-            nameInput.classList.add('is-invalid');
+            this.showFieldError('categoryName', this.translations.required);
             nameInput.focus();
-            CommonUtils.showToast(this.translations.required, 'error');
             return;
         }
 
@@ -223,34 +275,22 @@ class CategoriesAdminApp extends BaseApiClient {
             console.log('Category creation response:', response);
 
             if (response.success) {
-                CommonUtils.showToast(response.message || this.translations.successCreated);
-                this.resetCreateForm();
+                CommonUtils.showToast(response.message || this.translations.successCreated, 'success');
 
+                // Закрываем модальное окно
                 const modal = bootstrap.Modal.getInstance(document.getElementById('createCategoryModal'));
                 if (modal) {
                     modal.hide();
                 }
 
+                // Перезагружаем список категорий
                 await this.loadCategories();
             } else {
                 CommonUtils.showToast(response.message || this.translations.errorCreate, 'error');
             }
         } catch (error) {
             console.error('Error creating category:', error);
-            let errorMessage = this.translations.errorCreate;
-
-            if (error.response) {
-                try {
-                    const errorData = await error.response.json();
-                    errorMessage = errorData.message || errorMessage;
-                } catch (e) {
-                    errorMessage = error.message || errorMessage;
-                }
-            } else if (error.message) {
-                errorMessage = error.message;
-            }
-
-            CommonUtils.showToast(errorMessage, 'error');
+            await this.handleValidationError(error, 'createCategoryForm');
         } finally {
             if (createBtn) {
                 createBtn.disabled = false;
@@ -261,11 +301,17 @@ class CategoriesAdminApp extends BaseApiClient {
 
     openEditModal(categoryId) {
         const category = this.categories.find(c => c.id == categoryId);
-        if (!category) return;
+        if (!category) {
+            console.error('Category not found for ID:', categoryId);
+            return;
+        }
 
         document.getElementById('editCategoryId').value = category.id;
         document.getElementById('editCategoryName').value = category.name;
         document.getElementById('editCategoryDescription').value = category.description || '';
+
+        // Очищаем ошибки при открытии
+        this.clearValidationErrors('editCategoryForm');
 
         new bootstrap.Modal(document.getElementById('editCategoryModal')).show();
     }
@@ -276,8 +322,13 @@ class CategoriesAdminApp extends BaseApiClient {
         const description = document.getElementById('editCategoryDescription').value.trim();
         const updateBtn = document.getElementById('updateCategoryBtn');
 
+        // Очищаем предыдущие ошибки
+        this.clearValidationErrors('editCategoryForm');
+
+        // Базовая валидация на клиенте
         if (!name) {
-            CommonUtils.showToast(this.translations.required, 'error');
+            this.showFieldError('editCategoryName', this.translations.required);
+            document.getElementById('editCategoryName').focus();
             return;
         }
 
@@ -287,29 +338,27 @@ class CategoriesAdminApp extends BaseApiClient {
         }
 
         try {
+            console.log('Sending category update request:', { id, name, description });
             const response = await this.put(`/categories/${id}`, { name, description });
+            console.log('Category update response:', response);
 
             if (response.success) {
-                CommonUtils.showToast(response.message || this.translations.successUpdated);
-                document.getElementById('editCategoryModal').querySelector('.btn-close').click();
+                CommonUtils.showToast(response.message || this.translations.successUpdated, 'success');
+
+                // Закрываем модальное окно
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editCategoryModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                // Перезагружаем список категорий
                 await this.loadCategories();
             } else {
                 CommonUtils.showToast(response.message || this.translations.errorUpdate, 'error');
             }
         } catch (error) {
             console.error('Error updating category:', error);
-            let errorMessage = this.translations.errorUpdate;
-
-            if (error.response) {
-                try {
-                    const errorData = await error.response.json();
-                    errorMessage = errorData.message || errorMessage;
-                } catch (e) {
-                    errorMessage = error.message || errorMessage;
-                }
-            }
-
-            CommonUtils.showToast(errorMessage, 'error');
+            await this.handleValidationError(error, 'editCategoryForm');
         } finally {
             if (updateBtn) {
                 updateBtn.disabled = false;
@@ -318,7 +367,81 @@ class CategoriesAdminApp extends BaseApiClient {
         }
     }
 
-    // УПРОЩЕННАЯ ЛОГИКА УДАЛЕНИЯ (как в инвентаре)
+    async handleValidationError(error, formId) {
+        console.log('Handling validation error for form:', formId, error);
+
+        if (error.response) {
+            try {
+                const errorData = await error.response.json();
+                const errorMessage = errorData.message || 'Произошла ошибка';
+
+                // Если это ошибка валидации (400), показываем в соответствующих полях
+                if (error.response.status === 400) {
+                    this.showValidationErrors(formId, errorMessage);
+                    return;
+                }
+
+                // Для других ошибок показываем общее сообщение
+                CommonUtils.showToast(errorMessage, 'error');
+            } catch (e) {
+                console.error('Error parsing error response:', e);
+                CommonUtils.showToast('Произошла ошибка', 'error');
+            }
+        } else if (error.message) {
+            CommonUtils.showToast(error.message, 'error');
+        } else {
+            CommonUtils.showToast('Произошла неизвестная ошибка', 'error');
+        }
+    }
+
+    showValidationErrors(formId, errorMessage) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        // Очищаем предыдущие ошибки
+        this.clearValidationErrors(formId);
+
+        // Разделяем сообщение на отдельные ошибки (если они разделены переносами строк или запятыми)
+        const errors = errorMessage.split(/\n|, /).filter(msg => msg.trim());
+
+        let hasFieldErrors = false;
+
+        errors.forEach(error => {
+            const cleanError = error.replace(/^•\s*/, '').trim();
+
+            // Определяем, к какому полю относится ошибка
+            if (cleanError.includes('назван') || cleanError.includes('name') || cleanError.includes('Название')) {
+                this.showFieldError('editCategoryName', cleanError);
+                hasFieldErrors = true;
+            } else if (cleanError.includes('описан') || cleanError.includes('description') || cleanError.includes('Описание')) {
+                this.showFieldError('editCategoryDescription', cleanError);
+                hasFieldErrors = true;
+            }
+        });
+
+        // Если не удалось сопоставить ошибки с полями, показываем общее сообщение
+        if (!hasFieldErrors) {
+            CommonUtils.showToast(errorMessage, 'error');
+        } else {
+            // Фокусируемся на первом поле с ошибкой
+            const firstErrorField = form.querySelector('.is-invalid');
+            if (firstErrorField) {
+                firstErrorField.focus();
+            }
+        }
+    }
+
+    showFieldError(fieldId, message) {
+        const field = document.getElementById(fieldId);
+        if (!field) return;
+
+        field.classList.add('is-invalid');
+        const feedback = field.nextElementSibling;
+        if (feedback && feedback.classList.contains('invalid-feedback')) {
+            feedback.textContent = message;
+        }
+    }
+
     async openDeleteModal(categoryId, categoryName) {
         document.getElementById('deleteCategoryName').textContent = categoryName;
         document.getElementById('deleteCategoryModal').dataset.categoryId = categoryId;
@@ -412,7 +535,7 @@ class CategoriesAdminApp extends BaseApiClient {
             console.log('Delete response:', response);
 
             if (response.success) {
-                CommonUtils.showToast(response.message || this.translations.successDeleted);
+                CommonUtils.showToast(response.message || this.translations.successDeleted, 'success');
                 console.log('Category deleted successfully');
 
                 // Закрываем модальное окно

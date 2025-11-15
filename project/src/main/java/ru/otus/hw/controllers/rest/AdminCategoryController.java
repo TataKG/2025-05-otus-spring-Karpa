@@ -1,5 +1,9 @@
 package ru.otus.hw.controllers.rest;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,21 +39,15 @@ public class AdminCategoryController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<CategoryDto>> createCategory(@RequestBody CreateCategoryRequest request) {
+    public ResponseEntity<ApiResponse<CategoryDto>> createCategory(
+            @Valid @RequestBody CategoryRequest request) {
         try {
-            CategoryDto categoryDto = categoryService.createCategory(
-                    request.name().trim(),
-                    request.description() != null ? request.description().trim() : null
-            );
-
+            CategoryDto categoryDto = categoryService.createCategory(request.name(), request.description());
             return ResponseEntity.status(HttpStatus.CREATED).body(
                     ApiResponse.success(categoryDto, messageProvider.getMessage("category.created"))
             );
         } catch (EntityAlreadyExistsException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error(e.getMessage()));
         }
     }
@@ -57,7 +55,7 @@ public class AdminCategoryController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<CategoryDto>> updateCategory(
             @PathVariable Long id,
-            @RequestBody UpdateCategoryRequest request) {
+            @Valid @RequestBody CategoryRequest request) {
         try {
             CategoryDto categoryDto = categoryService.updateCategory(id, request.name(), request.description());
             return ResponseEntity.ok(
@@ -66,7 +64,7 @@ public class AdminCategoryController {
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(e.getMessage()));
-        } catch (EntityAlreadyExistsException | IllegalArgumentException e) {
+        } catch (EntityAlreadyExistsException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error(e.getMessage()));
         }
@@ -101,10 +99,24 @@ public class AdminCategoryController {
         }
     }
 
-    public record CreateCategoryRequest(String name, String description) {
-    }
+    public record CategoryRequest(
+            @NotBlank(message = "{category.name.not.blank}")
+            @Size(min = 2, max = 50, message = "{category.name.size}")
+            @Pattern(regexp = "^[a-zA-Zа-яА-Я0-9\\s\\-]+$", message = "{category.name.pattern}")
+            String name,
 
-    public record UpdateCategoryRequest(String name, String description) {
+            @NotBlank(message = "{category.description.not.blank}")
+            @Size(max = 255, message = "{category.description.size}")
+            String description
+    ) {
+        public CategoryRequest {
+            if (name != null) {
+                name = name.trim();
+            }
+            if (description != null) {
+                description = description.trim();
+            }
+        }
     }
 
     public record CategoryUsageResponse(boolean isUsed, long recipeCount) {

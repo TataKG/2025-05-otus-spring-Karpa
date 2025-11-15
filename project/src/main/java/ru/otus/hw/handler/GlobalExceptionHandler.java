@@ -17,6 +17,9 @@ import ru.otus.hw.exceptions.EntityAlreadyExistsException;
 import ru.otus.hw.exceptions.ValidationException;
 import ru.otus.hw.utils.MessageProvider;
 
+import java.text.MessageFormat;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -74,11 +77,22 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<?>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         log.warn("Validation error: {}", ex.getMessage());
 
-        String errorMessage = ex.getBindingResult().getFieldErrors().stream()
-                .map(FieldError::getDefaultMessage)
+        List<String> errorMessages = ex.getBindingResult().getFieldErrors().stream()
+                .map(this::getValidationErrorMessage)
                 .filter(Objects::nonNull)
                 .distinct()
-                .collect(Collectors.joining(", "));
+                .collect(Collectors.toList());
+
+        String errorMessage;
+        if (errorMessages.size() > 1) {
+            errorMessage = errorMessages.stream()
+                    .map(msg -> "• " + msg)
+                    .collect(Collectors.joining("\n"));
+        } else if (errorMessages.size() == 1) {
+            errorMessage = errorMessages.get(0);
+        } else {
+            errorMessage = messageProvider.getMessage("validation.error.default");
+        }
 
         log.warn("Validation errors: {}", errorMessage);
 
@@ -109,7 +123,29 @@ public class GlobalExceptionHandler {
 
     private String getValidationErrorMessage(FieldError fieldError) {
         String message = fieldError.getDefaultMessage();
-        return resolveMessageFromTemplate(message);
+
+        if (message != null && message.startsWith("{") && message.endsWith("}")) {
+            String messageKey = message.substring(1, message.length() - 1);
+            try {
+                String resolvedMessage = messageProvider.getMessage(messageKey);
+
+                if (fieldError.getArguments() != null && fieldError.getArguments().length > 1) {
+                    Object[] args = Arrays.copyOfRange(fieldError.getArguments(), 1, fieldError.getArguments().length);
+                    try {
+                        return MessageFormat.format(resolvedMessage, args);
+                    } catch (Exception e) {
+                        log.warn("Failed to format message: {} with args: {}", resolvedMessage, Arrays.toString(args));
+                    }
+                }
+
+                return resolvedMessage;
+            } catch (Exception e) {
+                log.warn("Failed to resolve message for key: {}", messageKey);
+                return messageProvider.getMessage("validation.error.default");
+            }
+        }
+
+        return message;
     }
 
     private String resolveMessageFromTemplate(String message) {

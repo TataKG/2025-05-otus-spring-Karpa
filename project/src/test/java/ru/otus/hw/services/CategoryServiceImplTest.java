@@ -107,25 +107,6 @@ class CategoryServiceImplTest {
     }
 
     @Test
-    @DisplayName("Создание категории - пустое имя")
-    void createCategory_ShouldThrowException_WhenNameIsEmpty() {
-        // Arrange
-        String name = "   ";
-        String description = "Описание категории";
-
-        when(messageProvider.getMessage("category.name_empty"))
-                .thenReturn("Название категории не может быть пустым");
-
-        // Act & Assert
-        assertThatThrownBy(() -> categoryService.createCategory(name, description))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Название категории не может быть пустым");
-
-        verify(categoryRepository, never()).existsByName(anyString());
-        verify(categoryRepository, never()).save(any(Category.class));
-    }
-
-    @Test
     @DisplayName("Получение категории по ID - категория найдена")
     void getCategoryById_ShouldReturnCategory_WhenCategoryExists() {
         // Arrange
@@ -389,21 +370,4 @@ class CategoryServiceImplTest {
         assertThat(result.get(ANOTHER_CATEGORY_ID)).isFalse();
     }
 
-    @Test
-    @DisplayName("Создание категории - null имя")
-    void createCategory_ShouldThrowException_WhenNameIsNull() {
-        // Arrange
-        String description = "Описание категории";
-
-        when(messageProvider.getMessage("category.name_empty"))
-                .thenReturn("Название категории не может быть пустым");
-
-        // Act & Assert
-        assertThatThrownBy(() -> categoryService.createCategory(null, description))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Название категории не может быть пустым");
-
-        verify(categoryRepository, never()).existsByName(anyString());
-        verify(categoryRepository, never()).save(any(Category.class));
-    }
 }

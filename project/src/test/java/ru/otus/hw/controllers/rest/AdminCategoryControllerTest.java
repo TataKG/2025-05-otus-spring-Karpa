@@ -101,8 +101,8 @@ class AdminCategoryControllerTest {
     @DisplayName("Создание категории - успешное создание")
     void createCategory_Success() {
         // Arrange
-        AdminCategoryController.CreateCategoryRequest request =
-                new AdminCategoryController.CreateCategoryRequest(SOUPS_CATEGORY_NAME, "Первые блюда");
+        AdminCategoryController.CategoryRequest request =
+                new AdminCategoryController.CategoryRequest(SOUPS_CATEGORY_NAME, "Первые блюда");
         CategoryDto categoryDto = createSoupsCategory();
 
         when(categoryService.createCategory(SOUPS_CATEGORY_NAME, "Первые блюда")).thenReturn(categoryDto);
@@ -124,8 +124,8 @@ class AdminCategoryControllerTest {
     @DisplayName("Создание категории - категория уже существует")
     void createCategory_EntityAlreadyExists() {
         // Arrange
-        AdminCategoryController.CreateCategoryRequest request =
-                new AdminCategoryController.CreateCategoryRequest(DESSERTS_CATEGORY_NAME, "Сладкие блюда");
+        AdminCategoryController.CategoryRequest request =
+                new AdminCategoryController.CategoryRequest(DESSERTS_CATEGORY_NAME, "Сладкие блюда");
         when(categoryService.createCategory(DESSERTS_CATEGORY_NAME, "Сладкие блюда"))
                 .thenThrow(new EntityAlreadyExistsException("Категория уже существует"));
 
@@ -140,30 +140,11 @@ class AdminCategoryControllerTest {
     }
 
     @Test
-    @DisplayName("Создание категории - неверные аргументы")
-    void createCategory_IllegalArgumentException() {
-        // Arrange
-        AdminCategoryController.CreateCategoryRequest request =
-                new AdminCategoryController.CreateCategoryRequest("", "Описание");
-        when(categoryService.createCategory("", "Описание"))
-                .thenThrow(new IllegalArgumentException("Название категории не может быть пустым"));
-
-        // Act
-        ResponseEntity<ApiResponse<CategoryDto>> response = adminCategoryController.createCategory(request);
-
-        // Assert
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().success()).isFalse();
-        assertThat(response.getBody().message()).isEqualTo("Название категории не может быть пустым");
-    }
-
-    @Test
     @DisplayName("Обновление категории - успешное обновление")
     void updateCategory_Success() {
         // Arrange
-        AdminCategoryController.UpdateCategoryRequest request =
-                new AdminCategoryController.UpdateCategoryRequest(
+        AdminCategoryController.CategoryRequest request =
+                new AdminCategoryController.CategoryRequest(
                         UPDATED_CATEGORY_NAME,
                         "Обновленное описание");
         CategoryDto categoryDto = createTestCategory(
@@ -195,8 +176,8 @@ class AdminCategoryControllerTest {
     @DisplayName("Обновление категории - категория не найдена")
     void updateCategory_EntityNotFound() {
         // Arrange
-        AdminCategoryController.UpdateCategoryRequest request =
-                new AdminCategoryController.UpdateCategoryRequest("Новое имя", "Новое описание");
+        AdminCategoryController.CategoryRequest request =
+                new AdminCategoryController.CategoryRequest("Новое имя", "Новое описание");
         when(categoryService.updateCategory(NON_EXISTING_CATEGORY_ID, "Новое имя", "Новое описание"))
                 .thenThrow(new EntityNotFoundException("Категория не найдена"));
 
@@ -211,30 +192,11 @@ class AdminCategoryControllerTest {
     }
 
     @Test
-    @DisplayName("Обновление категории - неверные аргументы")
-    void updateCategory_IllegalArgumentException() {
-        // Arrange
-        AdminCategoryController.UpdateCategoryRequest request =
-                new AdminCategoryController.UpdateCategoryRequest("", "Описание");
-        when(categoryService.updateCategory(EXISTING_CATEGORY_ID, "", "Описание"))
-                .thenThrow(new IllegalArgumentException("Название категории не может быть пустым"));
-
-        // Act
-        ResponseEntity<ApiResponse<CategoryDto>> response = adminCategoryController.updateCategory(EXISTING_CATEGORY_ID, request);
-
-        // Assert
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().success()).isFalse();
-        assertThat(response.getBody().message()).isEqualTo("Название категории не может быть пустым");
-    }
-
-    @Test
     @DisplayName("Обновление категории - категория уже существует")
     void updateCategory_EntityAlreadyExists() {
         // Arrange
-        AdminCategoryController.UpdateCategoryRequest request =
-                new AdminCategoryController.UpdateCategoryRequest("Супы", "Описание");
+        AdminCategoryController.CategoryRequest request =
+                new AdminCategoryController.CategoryRequest("Супы", "Описание");
         when(categoryService.updateCategory(EXISTING_CATEGORY_ID, "Супы", "Описание"))
                 .thenThrow(new EntityAlreadyExistsException("Категория с таким названием уже существует"));
 
