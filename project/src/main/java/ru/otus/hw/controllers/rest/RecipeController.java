@@ -1,6 +1,10 @@
 package ru.otus.hw.controllers.rest;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -293,7 +297,6 @@ public class RecipeController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.error(messageProvider.getMessage("recipe.details.load_failed") + ": " + e.getMessage()));
         }
@@ -407,6 +410,56 @@ public class RecipeController {
             RecipeDto recipe,
             List<CategoryDto> categories,
             List<InventoryDto> inventoryItems
+    ) {
+    }
+
+    public record CreateRecipeRequest(
+            @NotBlank(message = "{recipe.title.required}")
+            @Size(min = 2, max = 255, message = "{recipe.title.min_length}")
+            String title,
+
+            @NotNull(message = "{recipe.category.required}")
+            Long categoryId,
+
+            @NotNull(message = "{author.id.null}")
+            Long authorId,
+
+            @NotEmpty(message = "{recipe.ingredients.empty}")
+            List<@NotBlank(message = "{recipe.ingredient.blank}") String> ingredients,
+
+            @NotBlank(message = "{recipe.description.required}")
+            @Size(min = 10, max = 5000, message = "{recipe.description.min_length}")
+            String description,
+
+            List<Long> inventoryIds,
+
+            boolean published) {
+        public CreateRecipeRequest {
+            inventoryIds = (inventoryIds != null) ? inventoryIds : new ArrayList<>();
+        }
+    }
+
+    public record UpdateRecipeRequest(
+            @NotBlank(message = "{recipe.title.required}")
+            @Size(min = 2, max = 255, message = "{recipe.title.min_length}")
+            String title,
+
+            @NotNull(message = "{recipe.category.required}")
+            Long categoryId,
+
+            @NotNull(message = "{author.id.null}")
+            Long authorId,
+
+            @NotEmpty(message = "{recipe.ingredients.empty}")
+            List<@NotBlank(message = "{recipe.ingredient.blank}") String> ingredients,
+
+            @NotBlank(message = "{recipe.description.required}")
+            @Size(min = 10, max = 5000, message = "{recipe.description.min_length}")
+            String description,
+
+            List<Long> inventoryIds,
+
+            boolean published
     ) {
     }
 }
