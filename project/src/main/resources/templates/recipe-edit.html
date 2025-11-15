@@ -173,13 +173,16 @@
 
 <script th:src="@{/js/recipe-edit.js}"></script>
 
-<!-- УБИРАЕМ ВСЕ СООБЩЕНИЯ ИЗ UI -->
 <script th:inline="javascript">
     window.i18nMessages = {
         ...window.i18nMessages,
-        // ТОЛЬКО ТЕХНИЧЕСКИЕ СООБЩЕНИЯ, которые не приходят с бэкенда
         'common.saving': /*[[#{common.saving}]]*/ 'Сохранение...',
-        'common.publishing': /*[[#{common.publishing}]]*/ 'Публикация...'
+        'common.publishing': /*[[#{common.publishing}]]*/ 'Публикация...',
+
+        'recipe.category.placeholder': /*[[#{recipe.category.placeholder}]]*/ 'Выберите категорию',
+        'recipe.ingredient.placeholder': /*[[#{recipe.ingredient.placeholder}]]*/ 'Введите ингредиент...',
+        'recipe.inventory.none': /*[[#{recipe.inventory.none}]]*/ 'Инвентарь не выбран',
+        'recipe.inventory.search.placeholder': /*[[#{recipe.inventory.search.placeholder}]]*/ 'Начните вводить название инвентаря...'
     };
 </script>
 
