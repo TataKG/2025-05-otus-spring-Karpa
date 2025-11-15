@@ -1,68 +1,10 @@
-// my-recipes.js - для страницы "Мои рецепты"
+// my-recipes.js - только обработка сообщений с бэкенда
 class MyRecipesApp extends BaseApiClient {
     constructor() {
         super('/api/recipes');
-        this.messages = window.i18nMessages || this.getFallbackMessages();
         this.currentFilter = 'all';
         this.currentUserRecipes = [];
-
-        window.addEventListener('languageChange', () => {
-            this.handleLanguageChange();
-        });
-
         this.init();
-    }
-
-    handleLanguageChange() {
-        this.loadMyRecipes();
-    }
-
-    getFallbackMessages() {
-        return {
-            loading: 'Загрузка...',
-            close: 'Закрыть',
-            view: 'Просмотр',
-            edit: 'Редактировать',
-            delete: 'Удалить',
-            cancel: 'Отмена',
-            retry: 'Повторить',
-            publish: 'Опубликовать',
-            'recipe-details': 'Детали рецепта',
-            'recipes-loading': 'Загрузка ваших рецептов...',
-            'no-recipes': 'У вас пока нет рецептов',
-            'error-loading-recipes': 'Ошибка при загрузке рецептов',
-            'error-loading-details': 'Ошибка при загрузке деталей рецепта',
-            'error-loading-comments': 'Ошибка при загрузке комментариев',
-            category: 'Категория',
-            author: 'Автор',
-            comments: 'Комментарии',
-            actions: 'Действия',
-            ingredients: 'Ингредиенты',
-            description: 'Описание',
-            inventory: 'Необходимый инвентарь',
-            'status-published': 'Опубликован',
-            'status-draft': 'Черновик',
-            'delete-confirm-title': 'Подтверждение удаления',
-            'delete-confirm-message': 'Вы уверены, что хотите удалить этот рецепт? Это действие нельзя отменить.',
-            'delete-success': 'Рецепт успешно удален',
-            'delete-error': 'Ошибка при удалении рецепта',
-            'comments-title': 'Комментарии к рецепту',
-            'no-comments': 'Комментариев пока нет',
-            'comment-author': 'Автор',
-            'comment-date': 'Дата',
-            'comment-content': 'Комментарий',
-            'comments-loading': 'Загрузка комментариев...',
-            'recipe-details-category': '📂 Категория',
-            'recipe-details-author': '👨‍🍳 Автор',
-            'recipe-details-ingredients': '🛒 Ингредиенты',
-            'recipe-details-description': '📝 Описание',
-            'recipe-details-inventory': '🔧 Необходимый инвентарь',
-            'recipe-details-comments': '💬 Комментарии',
-            'recipe-details-status': '📊 Статус',
-            'recipe-details-created-date': '📅 Дата создания',
-            'publish-success': 'Рецепт успешно опубликован',
-            'publish-error': 'Ошибка при публикации рецепта'
-        };
     }
 
     async init() {
@@ -72,7 +14,7 @@ class MyRecipesApp extends BaseApiClient {
 
     async loadMyRecipes() {
         try {
-            CommonUtils.showLoadingState('recipesTableBody', this.messages['recipes-loading'], 6);
+            CommonUtils.showLoadingState('recipesTableBody', 'Загрузка ваших рецептов...', 6);
 
             const response = await this.get('/my-recipes');
 
@@ -81,11 +23,10 @@ class MyRecipesApp extends BaseApiClient {
                 this.updateStatistics(response.data);
                 this.displayRecipes(response.data);
             } else {
-                this.showError(this.messages['error-loading-recipes'] + ': ' + (response.message || 'Unknown error'));
+                this.showError(response.message);
             }
         } catch (error) {
-            const errorMessage = CommonUtils.handleApiError(error, this.messages['error-loading-recipes']);
-            this.showError(errorMessage);
+            this.showError(error.message);
         }
     }
 
@@ -134,7 +75,7 @@ class MyRecipesApp extends BaseApiClient {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="6" class="text-center py-4 text-muted">
-                        📝 ${this.messages['no-recipes']}
+                        📝 У вас пока нет рецептов
                     </td>
                 </tr>
             `;
@@ -143,7 +84,6 @@ class MyRecipesApp extends BaseApiClient {
 
         tbody.innerHTML = recipes.map(recipe => {
             const categoryName = recipe.categoryName || 'Не указана';
-            const authorName = recipe.authorName || 'Неизвестен';
             const commentCount = recipe.commentCount || 0;
 
             return `
@@ -154,8 +94,8 @@ class MyRecipesApp extends BaseApiClient {
                     </td>
                     <td>
                         ${recipe.published ?
-                            `<span class="badge bg-success">${this.messages['status-published']}</span>` :
-                            `<span class="badge bg-warning text-dark">${this.messages['status-draft']}</span>`
+                            `<span class="badge bg-success">Опубликован</span>` :
+                            `<span class="badge bg-warning text-dark">Черновик</span>`
                         }
                     </td>
                     <td class="text-muted">
@@ -166,7 +106,7 @@ class MyRecipesApp extends BaseApiClient {
                               style="cursor: pointer;"
                               data-recipe-id="${recipe.id}"
                               data-recipe-title="${CommonUtils.escapeHtml(recipe.title)}"
-                              title="${this.messages.view} ${this.messages.comments.toLowerCase()}">
+                              title="Просмотр комментариев">
                             💬 ${commentCount}
                         </span>
                     </td>
@@ -174,26 +114,26 @@ class MyRecipesApp extends BaseApiClient {
                         <div class="btn-group btn-group-sm" role="group">
                             <button class="btn btn-outline-primary view-recipe"
                                     data-recipe-id="${recipe.id}"
-                                    title="${this.messages.view}">
-                                👁️ ${this.messages.view}
+                                    title="Просмотр">
+                                👁️ Просмотр
                             </button>
                             <button class="btn btn-outline-warning edit-recipe"
                                     data-recipe-id="${recipe.id}"
-                                    title="${this.messages.edit}">
-                                ✏️ ${this.messages.edit}
+                                    title="Редактировать">
+                                ✏️ Редактировать
                             </button>
                             ${!recipe.published ? `
                                 <button class="btn btn-outline-success publish-recipe"
                                         data-recipe-id="${recipe.id}"
-                                        title="${this.messages.publish}">
-                                    📢 ${this.messages.publish}
+                                        title="Опубликовать">
+                                    📢 Опубликовать
                                 </button>
                             ` : ''}
                             <button class="btn btn-outline-danger delete-recipe"
                                     data-recipe-id="${recipe.id}"
                                     data-recipe-title="${CommonUtils.escapeHtml(recipe.title)}"
-                                    title="${this.messages.delete}">
-                                🗑️ ${this.messages.delete}
+                                    title="Удалить">
+                                🗑️ Удалить
                             </button>
                         </div>
                     </td>
@@ -241,12 +181,6 @@ class MyRecipesApp extends BaseApiClient {
             badge.addEventListener('click', (e) => {
                 const recipeId = e.target.closest('.comments-badge').dataset.recipeId;
                 const recipeTitle = e.target.closest('.comments-badge').dataset.recipeTitle;
-
-                if (!recipeId || recipeId === 'undefined') {
-                    CommonUtils.showToast('Неверный идентификатор рецепта', 'error');
-                    return;
-                }
-
                 this.showCommentsModal(recipeId, recipeTitle);
             });
         });
@@ -259,40 +193,10 @@ class MyRecipesApp extends BaseApiClient {
             if (response.success) {
                 this.showRecipeModal(response.data);
             } else {
-                this.showError(this.messages['error-loading-details']);
+                CommonUtils.showToast(response.message, 'error');
             }
         } catch (error) {
-            const errorMessage = CommonUtils.handleApiError(error, this.messages['error-loading-details']);
-            this.showError(errorMessage);
-        }
-    }
-
-    async loadRecipeComments(recipeId) {
-        try {
-            const response = await fetch(`/api/recipes/${recipeId}/comments`, {
-                credentials: 'include',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                if (response.status === 404 || response.status === 403) {
-                    return [];
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-
-            if (result.success) {
-                return result.data || [];
-            } else {
-                return [];
-            }
-        } catch (error) {
-            throw error;
+            CommonUtils.showToast(error.message, 'error');
         }
     }
 
@@ -313,17 +217,17 @@ class MyRecipesApp extends BaseApiClient {
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <h6>${this.messages['recipe-details-category']}:</h6>
+                        <h6>📂 Категория:</h6>
                         <p><span class="badge bg-primary">${CommonUtils.escapeHtml(categoryName)}</span></p>
                     </div>
 
                     <div class="mb-3">
-                        <h6>${this.messages['recipe-details-author']}:</h6>
+                        <h6>👨‍🍳 Автор:</h6>
                         <p class="text-muted">${CommonUtils.escapeHtml(authorName)}</p>
                     </div>
 
                     <div class="mb-3">
-                        <h6>${this.messages['recipe-details-ingredients']}:</h6>
+                        <h6>🛒 Ингредиенты:</h6>
                         <div class="list-group">
                             ${this.getIngredientsList(ingredients)}
                         </div>
@@ -332,28 +236,28 @@ class MyRecipesApp extends BaseApiClient {
 
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <h6>${this.messages['recipe-details-description']}:</h6>
+                        <h6>📝 Описание:</h6>
                         <p class="text-muted border-start border-3 border-primary ps-3 py-2 bg-light">
                             ${CommonUtils.escapeHtml(description)}
                         </p>
                     </div>
 
                     <div class="mb-3">
-                        <h6>${this.messages['recipe-details-inventory']}:</h6>
+                        <h6>🔧 Необходимый инвентарь:</h6>
                         <div class="d-flex flex-wrap gap-2">
                             ${this.getInventoryItemsList(inventoryItems)}
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <h6>${this.messages['recipe-details-comments']}:</h6>
+                        <h6>💬 Комментарии:</h6>
                         <p>
                             <span class="badge bg-info text-dark comments-badge"
                                   style="cursor: pointer;"
                                   data-recipe-id="${recipe.id}"
                                   data-recipe-title="${CommonUtils.escapeHtml(recipe.title)}"
-                                  title="${this.messages.view} ${this.messages.comments.toLowerCase()}">
-                                💬 ${commentCount} ${CommonUtils.getCommentText(commentCount)}
+                                  title="Просмотр комментариев">
+                                💬 ${commentCount}
                             </span>
                         </p>
                     </div>
@@ -366,12 +270,6 @@ class MyRecipesApp extends BaseApiClient {
             commentsBadge.addEventListener('click', () => {
                 const recipeId = commentsBadge.dataset.recipeId;
                 const recipeTitle = commentsBadge.dataset.recipeTitle;
-
-                if (!recipeId || recipeId === 'undefined') {
-                    CommonUtils.showToast('Неверный идентификатор рецепта', 'error');
-                    return;
-                }
-
                 this.showCommentsModal(recipeId, recipeTitle);
 
                 const recipeModal = bootstrap.Modal.getInstance(document.getElementById('recipeModal'));
@@ -422,22 +320,17 @@ class MyRecipesApp extends BaseApiClient {
     }
 
     async showCommentsModal(recipeId, recipeTitle) {
-        if (!recipeId || recipeId === 'undefined') {
-            CommonUtils.showToast('Неверный идентификатор рецепта', 'error');
-            return;
-        }
-
         const modalTitle = document.getElementById('commentsModalTitle');
         const modalBody = document.getElementById('commentsModalBody');
 
-        modalTitle.textContent = `💬 ${this.messages['comments-title']}: ${CommonUtils.escapeHtml(recipeTitle)}`;
+        modalTitle.textContent = `💬 Комментарии: ${CommonUtils.escapeHtml(recipeTitle)}`;
 
         modalBody.innerHTML = `
             <div class="text-center py-4">
                 <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">${this.messages.loading}</span>
+                    <span class="visually-hidden">Загрузка...</span>
                 </div>
-                <p class="mt-2 text-muted">${this.messages['comments-loading']}</p>
+                <p class="mt-2 text-muted">Загрузка комментариев...</p>
             </div>
         `;
 
@@ -450,14 +343,19 @@ class MyRecipesApp extends BaseApiClient {
         } catch (error) {
             modalBody.innerHTML = `
                 <div class="alert alert-danger">
-                    <p>${this.messages['error-loading-comments']}</p>
-                    <p class="small text-muted">Ошибка: ${error.message}</p>
+                    <p>Ошибка при загрузке комментариев</p>
                     <button class="btn btn-sm btn-outline-primary" onclick="myRecipesApp.showCommentsModal('${recipeId}', '${CommonUtils.escapeHtml(recipeTitle)}')">
-                        ${this.messages.retry}
+                        Повторить
                     </button>
                 </div>
             `;
         }
+    }
+
+    async loadRecipeComments(recipeId) {
+        const response = await fetch(`/api/recipes/${recipeId}/comments`);
+        const result = await response.json();
+        return result.success ? result.data || [] : [];
     }
 
     displayComments(comments, modalBody) {
@@ -465,43 +363,33 @@ class MyRecipesApp extends BaseApiClient {
             modalBody.innerHTML = `
                 <div class="text-center py-4">
                     <div class="text-muted mb-2">💬</div>
-                    <p class="text-muted">${this.messages['no-comments']}</p>
+                    <p class="text-muted">Комментариев пока нет</p>
                 </div>
             `;
             return;
         }
 
-        modalBody.innerHTML = `
-            <div class="comments-list">
-                ${comments.map(comment => `
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <div>
-                                    <h6 class="card-title mb-1">
-                                        👤 ${CommonUtils.escapeHtml(comment.userName || comment.author || comment.user?.username || this.messages['comment-author'])}
-                                    </h6>
-                                    <small class="text-muted">
-                                        📅 ${new Date(comment.createdAt).toLocaleString()}
-                                    </small>
-                                </div>
-                            </div>
-                            <p class="card-text mt-3">${CommonUtils.escapeHtml(comment.content)}</p>
+        modalBody.innerHTML = comments.map(comment => `
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h6 class="card-title mb-1">
+                                👤 ${CommonUtils.escapeHtml(comment.userName || comment.author || comment.user?.username || 'Автор')}
+                            </h6>
+                            <small class="text-muted">
+                                📅 ${new Date(comment.createdAt).toLocaleString()}
+                            </small>
                         </div>
                     </div>
-                `).join('')}
+                    <p class="card-text mt-3">${CommonUtils.escapeHtml(comment.content)}</p>
+                </div>
             </div>
-        `;
+        `).join('');
     }
 
     editRecipe(recipeId) {
-        if (!recipeId || recipeId === 'undefined') {
-            CommonUtils.showToast('Неверный идентификатор рецепта для редактирования', 'error');
-            return;
-        }
-
-        const editUrl = `/recipe/edit/${recipeId}`;
-        window.location.href = editUrl;
+        window.location.href = `/recipe/edit/${recipeId}`;
     }
 
     showDeleteConfirmation(recipeId, recipeTitle) {
@@ -528,25 +416,15 @@ class MyRecipesApp extends BaseApiClient {
             const response = await this.delete(`/${recipeId}`);
 
             if (response.success) {
-                CommonUtils.showToast(this.messages['delete-success'], 'success');
-
+                CommonUtils.showToast(response.message, 'success');
                 this.currentUserRecipes = this.currentUserRecipes.filter(recipe => recipe.id != recipeId);
                 this.updateStatistics(this.currentUserRecipes);
                 this.displayRecipes(this.currentUserRecipes);
-
             } else {
-                CommonUtils.showToast(this.messages['delete-error'], 'error');
+                CommonUtils.showToast(response.message, 'error');
             }
         } catch (error) {
-            if (error.message.includes('404')) {
-                CommonUtils.showToast(this.messages['delete-success'], 'success');
-                this.currentUserRecipes = this.currentUserRecipes.filter(recipe => recipe.id != recipeId);
-                this.updateStatistics(this.currentUserRecipes);
-                this.displayRecipes(this.currentUserRecipes);
-            } else {
-                const errorMessage = CommonUtils.handleApiError(error, this.messages['delete-error']);
-                CommonUtils.showToast(errorMessage, 'error');
-            }
+            CommonUtils.showToast(error.message, 'error');
         }
     }
 
@@ -562,18 +440,15 @@ class MyRecipesApp extends BaseApiClient {
             const response = await this.patch(`/${recipeId}/publish`, {});
 
             if (response.success) {
-                CommonUtils.showToast(this.messages['publish-success'], 'success');
-
+                CommonUtils.showToast(response.message, 'success');
                 const recipeIndex = this.currentUserRecipes.findIndex(r => r.id == recipeId);
                 if (recipeIndex !== -1) {
                     this.currentUserRecipes[recipeIndex].published = true;
                 }
-
                 this.updateStatistics(this.currentUserRecipes);
                 this.displayRecipes(this.currentUserRecipes);
-
             } else {
-                throw new Error(response.message || 'Ошибка при публикации рецепта');
+                throw new Error(response.message);
             }
 
         } catch (error) {
@@ -582,9 +457,7 @@ class MyRecipesApp extends BaseApiClient {
                 publishButton.innerHTML = '📢 Опубликовать';
                 publishButton.disabled = false;
             }
-
-            const errorMessage = CommonUtils.handleApiError(error, this.messages['publish-error']);
-            CommonUtils.showToast(errorMessage, 'error');
+            CommonUtils.showToast(error.message, 'error');
         }
     }
 
@@ -611,9 +484,5 @@ class MyRecipesApp extends BaseApiClient {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    try {
-        window.myRecipesApp = new MyRecipesApp();
-    } catch (error) {
-        console.error("Error initializing MyRecipesApp:", error);
-    }
+    window.myRecipesApp = new MyRecipesApp();
 });
