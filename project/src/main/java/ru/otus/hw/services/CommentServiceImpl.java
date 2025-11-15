@@ -142,13 +142,4 @@ public class CommentServiceImpl implements CommentService {
                         messageProvider.getMessage("user.not_found")
                 ));
     }
-
-    private Long getCurrentUserId(String username) {
-        if (username == null) {
-            return null;
-        }
-        return userRepository.findByUsername(username)
-                .map(User::getId)
-                .orElse(null);
-    }
 }
