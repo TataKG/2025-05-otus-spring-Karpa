@@ -3,11 +3,7 @@ package ru.otus.hw.converters;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import ru.otus.hw.dto.CommentDto;
-import ru.otus.hw.dto.UserDto;
 import ru.otus.hw.models.Comment;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -43,11 +39,5 @@ public class CommentConverter {
                 isOwner,
                 isOwner
         );
-    }
-
-    public List<CommentDto> toDtoList(List<Comment> comments, Long currentUserId) {
-        return comments.stream()
-                .map(comment -> toDto(comment, currentUserId))
-                .collect(Collectors.toList());
     }
 }

@@ -6,9 +6,7 @@ import ru.otus.hw.dto.UserDto;
 import ru.otus.hw.models.User;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Component
 public class UserConverter {
@@ -29,26 +27,6 @@ public class UserConverter {
                 roles,
                 user.getCreatedAt(),
                 isAuthor
-        );
-    }
-
-    public List<UserDto> toDtoList(List<User> users) {
-        return users.stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
-    }
-
-    public UserDto toBasicDto(User user) {
-        if (user == null) return null;
-
-        return new UserDto(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.isEnabled(),
-                new HashSet<>(),
-                user.getCreatedAt(),
-                false
         );
     }
 }
