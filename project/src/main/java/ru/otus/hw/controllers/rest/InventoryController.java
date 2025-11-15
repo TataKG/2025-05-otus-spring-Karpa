@@ -27,25 +27,6 @@ public class InventoryController {
     private final InventoryService inventoryService;
     private final MessageProvider messageProvider;
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<InventoryDto>> createInventory(@RequestBody CreateInventoryRequest request) {
-        try {
-            InventoryDto inventoryDto = inventoryService.createInventory(
-                    request.name(),
-                    request.description()
-            );
-            return ResponseEntity.status(HttpStatus.CREATED).body(
-                    ApiResponse.success(inventoryDto, messageProvider.getMessage("inventory.created"))
-            );
-        } catch (EntityAlreadyExistsException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(ApiResponse.error(e.getMessage()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
-        }
-    }
-
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<InventoryDto>> getInventoryById(@PathVariable Long id) {
         try {
