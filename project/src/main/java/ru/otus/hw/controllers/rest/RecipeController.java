@@ -109,7 +109,7 @@ public class RecipeController {
         }
     }
 
-    @PostMapping
+    @PostMapping(value = {"", "/"})
     public ResponseEntity<ApiResponse<RecipeDto>> createRecipe(
             @Valid @RequestBody CreateRecipeRequest request,
             Authentication authentication) {
