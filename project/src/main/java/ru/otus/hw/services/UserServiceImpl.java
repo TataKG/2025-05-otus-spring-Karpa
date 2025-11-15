@@ -30,7 +30,6 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDto createUser(String username, String email, String password, String bio) {
-        // Оставить только проверки уникальности
         if (userExists(username)) {
             throw new EntityAlreadyExistsException(
                     messageProvider.getMessage("user.already_exists.username", username)
