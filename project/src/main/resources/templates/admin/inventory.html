@@ -26,11 +26,10 @@
 <div th:fragment="content">
     <div class="row mb-4">
         <div class="col">
-            <!-- УБРАН ЗАГОЛОВОК H1 Т.К. ОН УЖЕ ЕСТЬ В ШАБЛОНЕ -->
         </div>
         <div class="col-auto">
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createInventoryModal">
-                ➕ <span th:text="#{admin.button.add}">Добавить инвентарь</span>
+                ➕ <span th:text="#{admin.button.add}">Добавить</span>
             </button>
         </div>
     </div>
@@ -182,7 +181,7 @@
 
     <!-- Скрипты для инвентаря -->
     <div th:fragment="scripts">
-        <script th:src="@{/js/admin-inventory-fixed.js}"></script>
+        <script th:src="@{/js/admin-inventory.js}"></script>
     </div>
 </div>
 </body>
