@@ -106,43 +106,6 @@ class InventoryServiceImplTest {
     }
 
     @Test
-    @DisplayName("Создание инвентаря - пустое имя")
-    void createInventory_ShouldThrowException_WhenNameIsEmpty() {
-        // Arrange
-        String name = "   ";
-        String description = "Описание инвентаря";
-
-        when(messageProvider.getMessage("inventory.name.empty"))
-                .thenReturn("Название инвентаря не может быть пустым");
-
-        // Act & Assert
-        assertThatThrownBy(() -> inventoryService.createInventory(name, description))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Название инвентаря не может быть пустым");
-
-        verify(inventoryRepository, never()).existsByName(anyString());
-        verify(inventoryRepository, never()).save(any(Inventory.class));
-    }
-
-    @Test
-    @DisplayName("Создание инвентаря - null имя")
-    void createInventory_ShouldThrowException_WhenNameIsNull() {
-        // Arrange
-        String description = "Описание инвентаря";
-
-        when(messageProvider.getMessage("inventory.name.empty"))
-                .thenReturn("Название инвентаря не может быть пустым");
-
-        // Act & Assert
-        assertThatThrownBy(() -> inventoryService.createInventory(null, description))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Название инвентаря не может быть пустым");
-
-        verify(inventoryRepository, never()).existsByName(anyString());
-        verify(inventoryRepository, never()).save(any(Inventory.class));
-    }
-
-    @Test
     @DisplayName("Получение инвентаря по ID - инвентарь найден")
     void getInventoryById_ShouldReturnInventory_WhenInventoryExists() {
         // Arrange

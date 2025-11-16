@@ -42,7 +42,6 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public InventoryDto createInventory(String name, String description) {
-        validateInventoryName(name);
         String trimmedName = name.trim();
 
         if (inventoryRepository.existsByName(trimmedName)) {
@@ -172,14 +171,6 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     public List<InventoryDto> getInventoryByNameContainingWithRecipes(String name) {
         return getInventoryByNameContaining(name);
-    }
-
-    private void validateInventoryName(String name) {
-        if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException(
-                    messageProvider.getMessage("inventory.name.empty")
-            );
-        }
     }
 
     private Inventory getInventoryEntity(Long id) {

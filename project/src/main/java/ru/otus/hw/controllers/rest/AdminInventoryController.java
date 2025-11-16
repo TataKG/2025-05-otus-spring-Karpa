@@ -1,5 +1,9 @@
 package ru.otus.hw.controllers.rest;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,7 +56,7 @@ public class AdminInventoryController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<InventoryDto>> createInventory(@RequestBody CreateInventoryRequest request) {
+    public ResponseEntity<ApiResponse<InventoryDto>> createInventory(@RequestBody @Valid CreateInventoryRequest request) {
         try {
             InventoryDto inventoryDto = inventoryService.createInventory(
                     request.name().trim(),
@@ -77,7 +81,7 @@ public class AdminInventoryController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<InventoryDto>> updateInventory(
             @PathVariable Long id,
-            @RequestBody UpdateInventoryRequest request) {
+            @RequestBody @Valid UpdateInventoryRequest request) {
         try {
             InventoryDto inventoryDto = inventoryService.updateInventory(id, request.description());
             return ResponseEntity.ok(
@@ -147,10 +151,22 @@ public class AdminInventoryController {
         }
     }
 
-    public record CreateInventoryRequest(String name, String description) {
+    public record CreateInventoryRequest(
+            @NotBlank(message = "{inventory.name.not.blank}")
+            @Size(min = 2, max = 150, message = "{inventory.name.size}")
+            @Pattern(regexp = "^[a-zA-Zа-яА-Я0-9\\s\\-]+$", message = "{inventory.name.pattern}")
+            String name,
+
+            @NotBlank(message = "{inventory.description.not.blank}")
+            @Size(max = 255, message = "{inventory.description.size}")
+            String description
+    ) {
     }
 
-    public record UpdateInventoryRequest(String description) {
+    public record UpdateInventoryRequest(
+            @NotBlank(message = "{inventory.description.not.blank}")
+            @Size(max = 255, message = "{inventory.description.size}")
+            String description) {
     }
 
     public record InventoryUsageResponse(boolean isUsed, long recipeCount) {

@@ -13,6 +13,12 @@
             border-top: none;
             font-weight: 600;
         }
+        .form-control-plaintext {
+            background-color: #f8f9fa;
+            padding: 0.375rem 0.75rem;
+            border: 1px solid #ced4da;
+            border-radius: 0.375rem;
+        }
     </style>
 </head>
 <body>
@@ -77,13 +83,20 @@
                             <div class="mb-3">
                                 <label for="inventoryName" class="form-label" th:text="#{admin.table.name} + ' *'">Название инвентаря *</label>
                                 <input type="text" class="form-control" id="inventoryName" required
-                                       th:placeholder="#{admin.table.name.placeholder}">
-                                <div class="invalid-feedback" th:text="#{validation.required}">Пожалуйста, введите название инвентаря</div>
+                                       th:placeholder="#{admin.table.name.placeholder}"
+                                       th:attr="data-validation-required=#{validation.required}">
+                                <div class="invalid-feedback" th:text="#{validation.required}">
+                                    Пожалуйста, введите название инвентаря
+                                </div>
                             </div>
                             <div class="mb-3">
-                                <label for="inventoryDescription" class="form-label" th:text="#{admin.table.description}">Описание</label>
-                                <textarea class="form-control" id="inventoryDescription" rows="3"
-                                          th:placeholder="#{admin.table.description.placeholder}"></textarea>
+                                <label for="inventoryDescription" class="form-label" th:text="#{admin.table.description} + ' *'">Описание *</label>
+                                <textarea class="form-control" id="inventoryDescription" rows="3" required
+                                          th:placeholder="#{admin.table.description.placeholder}"
+                                          th:attr="data-validation-required=#{validation.required}"></textarea>
+                                <div class="invalid-feedback" th:text="#{validation.required}">
+                                    Пожалуйста, введите описание инвентаря
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -109,12 +122,17 @@
                         <form id="editInventoryForm" onsubmit="return false;">
                             <input type="hidden" id="editInventoryId">
                             <div class="mb-3">
-                                <label for="editInventoryName" class="form-label" th:text="#{admin.table.name}">Название инвентаря</label>
-                                <input type="text" class="form-control" id="editInventoryName" readonly>
+                                <label class="form-label" th:text="#{admin.table.name}">Название инвентаря</label>
+                                <p class="form-control-plaintext fw-bold" id="editInventoryName"></p>
+                                <small class="text-muted" th:text="#{admin.inventory.name_not_editable}">Название нельзя изменить после создания</small>
                             </div>
                             <div class="mb-3">
-                                <label for="editInventoryDescription" class="form-label" th:text="#{admin.table.description}">Описание</label>
-                                <textarea class="form-control" id="editInventoryDescription" rows="3"></textarea>
+                                <label for="editInventoryDescription" class="form-label" th:text="#{admin.table.description} + ' *'">Описание *</label>
+                                <textarea class="form-control" id="editInventoryDescription" rows="3" required
+                                          th:attr="data-validation-required=#{validation.required}"></textarea>
+                                <div class="invalid-feedback" th:text="#{validation.required}">
+                                    Пожалуйста, введите описание инвентаря
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -144,7 +162,7 @@
                             <!-- Содержимое будет добавляться через JavaScript -->
                         </div>
 
-                        <!-- Добавьте этот элемент для отображения количества рецептов -->
+                        <!-- Информация об использовании -->
                         <div id="usageInfo" style="display: none;" class="mt-3">
                             <div class="alert alert-warning">
                                 <span id="recipeCount"></span> <span th:text="#{admin.inventory.recipes}">рецептах</span>
@@ -164,7 +182,6 @@
 
     <!-- Скрипты для инвентаря -->
     <div th:fragment="scripts">
-<!--        <script th:src="@{/js/admin-inventory.js}"></script>-->
         <script th:src="@{/js/admin-inventory-fixed.js}"></script>
     </div>
 </div>

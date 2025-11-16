@@ -1,4 +1,4 @@
-// admin-inventory-fixed.js - полностью автономная версия
+// admin-inventory-fixed.js - адаптирован для Spring Validation
 (function() {
     'use strict';
 
@@ -245,7 +245,7 @@
             try {
                 await this.loadInventories();
                 this.setupEventListeners();
-                this.setupCreateFormHandlers();
+                this.setupFormHandlers();
                 this.initialized = true;
                 console.log('✅ InventoryAdminApp initialized successfully');
             } catch (error) {
@@ -387,13 +387,21 @@
                     this.resetCreateForm();
                 });
             }
+
+            const editModal = document.getElementById('editInventoryModal');
+            if (editModal) {
+                editModal.addEventListener('hidden.bs.modal', () => {
+                    this.clearValidationErrors('editInventoryForm');
+                });
+            }
         }
 
-        setupCreateFormHandlers() {
+        setupFormHandlers() {
+            // Обработчики для формы создания
             const createForm = document.getElementById('createInventoryForm');
             if (createForm) {
                 createForm.addEventListener('input', (e) => {
-                    if (e.target.id === 'inventoryName') {
+                    if (e.target.id === 'inventoryName' || e.target.id === 'inventoryDescription') {
                         e.target.classList.remove('is-invalid');
                     }
                 });
@@ -406,6 +414,24 @@
                 });
             }
 
+            // Обработчики для формы редактирования
+            const editForm = document.getElementById('editInventoryForm');
+            if (editForm) {
+                editForm.addEventListener('input', (e) => {
+                    if (e.target.id === 'editInventoryDescription') {
+                        e.target.classList.remove('is-invalid');
+                    }
+                });
+
+                editForm.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.updateInventory();
+                    }
+                });
+            }
+
+            // Сброс формы при открытии модального окна создания
             const createModal = document.getElementById('createInventoryModal');
             if (createModal) {
                 createModal.addEventListener('show.bs.modal', () => {
@@ -418,10 +444,33 @@
             const form = document.getElementById('createInventoryForm');
             if (form) {
                 form.reset();
-                const nameInput = document.getElementById('inventoryName');
-                if (nameInput) {
-                    nameInput.classList.remove('is-invalid');
-                }
+                this.clearValidationErrors('createInventoryForm');
+            }
+        }
+
+        clearValidationErrors(formId) {
+            const form = document.getElementById(formId);
+            if (!form) return;
+
+            const invalidInputs = form.querySelectorAll('.is-invalid');
+            invalidInputs.forEach(input => {
+                input.classList.remove('is-invalid');
+            });
+
+            const invalidFeedbacks = form.querySelectorAll('.invalid-feedback');
+            invalidFeedbacks.forEach(feedback => {
+                feedback.textContent = '';
+            });
+        }
+
+        showFieldError(fieldId, message) {
+            const field = document.getElementById(fieldId);
+            if (!field) return;
+
+            field.classList.add('is-invalid');
+            const feedback = field.nextElementSibling;
+            if (feedback && feedback.classList.contains('invalid-feedback')) {
+                feedback.textContent = message;
             }
         }
 
@@ -433,12 +482,8 @@
             const name = nameInput.value.trim();
             const description = descriptionInput.value.trim();
 
-            if (!name) {
-                nameInput.classList.add('is-invalid');
-                nameInput.focus();
-                TemporaryCommonUtils.showToast(this.translations.required, 'error');
-                return;
-            }
+            // Очищаем предыдущие ошибки
+            this.clearValidationErrors('createInventoryForm');
 
             if (createBtn) {
                 createBtn.disabled = true;
@@ -451,7 +496,7 @@
                 console.log('Inventory creation response:', response);
 
                 if (response.success) {
-                    TemporaryCommonUtils.showToast(response.message || this.translations.successCreated);
+                    TemporaryCommonUtils.showToast(response.message || this.translations.successCreated, 'success');
                     this.resetCreateForm();
 
                     const modal = bootstrap.Modal.getInstance(document.getElementById('createInventoryModal'));
@@ -465,7 +510,7 @@
                 }
             } catch (error) {
                 console.error('Error creating inventory:', error);
-                TemporaryCommonUtils.showToast(this.translations.errorCreate, 'error');
+                await this.handleValidationError(error, 'createInventoryForm');
             } finally {
                 if (createBtn) {
                     createBtn.disabled = false;
@@ -482,20 +527,27 @@
             }
 
             document.getElementById('editInventoryId').value = inventory.id;
-            document.getElementById('editInventoryName').value = inventory.name;
+            document.getElementById('editInventoryName').textContent = inventory.name; // Только отображение, не редактирование
             document.getElementById('editInventoryDescription').value = inventory.description || '';
+
+            // Очищаем ошибки при открытии
+            this.clearValidationErrors('editInventoryForm');
 
             new bootstrap.Modal(document.getElementById('editInventoryModal')).show();
         }
 
         async updateInventory() {
             const id = document.getElementById('editInventoryId').value;
-            const name = document.getElementById('editInventoryName').value.trim();
             const description = document.getElementById('editInventoryDescription').value.trim();
             const updateBtn = document.getElementById('updateInventoryBtn');
 
-            if (!name) {
-                TemporaryCommonUtils.showToast(this.translations.required, 'error');
+            // Очищаем предыдущие ошибки
+            this.clearValidationErrors('editInventoryForm');
+
+            // Базовая валидация на клиенте
+            if (!description) {
+                this.showFieldError('editInventoryDescription', this.translations.required);
+                document.getElementById('editInventoryDescription').focus();
                 return;
             }
 
@@ -505,26 +557,96 @@
             }
 
             try {
-                const response = await this.put(`/inventory/${id}`, { name, description });
+                console.log('Sending inventory update request:', { id, description });
+                const response = await this.put(`/inventory/${id}`, { description });
+                console.log('Inventory update response:', response);
 
                 if (response.success) {
-                    TemporaryCommonUtils.showToast(response.message || this.translations.successUpdated);
+                    TemporaryCommonUtils.showToast(response.message || this.translations.successUpdated, 'success');
 
-                    const modalElement = document.getElementById('editInventoryModal');
-                    const closeBtn = modalElement.querySelector('.btn-close');
-                    if (closeBtn) closeBtn.click();
+                    // Закрываем модальное окно
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editInventoryModal'));
+                    if (modal) {
+                        modal.hide();
+                    }
 
+                    // Перезагружаем список инвентаря
                     await this.loadInventories();
                 } else {
                     TemporaryCommonUtils.showToast(response.message || this.translations.errorUpdate, 'error');
                 }
             } catch (error) {
                 console.error('Error updating inventory:', error);
-                TemporaryCommonUtils.showToast(this.translations.errorUpdate, 'error');
+                await this.handleValidationError(error, 'editInventoryForm');
             } finally {
                 if (updateBtn) {
                     updateBtn.disabled = false;
                     updateBtn.innerHTML = this.translations.save;
+                }
+            }
+        }
+
+        async handleValidationError(error, formId) {
+            console.log('Handling validation error for form:', formId, error);
+
+            if (error.response) {
+                try {
+                    const errorData = await error.response.json();
+                    const errorMessage = errorData.message || 'Произошла ошибка';
+
+                    // Если это ошибка валидации (400), показываем в соответствующем поле
+                    if (error.response.status === 400) {
+                        this.showValidationErrors(formId, errorMessage);
+                        return;
+                    }
+
+                    // Для других ошибок показываем общее сообщение
+                    TemporaryCommonUtils.showToast(errorMessage, 'error');
+                } catch (e) {
+                    console.error('Error parsing error response:', e);
+                    TemporaryCommonUtils.showToast('Произошла ошибка', 'error');
+                }
+            } else if (error.message) {
+                TemporaryCommonUtils.showToast(error.message, 'error');
+            } else {
+                TemporaryCommonUtils.showToast('Произошла неизвестная ошибка', 'error');
+            }
+        }
+
+        showValidationErrors(formId, errorMessage) {
+            const form = document.getElementById(formId);
+            if (!form) return;
+
+            // Разделяем сообщение на отдельные ошибки
+            const errors = errorMessage.split(/\n|, /).filter(msg => msg.trim());
+
+            let hasFieldErrors = false;
+
+            errors.forEach(error => {
+                const cleanError = error.replace(/^•\s*/, '').trim();
+
+                // Определяем, к какому полю относится ошибка
+                if (cleanError.includes('назван') || cleanError.includes('name') || cleanError.includes('Название')) {
+                    this.showFieldError('inventoryName', cleanError);
+                    hasFieldErrors = true;
+                } else if (cleanError.includes('описан') || cleanError.includes('description') || cleanError.includes('Описание')) {
+                    if (formId === 'createInventoryForm') {
+                        this.showFieldError('inventoryDescription', cleanError);
+                    } else {
+                        this.showFieldError('editInventoryDescription', cleanError);
+                    }
+                    hasFieldErrors = true;
+                }
+            });
+
+            // Если не удалось сопоставить ошибки с полями, показываем общее сообщение
+            if (!hasFieldErrors) {
+                TemporaryCommonUtils.showToast(errorMessage, 'error');
+            } else {
+                // Фокусируемся на первом поле с ошибкой
+                const firstErrorField = form.querySelector('.is-invalid');
+                if (firstErrorField) {
+                    firstErrorField.focus();
                 }
             }
         }
@@ -615,7 +737,7 @@
                 console.log('Delete response:', response);
 
                 if (response.success) {
-                    TemporaryCommonUtils.showToast(response.message || this.translations.successDeleted);
+                    TemporaryCommonUtils.showToast(response.message || this.translations.successDeleted, 'success');
                     console.log('Inventory deleted successfully');
 
                     const modal = bootstrap.Modal.getInstance(document.getElementById('deleteInventoryModal'));
