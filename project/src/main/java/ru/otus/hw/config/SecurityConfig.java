@@ -50,8 +50,7 @@ public class SecurityConfig {
 
                 // CSRF конфигурация - отключаем для API, оставляем для форм
                 .csrf(csrf -> csrf
-                                .ignoringRequestMatchers("/h2-console/**", "/api/**")
-                        // Убрали CookieCsrfTokenRepository для API endpoints
+                        .ignoringRequestMatchers("/h2-console/**", "/api/**")
                 )
 
                 // Headers для H2 console
@@ -63,7 +62,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/", "/index.html", "/login", "/logout", "/register", "/error",
                                 "/css/**", "/js/**", "/images/**", "/webjars/**", "/favicon.ico",
-                                "/create-form-data", "/edit-form-data/**"  // Добавили пути формы
+                                "/create-form-data", "/edit-form-data/**"
                         ).permitAll()
 
                         // API auth endpoints
@@ -118,8 +117,9 @@ public class SecurityConfig {
 
                 // Exception handling
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            // Для API запросов возвращаем 401, для веб - редирект на логин
+                        .authenticationEntryPoint((request,
+                                                   response,
+                                                   authException) -> {
                             if (request.getRequestURI().startsWith("/api/")) {
                                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                                 response.setContentType("application/json");
@@ -128,8 +128,9 @@ public class SecurityConfig {
                                 response.sendRedirect("/login");
                             }
                         })
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            // Для API запросов возвращаем 403, для веб - страница ошибки
+                        .accessDeniedHandler((request,
+                                              response,
+                                              accessDeniedException) -> {
                             if (request.getRequestURI().startsWith("/api/")) {
                                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                                 response.setContentType("application/json");

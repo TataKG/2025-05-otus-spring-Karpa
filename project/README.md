@@ -19,6 +19,8 @@
 10. Использование паттернов отказоустойчивости приветствуется (CircuitBreaker/Retry/Cache/ServiceRegistry/ConfigServer/ApiGateway/...)
 11. Docker приветствуется
 
+
+Справочная информация по паролям:
 Пользователь	Исходный пароль	
 admin	    admin123	
 chef_ivan	ivan456	

@@ -36,14 +36,7 @@
                                 👤 Имя пользователя
                             </label>
                             <input type="text" class="form-control form-control-lg" id="username" name="username"
-                                   required minlength="3" maxlength="50" pattern="[a-zA-Z0-9_]+"
                                    th:placeholder="#{registration.username.placeholder}">
-                            <div class="form-text">
-                                <small th:text="#{validation.username.pattern}">
-                                    Только буквы, цифры и подчеркивания
-                                </small>
-                            </div>
-                            <div class="invalid-feedback" th:text="#{validation.username.required}"></div>
                             <div class="field-status text-success" id="usernameStatus" style="display: none;"></div>
                             <div class="field-status text-danger" id="usernameError" style="display: none;"></div>
                         </div>
@@ -54,8 +47,7 @@
                                 📧 Email адрес
                             </label>
                             <input type="email" class="form-control form-control-lg" id="email" name="email"
-                                   required th:placeholder="#{registration.email.placeholder}">
-                            <div class="invalid-feedback" th:text="#{validation.email.required}"></div>
+                                   th:placeholder="#{registration.email.placeholder}">
                             <div class="field-status text-success" id="emailStatus" style="display: none;"></div>
                             <div class="field-status text-danger" id="emailError" style="display: none;"></div>
                         </div>
@@ -65,7 +57,7 @@
                             <label for="bio" class="form-label fw-semibold" th:text="#{registration.bio}">
                                 📝 О себе (биография)
                             </label>
-                            <textarea class="form-control" id="bio" name="bio" rows="3" maxlength="500"
+                            <textarea class="form-control" id="bio" name="bio" rows="3"
                                       th:placeholder="#{registration.bio.placeholder}"></textarea>
                             <div class="bio-counter">
                                 <span id="bioCounter">0</span>/500 <span th:text="#{registration.bio.characters}">символов</span>
@@ -83,14 +75,8 @@
                                 🔒 Пароль
                             </label>
                             <input type="password" class="form-control form-control-lg" id="password" name="password"
-                                   required minlength="6" th:placeholder="#{registration.password.placeholder}">
+                                   th:placeholder="#{registration.password.placeholder}">
                             <div class="password-strength" id="passwordStrength"></div>
-                            <div class="form-text">
-                                <small th:text="#{validation.password.min_length}">
-                                    Минимум 6 символов
-                                </small>
-                            </div>
-                            <div class="invalid-feedback" th:text="#{validation.password.required}"></div>
                         </div>
 
                         <!-- Подтверждение пароля -->
@@ -99,8 +85,7 @@
                                 🔒 Подтвердите пароль
                             </label>
                             <input type="password" class="form-control form-control-lg" id="confirmPassword" name="confirmPassword"
-                                   required th:placeholder="#{registration.confirm_password.placeholder}">
-                            <div class="invalid-feedback" th:text="#{validation.confirm_password.required}"></div>
+                                   th:placeholder="#{registration.confirm_password.placeholder}">
                             <div id="passwordMatch" class="form-text"></div>
                         </div>
 
