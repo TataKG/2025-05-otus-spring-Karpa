@@ -1,0 +1,38 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: library_test
+
+  liquibase:
+    enabled: true
+    contexts: test
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    generate-ddl: false
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
+
+logging:
+  level:
+    org.springframework: WARN
+    org.springframework.batch: WARN
+    org.hibernate: WARN
