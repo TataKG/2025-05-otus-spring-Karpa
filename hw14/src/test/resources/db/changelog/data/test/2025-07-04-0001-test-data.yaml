@@ -1,0 +1,85 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2025-07-24-0001-test-authors-data
+      author: tgkarpa
+      context: test
+      changes:
+        - loadData:
+            file: csv/test/2025-07-24-0001-authors.csv
+            relativeToChangelogFile: true
+            separator: ";"
+            encoding: UTF-8
+            tableName: authors
+            columns:
+              - column:
+                  name: id
+                  type: NUMERIC
+              - column:
+                  name: full_name
+                  type: VARCHAR(255)
+
+  - changeSet:
+      id: 2025-07-24-0001-test-genres-data
+      author: tgkarpa
+      context: test
+      changes:
+        - loadData:
+            file: csv/test/2025-07-24-0001-genres.csv
+            relativeToChangelogFile: true
+            separator: ";"
+            encoding: UTF-8
+            tableName: genres
+            columns:
+              - column:
+                  name: id
+                  type: NUMERIC
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+
+  - changeSet:
+      id: 2025-07-24-0001-test-books-data
+      author: tgkarpa
+      context: test
+      changes:
+        - loadData:
+            file: csv/test/2025-07-24-0001-books.csv
+            relativeToChangelogFile: true
+            separator: ";"
+            encoding: UTF-8
+            tableName: books
+            columns:
+              - column:
+                  name: id
+                  type: NUMERIC
+              - column:
+                  name: title
+                  type: VARCHAR(255)
+              - column:
+                  name: author_id
+                  type: NUMERIC
+              - column:
+                  name: genre_id
+                  type: NUMERIC
+
+  - changeSet:
+      id: 2025-07-24-0001-test-comments-data
+      author: tgkarpa
+      context: test
+      changes:
+        - loadData:
+            file: csv/test/2025-07-24-0001-comments.csv
+            relativeToChangelogFile: true
+            separator: ";"
+            encoding: UTF-8
+            tableName: comments
+            columns:
+              - column:
+                  name: id
+                  type: NUMERIC
+              - column:
+                  name: text
+                  type: VARCHAR(255)
+              - column:
+                  name: book_id
+                  type: NUMERIC

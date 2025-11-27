@@ -1,0 +1,40 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:maindb
+    driver-class-name: org.h2.Driver
+
+  liquibase:
+    enabled: true
+    contexts: dev
+
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: library
+
+  shell:
+    interactive:
+      enabled: true
+    history:
+      enabled: false
+
+  output:
+    ansi:
+      enabled: always
+
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
+
+logging:
+  level:
+    org.springframework.batch: INFO
