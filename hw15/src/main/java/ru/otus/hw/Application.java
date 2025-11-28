@@ -13,35 +13,35 @@ import ru.otus.hw.services.StoreService;
 @RequiredArgsConstructor
 public class Application implements CommandLineRunner {
 
-	private final StoreService storeService;
-	private final FlourMillService flourMillService;
+    private final StoreService storeService;
+    private final FlourMillService flourMillService;
 
-	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
 
-	@Override
-	public void run(String... args) {
-		log.info("🚀 Запуск системы 'Мукомольный завод - Хлебозавод - Магазин'");
+    @Override
+    public void run(String... args) {
+        log.info("🚀 Запуск системы 'Мукомольный завод - Хлебозавод - Магазин'");
 
-		simulateGrainSupplyIssues();
-		storeService.startOrderGeneration();
-	}
+        simulateGrainSupplyIssues();
+        storeService.startOrderGeneration();
+    }
 
-	private void simulateGrainSupplyIssues() {
-		new Thread(() -> {
-			try {
-				Thread.sleep(15000);
-				log.warn("🌾⚡ КРИТИЧЕСКАЯ СИТУАЦИЯ: Зерно закончилось!");
-				flourMillService.setHasGrain(false);
+    private void simulateGrainSupplyIssues() {
+        new Thread(() -> {
+            try {
+                Thread.sleep(15000);
+                log.warn("🌾⚡ КРИТИЧЕСКАЯ СИТУАЦИЯ: Зерно закончилось!");
+                flourMillService.setHasGrain(false);
 
-				Thread.sleep(10000);
-				log.info("🌾✅ СИТУАЦИЯ ВОССТАНОВЛЕНА: Поставка зерна получена!");
-				flourMillService.setHasGrain(true);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				log.error("Поток прерван", e);
-			}
-		}).start();
-	}
+                Thread.sleep(10000);
+                log.info("🌾✅ СИТУАЦИЯ ВОССТАНОВЛЕНА: Поставка зерна получена!");
+                flourMillService.setHasGrain(true);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error("Поток прерван", e);
+            }
+        }).start();
+    }
 }

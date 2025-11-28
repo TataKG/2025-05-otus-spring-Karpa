@@ -88,12 +88,12 @@ public class StoreServiceImpl implements StoreService {
 
     private Order generateOrder(String storeName) {
         Random random = new Random();
-        int itemCount = random.nextInt(3) + 1; // 1-3 позиции
+        int itemCount = random.nextInt(3) + 1;
 
         List<OrderItem> items = new ArrayList<>();
         for (int i = 0; i < itemCount; i++) {
             String product = BREAD_TYPES[random.nextInt(BREAD_TYPES.length)];
-            int quantity = random.nextInt(4) + 1; // 1-4 единицы
+            int quantity = random.nextInt(4) + 1;
             items.add(new OrderItem(product, quantity));
         }
 

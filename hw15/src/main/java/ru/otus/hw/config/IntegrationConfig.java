@@ -52,7 +52,7 @@ public class IntegrationConfig {
                                       BakeryService bakeryService) {
         return IntegrationFlow.from(orderChannel())
                 .log("📨 Получен заказ")
-                .<Order, java.util.List<ru.otus.hw.dto.OrderItem>>transform(Order::items)
+                .transform(Order::items)
                 .split()
                 .log("🔪 Разбит на элементы")
                 .handle(flourMillService, "produceFlour")
@@ -74,7 +74,7 @@ public class IntegrationConfig {
 
                             return shouldRelease;
                         })
-                        .groupTimeout(15000L)
+                        .groupTimeout(5000L)
                         .expireGroupsUponTimeout(true)
                         .sendPartialResultOnExpiry(true)
                 )

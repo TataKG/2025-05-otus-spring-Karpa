@@ -10,6 +10,8 @@ import java.util.List;
 @MessagingGateway
 public interface StoreGateway {
 
-    @Gateway(requestChannel = "orderChannel", replyChannel = "breadDeliveryChannel")
+    @Gateway(requestChannel = "orderChannel",
+            replyChannel = "breadDeliveryChannel",
+            replyTimeout = 20000L)
     List<Bread> placeOrder(Order order);
 }
