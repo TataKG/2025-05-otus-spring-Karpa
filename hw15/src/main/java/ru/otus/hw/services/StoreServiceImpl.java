@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import ru.otus.hw.dto.Bread;
 import ru.otus.hw.dto.Order;
 import ru.otus.hw.dto.OrderItem;
+import ru.otus.hw.gateway.StoreGateway;
 
 import java.util.ArrayList;
 import java.util.List;

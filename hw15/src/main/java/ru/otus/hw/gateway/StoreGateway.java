@@ -1,4 +1,4 @@
-package ru.otus.hw.services;
+package ru.otus.hw.gateway;
 
 import org.springframework.integration.annotation.Gateway;
 import org.springframework.integration.annotation.MessagingGateway;
