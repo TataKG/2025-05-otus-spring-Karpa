@@ -13,15 +13,6 @@ public class WebConfig implements WebMvcConfigurer {
     private final MetricsInterceptor metricsInterceptor;
 
     @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
-                .allowedOrigins("http://localhost:8080")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .allowCredentials(true);
-    }
-
-    @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(metricsInterceptor)
                 .addPathPatterns("/api/**");

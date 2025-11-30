@@ -15,7 +15,6 @@ public class MongoHealthIndicator implements HealthIndicator {
     @Override
     public Health health() {
         try {
-            // Выполняем простую команду для проверки соединения
             mongoTemplate.executeCommand("{ ping: 1 }");
             return Health.up()
                     .withDetail("database", "MongoDB")
