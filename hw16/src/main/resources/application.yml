@@ -1,5 +1,4 @@
 spring:
-
   messages:
     baseName: messages
     encoding: UTF-8
@@ -9,8 +8,6 @@ spring:
     hidden-method:
       filter:
         enabled: true
-    favicon:
-      enabled: false
 
   output:
     ansi:
@@ -32,19 +29,78 @@ spring:
   thymeleaf:
     cache: false
 
-  logging:
-    level:
-      root: OFF
-      #Отключаем шумные пакеты
-      org.springframework.boot.autoconfigure: OFF
-      org.springframework.security: OFF
+# Логирование
+logging:
+  level:
+    root: INFO
+    ru.otus.hw: DEBUG
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+    org.springframework.data.mongodb: INFO
+    # Логирование для мониторинга
+    org.springframework.boot.actuate: INFO
+    io.micrometer: INFO
+  file:
+    name: logs/application.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
+# Actuator endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info,prometheus
+      base-path: /actuator
+    enabled-by-default: true
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      enabled: true
+      probes:
+        enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+    info:
+      enabled: true
+  health:
+    db:
+      enabled: true
+    diskspace:
+      enabled: true
+    mongo:
+      enabled: true
+  info:
+    env:
+      enabled: true
+    build:
+      enabled: true
+    git:
+      enabled: true
+
+# Конфигурация Mongock для версии 5.x
 mongock:
-  #runner-type: "ApplicationRunner" # default
-  runner-type: "InitializingBean"
-  change-logs-scan-package:
+  migration-scan-package:
     - ru.otus.hw.mongo.changelog.mongock
-  mongo-db:
-    write-concern:
-      journal: false
-    read-concern: local
+  enabled: true
+  runner-type: application-runner # или "initializing-bean"
+  track-ignored: false
+  transaction-enabled: false
+  legacy-migration:
+    origin: none
+
+# Настройки приложения
+app:
+  metrics:
+    enabled: true
+  security:
+    cors:
+      allowed-origins: "http://localhost:8080"
