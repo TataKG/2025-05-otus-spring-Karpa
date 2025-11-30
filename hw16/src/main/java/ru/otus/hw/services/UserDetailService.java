@@ -1,0 +1,42 @@
+package ru.otus.hw.services;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+import ru.otus.hw.exceptions.EntityNotFoundException;
+import ru.otus.hw.repositories.UserRepository;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class UserDetailService implements UserDetailsService {
+    private final UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        var dbUser = userRepository.findByName(username)
+                .orElseThrow(
+                        () -> new EntityNotFoundException("User with name %s not found".formatted(username))
+                );
+
+        var authorities = getAuthorities(dbUser);
+
+        return new User(
+                dbUser.getName(),
+                dbUser.getPassword(),
+                authorities
+        );
+    }
+
+    private List<SimpleGrantedAuthority> getAuthorities(ru.otus.hw.models.User dbUser) {
+        return dbUser.getRoles().stream()
+                .map(role -> "ROLE_" + role)
+                .map(SimpleGrantedAuthority::new)
+                .toList();
+    }
+}
