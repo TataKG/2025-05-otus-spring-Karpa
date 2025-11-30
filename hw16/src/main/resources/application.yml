@@ -14,11 +14,28 @@ spring:
       enabled: always
 
   data:
+    rest:
+      base-path: /api/rest
+      # Настройки для решения проблемы с HAL представлениями
+      detection-strategy: annotated
+      return-body-on-create: true
+      return-body-on-update: true
+      # Отключение пагинации по умолчанию для лучшей совместимости
+      default-page-size: 50
+      max-page-size: 1000
     mongodb:
       host: localhost
       port: 27017
       database: hw12
       auto-index-creation: true
+
+  # Настройки CORS через properties
+  web:
+    cors:
+      allowed-origins: "http://localhost:8080"
+      allowed-methods: "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+      allowed-headers: "*"
+      allow-credentials: true
 
   devtools:
     restart:
@@ -29,14 +46,25 @@ spring:
   thymeleaf:
     cache: false
 
+  # Настройки безопасности через properties
+  security:
+    oauth2:
+      client:
+        registration: []
+    # Для отладки можно временно отключить CSRF для REST API
+    # (не рекомендуется для production)
+    filter:
+      order: 0
+
 # Логирование
 logging:
   level:
     root: INFO
     ru.otus.hw: DEBUG
     org.springframework.web: INFO
-    org.springframework.security: INFO
-    org.springframework.data.mongodb: INFO
+    org.springframework.security: DEBUG
+    org.springframework.data.mongodb: DEBUG
+    org.springframework.data.rest: DEBUG
     # Логирование для мониторинга
     org.springframework.boot.actuate: INFO
     io.micrometer: INFO
@@ -57,6 +85,10 @@ management:
       exposure:
         include: health,metrics,info,prometheus
       base-path: /actuator
+      # CORS для actuator
+      cors:
+        allowed-origins: "http://localhost:8080"
+        allowed-methods: "GET,POST,OPTIONS"
     enabled-by-default: true
   endpoint:
     health:
@@ -91,7 +123,7 @@ mongock:
   migration-scan-package:
     - ru.otus.hw.mongo.changelog.mongock
   enabled: true
-  runner-type: application-runner # или "initializing-bean"
+  runner-type: application-runner
   track-ignored: false
   transaction-enabled: false
   legacy-migration:
@@ -101,6 +133,3 @@ mongock:
 app:
   metrics:
     enabled: true
-  security:
-    cors:
-      allowed-origins: "http://localhost:8080"

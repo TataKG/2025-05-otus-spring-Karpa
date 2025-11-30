@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -16,6 +17,7 @@ import ru.otus.hw.services.UserDetailService;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@EnableMethodSecurity
 public class SecurityConfiguration {
 
     private final UserDetailService userDetailService;
@@ -26,13 +28,13 @@ public class SecurityConfiguration {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                        // Более широкое исключение для REST API
                         .ignoringRequestMatchers(
-                                "/api/v1/**",
-                                "/actuator/health",
-                                "/actuator/info",
-                                "/actuator/metrics"
+                                "/api/rest/**",
+                                "/actuator/**"
                         )
                 )
+                .cors(Customizer.withDefaults()) // Используем CORS из application.yml
                 .authorizeHttpRequests(authorize -> authorize
                         // Public endpoints
                         .requestMatchers("/actuator/health").permitAll()
@@ -53,8 +55,8 @@ public class SecurityConfiguration {
                         // Authentication pages
                         .requestMatchers("/login", "/error").permitAll()
 
-                        // API endpoints require authentication
-                        .requestMatchers("/api/**").authenticated()
+                        // Spring Data REST endpoints
+                        .requestMatchers("/api/rest/**").hasRole("ADMIN")
 
                         // All other requests require authentication
                         .anyRequest().authenticated()
@@ -66,7 +68,7 @@ public class SecurityConfiguration {
                 .logout(logout -> logout
                         .logoutSuccessUrl("/login?logout")
                         .permitAll())
-                .httpBasic(Customizer.withDefaults())
+                .httpBasic(Customizer.withDefaults()) // Для REST API
                 .userDetailsService(userDetailService);
 
         return http.build();
