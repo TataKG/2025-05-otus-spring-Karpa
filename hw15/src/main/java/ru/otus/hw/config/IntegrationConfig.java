@@ -1,5 +1,7 @@
 package ru.otus.hw.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.config.EnableIntegration;
@@ -8,6 +10,7 @@ import org.springframework.integration.dsl.MessageChannels;
 import org.springframework.integration.dsl.Pollers;
 import org.springframework.integration.scheduling.PollerMetadata;
 import org.springframework.messaging.MessageChannel;
+import ru.otus.hw.integration.OrderReleaseStrategy;
 import ru.otus.hw.dto.Order;
 import ru.otus.hw.services.BakeryService;
 import ru.otus.hw.services.FlourMillService;
@@ -17,9 +20,24 @@ import ru.otus.hw.services.GrainSupplyService;
 @EnableIntegration
 public class IntegrationConfig {
 
+    @Value("${app.integration.order-channel-capacity:10}")
+    private int orderChannelCapacity;
+
+    @Value("${app.integration.polling-rate:1000}")
+    private long pollingRate;
+
+    @Value("${app.integration.max-messages-per-poll:2}")
+    private int maxMessagesPerPoll;
+
+    @Value("${app.integration.aggregation-timeout:5000}")
+    private long aggregationTimeout;
+
+    @Autowired
+    private OrderReleaseStrategy orderReleaseStrategy;
+
     @Bean
     public MessageChannel orderChannel() {
-        return MessageChannels.queue(10).getObject();
+        return MessageChannels.queue(orderChannelCapacity).getObject();
     }
 
     @Bean
@@ -42,50 +60,64 @@ public class IntegrationConfig {
         return MessageChannels.publishSubscribe().getObject();
     }
 
+    @Bean
+    public MessageChannel grainSupplyChannel() {
+        return MessageChannels.direct().getObject();
+    }
+
     @Bean(name = PollerMetadata.DEFAULT_POLLER)
     public PollerMetadata poller() {
-        return Pollers.fixedRate(1000).maxMessagesPerPoll(2).getObject();
+        return Pollers.fixedRate(pollingRate)
+                .maxMessagesPerPoll(maxMessagesPerPoll)
+                .getObject();
     }
 
     @Bean
-    public IntegrationFlow bakeryFlow(FlourMillService flourMillService,
-                                      BakeryService bakeryService) {
+    public IntegrationFlow orderProcessingFlow() {
         return IntegrationFlow.from(orderChannel())
-                .log("📨 Получен заказ")
+                .log("Получен заказ")
                 .transform(Order::items)
                 .split()
-                .log("🔪 Разбит на элементы")
+                .log("Заказ разбит на элементы")
+                .channel(flourRequestChannel())
+                .get();
+    }
+
+    @Bean
+    public IntegrationFlow flourProductionFlow(FlourMillService flourMillService) {
+        return IntegrationFlow.from(flourRequestChannel())
                 .handle(flourMillService, "produceFlour")
-                .log("🏭 Мука произведена")
+                .log("Мука произведена")
                 .channel(flourDeliveryChannel())
+                .get();
+    }
+
+    @Bean
+    public IntegrationFlow breadProductionFlow(BakeryService bakeryService) {
+        return IntegrationFlow.from(flourDeliveryChannel())
                 .handle(bakeryService, "produceBread")
-                .log("🍞 Хлеб произведен")
+                .log("Хлеб произведен")
                 .channel(breadProductionChannel())
+                .get();
+    }
+
+    @Bean
+    public IntegrationFlow orderAggregationFlow() {
+        return IntegrationFlow.from(breadProductionChannel())
                 .aggregate(aggregator -> aggregator
-                        .releaseStrategy(group -> {
-                            Integer sequenceSize = group.getOne().getHeaders().get("sequenceSize", Integer.class);
-                            int currentSize = group.size();
-                            boolean shouldRelease = sequenceSize != null && currentSize >= sequenceSize;
-
-                            if (shouldRelease) {
-                                System.out.println("✅ Агрегация завершена для группы: " +
-                                        currentSize + " из " + sequenceSize + " элементов");
-                            }
-
-                            return shouldRelease;
-                        })
-                        .groupTimeout(5000L)
+                        .releaseStrategy(orderReleaseStrategy)
+                        .groupTimeout(aggregationTimeout)
                         .expireGroupsUponTimeout(true)
                         .sendPartialResultOnExpiry(true)
                 )
-                .log("📦 Заказ собран")
+                .log("Заказ собран")
                 .channel(breadDeliveryChannel())
                 .get();
     }
 
     @Bean
     public IntegrationFlow grainProcessingFlow(GrainSupplyService grainSupplyService) {
-        return IntegrationFlow.from("grainSupplyChannel")
+        return IntegrationFlow.from(grainSupplyChannel())
                 .handle(grainSupplyService, "processGrainDelivery")
                 .channel(flourDeliveryChannel())
                 .get();

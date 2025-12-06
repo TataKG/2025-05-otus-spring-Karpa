@@ -12,6 +12,7 @@ import ru.otus.hw.dto.Order;
 import ru.otus.hw.dto.OrderItem;
 import ru.otus.hw.gateway.StoreGateway;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,7 +36,8 @@ class BakeryErrorHandlingTest {
                         new OrderItem("Белый хлеб", 2),
                         new OrderItem("Ржаной хлеб", 1)
                 ),
-                "TEST-ORDER-VALID"
+                "TEST-ORDER-VALID",
+                LocalDateTime.now()
         );
 
         // When
@@ -50,7 +52,8 @@ class BakeryErrorHandlingTest {
         // Given
         Order order = new Order("Тестовый магазин",
                 List.of(new OrderItem("Багет", 1)),
-                "TEST-ORDER-MIN"
+                "TEST-ORDER-MIN",
+                LocalDateTime.now()
         );
 
         // When

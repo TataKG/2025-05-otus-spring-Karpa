@@ -16,6 +16,7 @@ import ru.otus.hw.services.BakeryService;
 import ru.otus.hw.services.FlourMillService;
 import ru.otus.hw.gateway.StoreGateway;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,7 +67,8 @@ class MockedBakeryIntegrationTest {
                         new OrderItem("Белый хлеб", 2),
                         new OrderItem("Ржаной хлеб", 1)
                 ),
-                "MOCK-ORDER-1"
+                "MOCK-ORDER-1",
+                LocalDateTime.now()
         );
 
         // When
@@ -83,7 +85,8 @@ class MockedBakeryIntegrationTest {
         // Given
         Order order = new Order("Тестовый магазин",
                 List.of(new OrderItem("Багет", 1)),
-                "MOCK-ORDER-2"
+                "MOCK-ORDER-2",
+                LocalDateTime.now()
         );
 
         // When

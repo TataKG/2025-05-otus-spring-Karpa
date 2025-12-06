@@ -4,4 +4,6 @@ public interface StoreService {
     void startOrderGeneration();
 
     void stopOrderGeneration();
+
+    boolean isRunning();
 }
