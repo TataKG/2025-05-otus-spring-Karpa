@@ -1,0 +1,135 @@
+spring:
+  messages:
+    baseName: messages
+    encoding: UTF-8
+    fallbackToSystemLocale: false
+
+  mvc:
+    hidden-method:
+      filter:
+        enabled: true
+
+  output:
+    ansi:
+      enabled: always
+
+  data:
+    rest:
+      base-path: /api/rest
+      # Настройки для решения проблемы с HAL представлениями
+      detection-strategy: annotated
+      return-body-on-create: true
+      return-body-on-update: true
+      # Отключение пагинации по умолчанию для лучшей совместимости
+      default-page-size: 50
+      max-page-size: 1000
+    mongodb:
+      host: localhost
+      port: 27017
+      database: hw12
+      auto-index-creation: true
+
+  # Настройки CORS через properties
+  web:
+    cors:
+      allowed-origins: "http://localhost:8080"
+      allowed-methods: "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+      allowed-headers: "*"
+      allow-credentials: true
+
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true
+
+  thymeleaf:
+    cache: false
+
+  # Настройки безопасности через properties
+  security:
+    oauth2:
+      client:
+        registration: []
+    # Для отладки можно временно отключить CSRF для REST API
+    # (не рекомендуется для production)
+    filter:
+      order: 0
+
+# Логирование
+logging:
+  level:
+    root: INFO
+    ru.otus.hw: DEBUG
+    org.springframework.web: INFO
+    org.springframework.security: DEBUG
+    org.springframework.data.mongodb: DEBUG
+    org.springframework.data.rest: DEBUG
+    # Логирование для мониторинга
+    org.springframework.boot.actuate: INFO
+    io.micrometer: INFO
+  file:
+    name: logs/application.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
+  pattern:
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# Actuator endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info,prometheus
+      base-path: /actuator
+      # CORS для actuator
+      cors:
+        allowed-origins: "http://localhost:8080"
+        allowed-methods: "GET,POST,OPTIONS"
+    enabled-by-default: true
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      enabled: true
+      probes:
+        enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+    info:
+      enabled: true
+  health:
+    db:
+      enabled: true
+    diskspace:
+      enabled: true
+    mongo:
+      enabled: true
+  info:
+    env:
+      enabled: true
+    build:
+      enabled: true
+    git:
+      enabled: true
+
+# Конфигурация Mongock для версии 5.x
+mongock:
+  migration-scan-package:
+    - ru.otus.hw.mongo.changelog.mongock
+  enabled: true
+  runner-type: application-runner
+  track-ignored: false
+  transaction-enabled: false
+  legacy-migration:
+    origin: none
+
+# Настройки приложения
+app:
+  metrics:
+    enabled: true
