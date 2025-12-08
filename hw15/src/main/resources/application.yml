@@ -1,0 +1,15 @@
+spring:
+  output:
+    ansi:
+      enabled: always
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true
+app:
+  integration:
+    order-channel-capacity: 10
+    polling-rate: 1000
+    max-messages-per-poll: 2
+    aggregation-timeout: 5000
