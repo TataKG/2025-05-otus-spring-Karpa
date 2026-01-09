@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{registration.title}">Регистрация - Кулинарная книга</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/register.css}" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card register-card">
+                <div class="card-header bg-success text-white text-center py-4">
+                    <h4 class="mb-0" th:text="#{registration.title}">👋 Регистрация</h4>
+                </div>
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h5 th:text="#{registration.welcome}">Добро пожаловать!</h5>
+                        <p class="text-muted" th:text="#{registration.subtitle}">
+                            Создайте аккаунт для доступа ко всем функциям
+                        </p>
+                    </div>
+
+                    <form id="registerForm" th:action="@{/register}" method="post" novalidate>
+                        <!-- Сообщение об успешной регистрации -->
+                        <div th:if="${param.registered}" class="alert alert-success alert-dismissible fade show">
+                            ✅ <span th:text="#{registration.success}">Регистрация прошла успешно! Теперь вы можете войти в систему.</span>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+
+                        <!-- Имя пользователя -->
+                        <div class="mb-3">
+                            <label for="username" class="form-label fw-semibold" th:text="#{registration.username}">
+                                👤 Имя пользователя
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="username" name="username"
+                                   th:placeholder="#{registration.username.placeholder}">
+                            <div class="field-status text-success" id="usernameStatus" style="display: none;"></div>
+                            <div class="field-status text-danger" id="usernameError" style="display: none;"></div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-semibold" th:text="#{registration.email}">
+                                📧 Email адрес
+                            </label>
+                            <input type="email" class="form-control form-control-lg" id="email" name="email"
+                                   th:placeholder="#{registration.email.placeholder}">
+                            <div class="field-status text-success" id="emailStatus" style="display: none;"></div>
+                            <div class="field-status text-danger" id="emailError" style="display: none;"></div>
+                        </div>
+
+                        <!-- Биография -->
+                        <div class="mb-3">
+                            <label for="bio" class="form-label fw-semibold" th:text="#{registration.bio}">
+                                📝 О себе (биография)
+                            </label>
+                            <textarea class="form-control" id="bio" name="bio" rows="3"
+                                      th:placeholder="#{registration.bio.placeholder}"></textarea>
+                            <div class="bio-counter">
+                                <span id="bioCounter">0</span>/500 <span th:text="#{registration.bio.characters}">символов</span>
+                            </div>
+                            <div class="form-text">
+                                <small th:text="#{registration.bio.help}">
+                                    Расскажите немного о себе и ваших кулинарных предпочтениях (необязательно)
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Пароль -->
+                        <div class="mb-3">
+                            <label for="password" class="form-label fw-semibold" th:text="#{registration.password}">
+                                🔒 Пароль
+                            </label>
+                            <input type="password" class="form-control form-control-lg" id="password" name="password"
+                                   th:placeholder="#{registration.password.placeholder}">
+                            <div class="password-strength" id="passwordStrength"></div>
+                        </div>
+
+                        <!-- Подтверждение пароля -->
+                        <div class="mb-4">
+                            <label for="confirmPassword" class="form-label fw-semibold" th:text="#{registration.confirm_password}">
+                                🔒 Подтвердите пароль
+                            </label>
+                            <input type="password" class="form-control form-control-lg" id="confirmPassword" name="confirmPassword"
+                                   th:placeholder="#{registration.confirm_password.placeholder}">
+                            <div id="passwordMatch" class="form-text"></div>
+                        </div>
+
+                        <!-- Кнопка регистрации -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success btn-lg fw-semibold" id="registerButton">
+                                🚀 <span th:text="#{registration.register_button}">Зарегистрироваться</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Ссылка на вход -->
+                    <div class="mt-4 pt-3 border-top text-center">
+                        <p class="text-muted mb-0">
+                            <span th:text="#{registration.login_link}">Уже есть аккаунт?</span>
+                            <a th:href="@{/login}" class="text-decoration-none fw-semibold ms-1">
+                                <span th:text="#{registration.login_button}">Войти</span>
+                            </a>
+                        </p>
+                    </div>
+
+                    <!-- Тестовые пользователи (только для разработки) -->
+                    <div class="test-users">
+                        <p class="text-center mb-2 text-muted small" th:text="#{registration.test_users}">
+                            Тестовые пользователи:
+                        </p>
+                        <div class="text-center">
+                            <small class="text-muted">
+                                <strong>admin</strong> / admin123 (первый пользователь станет администратором)<br>
+                                <strong>user1</strong> / user123
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast уведомления -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="registerToast" class="toast" role="alert">
+        <div class="toast-header">
+            <strong class="me-auto" id="toastTitle">Уведомление</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toastMessage"></div>
+    </div>
+</div>
+
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/js/register.js}"></script>
+</body>
+</html>

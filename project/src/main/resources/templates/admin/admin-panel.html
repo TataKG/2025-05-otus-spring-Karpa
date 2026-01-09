@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html th:replace="~{admin/admin-layout :: layout(
+    pageTitle='admin.panel.title',
+    pageSubtitle='admin.panel.subtitle'
+)}" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="#{admin.panel.title} + ' - ' + #{page.title}">Админ-панель - Кулинарная книга</title>
+</head>
+<body>
+<!-- Контент страницы -->
+<div th:fragment="content">
+    <!-- Карточки управления -->
+    <div class="row g-4">
+        <!-- Управление категориями -->
+        <div class="col-md-4">
+            <div class="card admin-card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <span class="display-4">📂</span>
+                    </div>
+                    <h5 class="card-title" th:text="#{admin.nav.categories}">Категории</h5>
+                    <p class="card-text text-muted" th:text="#{admin.categories.description}">
+                        Управление категориями рецептов: создание, редактирование, удаление
+                    </p>
+                    <a href="/admin/categories" class="btn btn-primary">
+                        📊 <span th:text="#{admin.nav.categories}">Управление категориями</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Управление ингредиентами -->
+        <div class="col-md-4">
+            <div class="card admin-card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <span class="display-4">🧰</span>
+                    </div>
+                    <h5 class="card-title" th:text="#{admin.nav.inventory}">Инвентарь</h5>
+                    <p class="card-text text-muted" th:text="#{admin.inventory.description}">
+                        Управление инвентарем: создание, редактирование описания, удаление неиспользуемых
+                    </p>
+                    <a href="/admin/inventory" class="btn btn-primary">
+                        🧰 <span th:text="#{admin.nav.inventory}">Управление инвентарем</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Управление авторами -->
+        <div class="col-md-4">
+            <div class="card admin-card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <span class="display-4">👨‍🍳</span>
+                    </div>
+                    <h5 class="card-title" th:text="#{admin.nav.authors}">Авторы</h5>
+                    <p class="card-text text-muted" th:text="#{admin.authors.description}">
+                        Просмотр и управление авторами рецептов
+                    </p>
+                    <a href="/admin/authors" class="btn btn-primary">
+                        📝 <span th:text="#{admin.nav.authors}">Управление авторами</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Управление рецептами -->
+        <div class="col-md-3">
+            <div class="card admin-card h-100">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <span class="display-4">📖</span>
+                    </div>
+                    <h5 class="card-title" th:text="#{admin.nav.recipes}">Рецепты</h5>
+                    <p class="card-text text-muted" th:text="#{admin.recipes.description}">
+                        Просмотр и управление опубликованными рецептами, фильтрация и удаление
+                    </p>
+                    <a href="/admin/recipes" class="btn btn-primary">
+                        📖 <span th:text="#{admin.nav.recipes}">Управление рецептами</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <h5 class="card-title text-white">📈 <span th:text="#{admin.stats.title}">Быстрая статистика</span></h5>
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h3 id="categoriesCount">-</h3>
+                            <p class="mb-0" th:text="#{admin.stats.categories}">Категорий</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 id="inventoryCount">-</h3>
+                            <p class="mb-0" th:text="#{admin.stats.inventory}">Инвентарь</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 id="authorsCount">-</h3>
+                            <p class="mb-0" th:text="#{admin.stats.authors}">Авторов</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 id="recipesCount">-</h3>
+                            <p class="mb-0" th:text="#{admin.stats.recipes}">Рецептов</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна (пустые для панели управления) -->
+<div th:fragment="modals">
+</div>
+
+<!-- Скрипты для панели управления -->
+<div th:fragment="scripts">
+    <script>
+        class AdminPanel {
+            constructor() {
+                this.loadStats();
+            }
+
+            async loadStats() {
+                try {
+                    // Загружаем базовую статистику
+                    const categoriesResponse = await fetch('/api/categories');
+                    const inventoryResponse = await fetch('/api/inventories');
+                    const recipesResponse = await fetch('/api/recipes');
+
+                    if (categoriesResponse.ok) {
+                        const categoriesData = await categoriesResponse.json();
+                        document.getElementById('categoriesCount').textContent = categoriesData.data.length;
+                    }
+
+                    if (inventoryResponse.ok) {
+                        const inventoryData = await inventoryResponse.json();
+                        document.getElementById('inventoryCount').textContent = inventoryData.data.length;
+                    }
+
+                    if (recipesResponse.ok) {
+                        const recipesData = await recipesResponse.json();
+                        document.getElementById('recipesCount').textContent = recipesData.data.length;
+                    }
+
+                    // Авторов грузим отдельно
+                    document.getElementById('authorsCount').textContent = '3'; // Временное значение
+
+                } catch (error) {
+                    console.error('Error loading stats:', error);
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new AdminPanel();
+        });
+    </script>
+</div>
+</body>
+</html>

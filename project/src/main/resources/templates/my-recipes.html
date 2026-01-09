@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="fragments/head :: head(#{myrecipes.title})">
+</head>
+<body>
+<!-- Навигационная панель -->
+<div th:replace="fragments/navbar :: navbar"></div>
+
+<!-- Основной контент -->
+<div class="container mt-4">
+    <!-- Заголовок -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="text-primary mb-2" th:text="#{myrecipes.title}">📚 Мои рецепты</h1>
+                    <p class="lead text-muted" th:text="#{myrecipes.subtitle}">
+                        Управляйте своими рецептами - просматривайте, редактируйте и удаляйте
+                    </p>
+                </div>
+                <!-- Кнопка создания рецепта - показывается только авторизованным пользователям -->
+                <div sec:authorize="isAuthenticated()">
+                    <a href="/recipe/create" class="btn btn-success btn-lg">
+                        ➕ <span th:text="#{myrecipes.create_new}">Создать рецепт</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4 id="totalRecipesCount">0</h4>
+                    <p class="mb-0" th:text="#{myrecipes.total_recipes}">Всего рецептов</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4 id="publishedRecipesCount">0</h4>
+                    <p class="mb-0" th:text="#{myrecipes.published}">Опубликовано</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h4 id="draftRecipesCount">0</h4>
+                    <p class="mb-0" th:text="#{myrecipes.drafts}">Черновики</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4 id="totalCommentsCount">0</h4>
+                    <p class="mb-0" th:text="#{myrecipes.total_comments}">Всего комментариев</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица рецептов -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0" th:text="#{myrecipes.my_recipes_list}">📋 Список моих рецептов</h5>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-light active" id="filterAll" onclick="myRecipesApp.filterRecipes('all')">
+                            <span th:text="#{myrecipes.filter_all}">Все</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-light" id="filterPublished" onclick="myRecipesApp.filterRecipes('published')">
+                            <span th:text="#{myrecipes.filter_published}">Опубликованные</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-light" id="filterDrafts" onclick="myRecipesApp.filterRecipes('drafts')">
+                            <span th:text="#{myrecipes.filter_drafts}">Черновики</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="recipesTable">
+                            <thead class="table-light">
+                            <tr>
+                                <th width="25%">📝 <span th:text="#{recipes.table.name}">Название рецепта</span></th>
+                                <th width="15%">📂 <span th:text="#{recipes.table.category}">Категория</span></th>
+                                <th width="10%">📊 <span th:text="#{myrecipes.status}">Статус</span></th>
+                                <th width="15%">📅 <span th:text="#{myrecipes.created.date}">Дата создания</span></th>
+                                <th width="10%">💬 <span th:text="#{recipes.table.comments}">Комментарии</span></th>
+                                <th width="25%" class="text-center">🎯 <span th:text="#{recipes.table.actions}">Действия</span></th>
+                            </tr>
+                            </thead>
+                            <tbody id="recipesTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden" th:text="#{common.loading}">Загрузка...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted" th:text="#{myrecipes.loading}">Загрузка ваших рецептов...</p>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно подтверждения удаления -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">⚠️ <span th:text="#{myrecipes.delete_confirm_title}">Подтверждение удаления</span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p th:text="#{myrecipes.delete_confirm_message}">Вы уверены, что хотите удалить этот рецепт? Это действие нельзя отменить.</p>
+                <p class="fw-bold" id="recipeToDeleteTitle"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <span th:text="#{common.cancel}">Отмена</span>
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    🗑️ <span th:text="#{myrecipes.delete}">Удалить</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна -->
+<div th:replace="fragments/modals :: modals"></div>
+
+<!-- Toast уведомления -->
+<div th:replace="fragments/toasts :: toasts"></div>
+
+<!-- Скрипты -->
+<div th:replace="fragments/scripts :: scripts"></div>
+
+<!-- Основной JS приложения для "Мои рецепты" -->
+<script th:src="@{/js/my-recipes.js}"></script>
+
+<script th:inline="javascript">
+    window.i18nMessages = {
+        loading: /*[[#{common.loading}]]*/ 'Загрузка...',
+        close: /*[[#{common.close}]]*/ 'Закрыть',
+        view: /*[[#{common.view}]]*/ 'Просмотр',
+        edit: /*[[#{myrecipes.edit}]]*/ 'Редактировать',
+        delete: /*[[#{myrecipes.delete}]]*/ 'Удалить',
+        cancel: /*[[#{common.cancel}]]*/ 'Отмена',
+        retry: /*[[#{common.retry}]]*/ 'Повторить',
+
+        // Рецепты
+        'recipe-details': /*[[#{recipe.details.title}]]*/ 'Детали рецепта',
+        'recipes-loading': /*[[#{myrecipes.loading}]]*/ 'Загрузка ваших рецептов...',
+        'no-recipes': /*[[#{myrecipes.no_recipes}]]*/ 'У вас пока нет рецептов',
+        'error-loading-recipes': /*[[#{error.loading_recipes}]]*/ 'Ошибка при загрузке рецептов',
+        'error-loading-details': /*[[#{error.loading_recipe_details}]]*/ 'Ошибка при загрузке деталей рецепта',
+        'error-loading-comments': /*[[#{error.loading_comments}]]*/ 'Ошибка при загрузке комментариев',
+
+        // Таблица
+        category: /*[[#{recipes.table.category}]]*/ 'Категория',
+        author: /*[[#{recipes.table.author}]]*/ 'Автор',
+        comments: /*[[#{recipes.table.comments}]]*/ 'Комментарии',
+        actions: /*[[#{recipes.table.actions}]]*/ 'Действия',
+
+        // Детали рецепта
+        ingredients: /*[[#{recipe.ingredients}]]*/ 'Ингредиенты',
+        description: /*[[#{recipe.description}]]*/ 'Описание',
+        inventory: /*[[#{recipe.inventory}]]*/ 'Необходимый инвентарь',
+
+        // Статусы
+        'status-published': /*[[#{myrecipes.status_published}]]*/ 'Опубликован',
+        'status-draft': /*[[#{myrecipes.status_draft}]]*/ 'Черновик',
+
+        // Удаление
+        'delete-confirm-title': /*[[#{myrecipes.delete_confirm_title}]]*/ 'Подтверждение удаления',
+        'delete-confirm-message': /*[[#{myrecipes.delete_confirm_message}]]*/ 'Вы уверены, что хотите удалить этот рецепт? Это действие нельзя отменить.',
+        'delete-success': /*[[#{myrecipes.delete_success}]]*/ 'Рецепт успешно удален',
+        'delete-error': /*[[#{myrecipes.delete_error}]]*/ 'Ошибка при удалении рецепта',
+
+        // Комментарии
+        'comments-title': /*[[#{comment.view_title}]]*/ 'Комментарии к рецепту',
+        'no-comments': /*[[#{comment.no_comments}]]*/ 'Комментариев пока нет',
+        'comment-author': /*[[#{comment.author}]]*/ 'Автор',
+        'comment-date': /*[[#{comment.date}]]*/ 'Дата',
+        'comment-content': /*[[#{comment.content}]]*/ 'Комментарий',
+        'comments-loading': /*[[#{comment.loading}]]*/ 'Загрузка комментариев...',
+
+        // Детали рецепта (полные)
+        'recipe-details-category': /*[[#{recipe.details.category}]]*/ '📂 Категория',
+        'recipe-details-author': /*[[#{recipe.details.author}]]*/ '👨‍🍳 Автор',
+        'recipe-details-ingredients': /*[[#{recipe.details.ingredients}]]*/ '🛒 Ингредиенты',
+        'recipe-details-description': /*[[#{recipe.details.description}]]*/ '📝 Описание',
+        'recipe-details-inventory': /*[[#{recipe.details.inventory}]]*/ '🔧 Необходимый инвентарь',
+        'recipe-details-comments': /*[[#{recipe.details.comments}]]*/ '💬 Комментарии',
+        'recipe-details-status': /*[[#{recipe.details.status}]]*/ '📊 Статус',
+        'recipe-details-created-date': /*[[#{recipe.details.created.date}]]*/ '📅 Дата создания',
+
+        // Публикация
+        'publish': /*[[#{myrecipes.publish}]]*/ 'Опубликовать',
+        'publish-success': /*[[#{myrecipes.publish_success}]]*/ 'Рецепт успешно опубликован',
+        'publish-error': /*[[#{myrecipes.publish_error}]]*/ 'Ошибка при публикации рецепта',
+    };
+</script>
+</body>
+</html>

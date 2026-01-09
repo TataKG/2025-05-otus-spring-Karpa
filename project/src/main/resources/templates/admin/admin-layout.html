@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:fragment="layout(pageTitle, pageSubtitle)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{${pageTitle}} + ' - ' + #{page.title}">Админ-панель - Кулинарная книга</title>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <style>
+        .table th {
+            border-top: none;
+            font-weight: 600;
+        }
+        .admin-nav {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            padding: 0.3rem;
+            margin-bottom: 1.5rem;
+        }
+        .nav-card {
+            transition: transform 0.2s;
+            border: none;
+            border-radius: 6px;
+            height: 100%;
+        }
+        .nav-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .nav-card .card-body {
+            padding: 0.8rem 0.3rem;
+        }
+        .nav-card .fs-1 {
+            font-size: 1.4rem !important;
+            margin-bottom: 0.3rem;
+        }
+        .nav-card .card-title {
+            font-size: 0.8rem;
+            margin-bottom: 0.3rem;
+            font-weight: 600;
+        }
+        .nav-card .card-text {
+            font-size: 0.65rem;
+            line-height: 1.2;
+        }
+        .admin-card {
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .admin-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.12);
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        /* Уменьшаем отступы между плитками */
+        .admin-nav .row.g-2 {
+            --bs-gutter-x: 0.5rem;
+            --bs-gutter-y: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+<!-- Навигационная панель -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/" th:text="#{navbar.brand}">🍳 Кулинарная книга</a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/" th:text="#{navbar.home}">🏠 Главная</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin" th:text="#{navbar.admin_panel}">⚙️ Админ-панель</a>
+                </li>
+            </ul>
+
+            <ul class="navbar-nav">
+                <!-- Language Switcher -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <span th:text="#{navbar.language}">🌐 Язык</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item language-switch" href="#" data-lang="ru" th:text="#{language.russian}">Русский</a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item language-switch" href="#" data-lang="en" th:text="#{language.english}">English</a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <form th:action="@{/logout}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-link nav-link p-0 border-0">
+                            🚪 <span th:text="#{navbar.logout}">Выйти</span> (<span sec:authentication="name"></span>)
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Основной контент -->
+<div class="container mt-4">
+    <!-- Заголовок страницы -->
+    <div class="row mb-3">
+        <div class="col">
+            <h1 class="text-primary mb-1" style="font-size: 1.5rem;" th:text="#{${pageTitle}}">Заголовок страницы</h1>
+            <p class="text-muted" style="font-size: 0.9rem;" th:text="#{${pageSubtitle}}">Описание страницы</p>
+        </div>
+    </div>
+
+    <!-- Навигация по админ-панели -->
+    <div class="admin-nav">
+        <div class="row g-2">
+            <div class="col-md-3 col-6">
+                <a th:href="@{/admin/categories}" class="text-decoration-none">
+                    <div class="card nav-card text-center">
+                        <div class="card-body">
+                            <div class="fs-1 mb-1">📂</div>
+                            <h6 class="card-title" th:text="#{admin.nav.categories}">Категории</h6>
+                            <p class="card-text text-muted small" th:text="#{admin.nav.categories.help}">Управление категориями</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3 col-6">
+                <a th:href="@{/admin/inventory}" class="text-decoration-none">
+                    <div class="card nav-card text-center">
+                        <div class="card-body">
+                            <div class="fs-1 mb-1">🧰</div>
+                            <h6 class="card-title" th:text="#{admin.nav.inventory}">Инвентарь</h6>
+                            <p class="card-text text-muted small" th:text="#{admin.nav.inventory.help}">Управление инвентарем</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3 col-6">
+                <a th:href="@{/admin/authors}" class="text-decoration-none">
+                    <div class="card nav-card text-center">
+                        <div class="card-body">
+                            <div class="fs-1 mb-1">👥</div>
+                            <h6 class="card-title" th:text="#{admin.nav.authors}">Авторы</h6>
+                            <p class="card-text text-muted small" th:text="#{admin.nav.authors.help}">Управление авторами</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3 col-6">
+                <a th:href="@{/admin/recipes}" class="text-decoration-none">
+                    <div class="card nav-card text-center">
+                        <div class="card-body">
+                            <div class="fs-1 mb-1">📖</div>
+                            <h6 class="card-title" th:text="#{admin.nav.recipes}">Рецепты</h6>
+                            <p class="card-text text-muted small" th:text="#{admin.nav.recipes.help}">Управление рецептами</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-3 col-6">
+                <a th:href="@{/admin}" class="text-decoration-none">
+                    <div class="card nav-card text-center">
+                        <div class="card-body">
+                            <div class="fs-1 mb-1">⚙️</div>
+                            <h6 class="card-title" th:text="#{admin.nav.dashboard}">Панель управления</h6>
+                            <p class="card-text text-muted small" th:text="#{admin.nav.dashboard.help}">Обзор системы</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Контент конкретной страницы -->
+    <div th:insert="~{::content}"></div>
+</div>
+
+<!-- Общие модальные окна и скрипты -->
+<div th:insert="~{::modals}"></div>
+
+<!-- Toast уведомления -->
+<div th:replace="fragments/toasts :: toasts"></div>
+
+<!-- Подключаем скрипты -->
+<!-- Сначала Bootstrap -->
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+<!-- Затем наши базовые скрипты -->
+<script th:src="@{/js/common-base.js}"></script>
+<script th:src="@{/js/common-auth.js}"></script>
+
+<!-- Языковой переключатель -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.language-switch').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const lang = this.getAttribute('data-lang');
+                const currentUrl = window.location.href;
+                const url = new URL(currentUrl);
+                url.searchParams.set('lang', lang);
+                window.location.href = url.toString();
+            });
+        });
+    });
+</script>
+
+<!-- Скрипты конкретной страницы (будут загружены последними) -->
+<div th:insert="~{::scripts}"></div>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html th:replace="~{admin/admin-layout :: layout(
+    pageTitle='admin.recipes.title',
+    pageSubtitle='admin.recipes.subtitle'
+)}" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="#{admin.recipes.title} + ' - ' + #{page.title}">Управление рецептами - Кулинарная книга</title>
+    <style>
+        .filters-card {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .search-box {
+            position: relative;
+        }
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+        .table-actions {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+<!-- Контент страницы -->
+<div th:fragment="content">
+    <!-- Фильтры и поиск -->
+    <div class="card filters-card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <!-- Поиск по названию -->
+                <div class="col-md-4">
+                    <label class="form-label small text-muted" th:text="#{admin.recipes.search_placeholder}">Поиск по названию</label>
+                    <div class="search-box">
+                        <i class="search-icon">🔍</i>
+                        <input type="text" class="form-control ps-4" id="searchInput"
+                               th:placeholder="#{admin.recipes.search_placeholder}">
+                    </div>
+                </div>
+
+                <!-- Фильтр по категории -->
+                <div class="col-md-3">
+                    <label class="form-label small text-muted" th:text="#{admin.recipes.filter_category}">Категория</label>
+                    <select class="form-select" id="categoryFilter">
+                        <option value="" th:text="#{admin.recipes.filter_all_categories}">Все категории</option>
+                        <!-- Категории будут загружены через JavaScript -->
+                    </select>
+                </div>
+
+                <!-- Фильтр по автору -->
+                <div class="col-md-3">
+                    <label class="form-label small text-muted" th:text="#{admin.recipes.filter_author}">Автор</label>
+                    <select class="form-select" id="authorFilter">
+                        <option value="" th:text="#{admin.recipes.filter_all_authors}">Все авторы</option>
+                        <!-- Авторы будут загружены через JavaScript -->
+                    </select>
+                </div>
+
+                <!-- Кнопки действий -->
+                <div class="col-md-2">
+                    <button class="btn btn-outline-secondary w-100" id="clearFilters">
+                        🗑️ <span th:text="#{filter.clear}">Очистить</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица рецептов -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">📖 <span th:text="#{admin.recipes.list}">Список рецептов</span></h5>
+            <span class="badge bg-light text-primary" id="recipesCount">0</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th width="5%" th:text="#{admin.table.id}">ID</th>
+                        <th width="25%" th:text="#{admin.table.title}">Название</th>
+                        <th width="15%" th:text="#{admin.table.category}">Категория</th>
+                        <th width="20%" th:text="#{admin.table.author}">Автор</th>
+                        <th width="10%" th:text="#{admin.table.comments}">Комментарии</th>
+                        <th width="15%" th:text="#{admin.table.created_date}">Дата создания</th>
+                        <th width="10%" th:text="#{admin.table.actions}">Действия</th>
+                    </tr>
+                    </thead>
+                    <tbody id="recipesTableBody">
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden" th:text="#{common.loading}">Загрузка...</span>
+                            </div>
+                            <p class="mt-2 text-muted" th:text="#{admin.recipes.loading}">Загрузка рецептов...</p>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно удаления -->
+<div th:fragment="modals">
+    <div class="modal fade" id="deleteRecipeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" th:text="#{admin.modal.confirm_delete}">Подтверждение удаления</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p><span th:text="#{admin.recipes.delete_confirm}">Вы уверены, что хотите удалить рецепт</span> <strong id="deleteRecipeTitle"></strong>?</p>
+                    <div class="alert alert-warning">
+                        ⚠️ <span th:text="#{common.warning}">Предупреждение:</span>
+                        <span th:text="#{admin.modal.delete_message}">Это действие нельзя отменить.</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.cancel}">Отмена</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteRecipeBtn">
+                        <span th:text="#{common.delete}">Удалить</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Скрипты для рецептов -->
+<div th:fragment="scripts">
+    <script th:src="@{/js/admin-recipes.js}"></script>
+</div>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head(#{page.title})">
+</head>
+<body>
+<!-- Навигационная панель -->
+<div th:replace="fragments/navbar :: navbar"></div>
+
+<!-- Основной контент -->
+<div class="container mt-4">
+    <!-- Приветственная секция -->
+    <div class="welcome-section">
+        <div class="row">
+            <div class="col-12 text-center">
+                <h1 class="display-4 mb-3" th:text="#{welcome.title}">🍽️ Добро пожаловать в Кулинарную книгу!</h1>
+                <p class="lead mb-0" th:text="#{welcome.subtitle}">
+                    Откройте для себя лучшие рецепты от наших авторов
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Секция фильтров -->
+    <div class="filter-section">
+        <div class="row filter-row g-3">
+            <div class="col-md-4">
+                <label for="searchInput" class="form-label">🔍 <span th:text="#{search.placeholder}">Поиск по названию</span></label>
+                <input type="text" class="form-control" id="searchInput"
+                       th:placeholder="#{search.placeholder}">
+            </div>
+            <div class="col-md-3">
+                <label for="categoryFilter" class="form-label">📂 <span th:text="#{recipe.category}">Категория</span></label>
+                <select class="form-select" id="categoryFilter">
+                    <option value="" th:text="#{filter.all_categories}">Все категории</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="authorFilter" class="form-label">👨‍🍳 <span th:text="#{recipe.author}">Автор</span></label>
+                <select class="form-select" id="authorFilter">
+                    <option value="" th:text="#{filter.all_authors}">Все авторы</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label d-block">&nbsp;</label>
+                <button class="btn btn-outline-secondary w-100" id="clearFilters">
+                    🗑️ <span th:text="#{filter.clear}">Очистить</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица рецептов -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0" th:text="#{recipes.title}">📋 Все рецепты</h5>
+            <span class="badge bg-light text-dark" id="recipesCount">0 рецептов</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th width="25%" th:text="#{recipes.table.name}">Название рецепта</th>
+                        <th width="15%" th:text="#{recipe.category}">Категория</th>
+                        <th width="20%" th:text="#{recipe.author}">Автор</th>
+                        <th width="15%" th:text="#{recipe.comments}">Комментарии</th>
+                        <th width="15%" th:text="#{recipe.created_date}">Дата создания</th>
+                        <th width="10%" th:text="#{recipes.table.actions}">Действия</th>
+                    </tr>
+                    </thead>
+                    <tbody id="recipesTableBody">
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden" th:text="#{common.loading}">Загрузка...</span>
+                            </div>
+                            <p class="mt-2 text-muted" th:text="#{recipes.loading}">Загрузка рецептов...</p>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна -->
+<div th:replace="fragments/modals :: modals"></div>
+
+<!-- Toast уведомления -->
+<div th:replace="fragments/toasts :: toasts"></div>
+
+<!-- Скрипты -->
+<div th:replace="fragments/scripts :: scripts"></div>
+
+<!-- Основной JS приложения -->
+<script th:src="@{/js/app.js}"></script>
+
+<script th:inline="javascript">
+    // Глобальные переменные для i18n
+    window.i18nMessages = {
+        // Общие сообщения
+        loading: /*[[#{common.loading}]]*/ 'Загрузка...',
+        close: /*[[#{common.close}]]*/ 'Закрыть',
+        view: /*[[#{common.view}]]*/ 'Просмотр',
+        retry: /*[[#{common.retry}]]*/ 'Повторить',
+        cancel: /*[[#{common.cancel}]]*/ 'Отмена',
+        save: /*[[#{common.save}]]*/ 'Сохранить',
+        delete: /*[[#{common.delete}]]*/ 'Удалить',
+        edit: /*[[#{common.edit}]]*/ 'Редактировать',
+        confirm: /*[[#{common.confirm}]]*/ 'Подтвердить',
+        'common-saving': /*[[#{common.saving}]]*/ 'Сохранение...',
+        'common-adding': /*[[#{common.adding}]]*/ 'Добавление...',
+        'common-deleting': /*[[#{common.deleting}]]*/ 'Удаление...',
+        'common-confirm-delete': /*[[#{common.confirm_delete}]]*/ 'Подтвердить удаление',
+        'common-action-irreversible': /*[[#{common.action_irreversible}]]*/ 'Это действие нельзя отменить.',
+
+        // ДОБАВЬТЕ ЭТИ СТРОКИ:
+        'common.delete': /*[[#{common.delete}]]*/ 'Удалить',
+        'common.save': /*[[#{common.save}]]*/ 'Сохранить',
+        'common.cancel': /*[[#{common.cancel}]]*/ 'Отмена',
+        'common.edit': /*[[#{common.edit}]]*/ 'Редактировать',
+
+        'common-saving': /*[[#{common.saving}]]*/ 'Сохранение...',
+        'common-adding': /*[[#{common.adding}]]*/ 'Добавление...',
+        'common-deleting': /*[[#{common.deleting}]]*/ 'Удаление...',
+        'common-confirm-delete': /*[[#{common.confirm_delete}]]*/ 'Подтвердить удаление',
+        'common-action-irreversible': /*[[#{common.action_irreversible}]]*/ 'Это действие нельзя отменить.',
+
+        // Фильтры - ДОБАВЬТЕ ЭТИ СТРОКИ:
+        'filter.all_categories': /*[[#{filter.all_categories}]]*/ 'Все категории',
+        'filter.all_authors': /*[[#{filter.all_authors}]]*/ 'Все авторы',
+        'filter.clear': /*[[#{filter.clear}]]*/ 'Очистить',
+
+        // Рецепты
+        'recipe-details': /*[[#{recipe.details.title}]]*/ 'Детали рецепта',
+        'recipes-loading': /*[[#{recipes.loading}]]*/ 'Загрузка рецептов...',
+        'no-recipes': /*[[#{recipes.no_recipes}]]*/ 'Рецепты не найдены',
+        'error-loading-recipes': /*[[#{error.loading_recipes}]]*/ 'Ошибка при загрузке рецептов',
+        'error-loading-details': /*[[#{error.loading_recipe_details}]]*/ 'Ошибка при загрузке деталей рецепта',
+        'error-loading-comments': /*[[#{error.loading_comments}]]*/ 'Ошибка при загрузке комментариев',
+        category: /*[[#{recipe.category}]]*/ 'Категория',
+        author: /*[[#{recipe.author}]]*/ 'Автор',
+        comments: /*[[#{recipe.comments}]]*/ 'Комментарии',
+        actions: /*[[#{recipes.table.actions}]]*/ 'Действия',
+        ingredients: /*[[#{recipe.ingredients}]]*/ 'Ингредиенты',
+        description: /*[[#{recipe.description}]]*/ 'Описание',
+        inventory: /*[[#{recipe.inventory}]]*/ 'Необходимый инвентарь',
+
+        // Комментарии
+        'comments-title': /*[[#{comment.view_title}]]*/ 'Комментарии к рецепту',
+        'no-comments': /*[[#{comment.no_comments}]]*/ 'Комментариев пока нет',
+        'comment-author': /*[[#{comment.author}]]*/ 'Автор комментария',
+        'comment-date': /*[[#{comment.date}]]*/ 'Дата',
+        'comment-content': /*[[#{comment.content}]]*/ 'Комментарий',
+        'comments-loading': /*[[#{comment.loading}]]*/ 'Загрузка комментариев...',
+        'recipe-details-category': /*[[#{recipe.details.category}]]*/ '📂 Категория',
+        'recipe-details-author': /*[[#{recipe.details.author}]]*/ '👨‍🍳 Автор',
+        'recipe-details-ingredients': /*[[#{recipe.details.ingredients}]]*/ '🛒 Ингредиенты',
+        'recipe-details-description': /*[[#{recipe.details.description}]]*/ '📝 Описание',
+        'recipe-details-inventory': /*[[#{recipe.details.inventory}]]*/ '🔧 Необходимый инвентарь',
+        'recipe-details-comments': /*[[#{recipe.details.comments}]]*/ '💬 Комментарии',
+
+        // Новые ключи для комментариев
+        'comment-edit': /*[[#{comment.edit}]]*/ 'Редактировать комментарий',
+        'comment-edit-title': /*[[#{comment.edit_title}]]*/ 'Редактирование комментария',
+        'comment-delete-confirm-title': /*[[#{comment.delete_confirm_title}]]*/ 'Подтверждение удаления',
+        'comment-delete-confirm-message': /*[[#{comment.delete_confirm_message}]]*/ 'Вы уверены, что хотите удалить этот комментарий?',
+        'comment-delete-confirm-warning': /*[[#{comment.delete_confirm_warning}]]*/ 'Это действие нельзя отменить.',
+        'comment-placeholder': /*[[#{comment.placeholder}]]*/ 'Введите ваш комментарий...',
+        'comment-add': /*[[#{comment.add}]]*/ 'Добавить комментарий',
+        'comment-add-button': /*[[#{comment.add_button}]]*/ 'Добавить комментарий',
+        'comment-save': /*[[#{comment.save}]]*/ 'Сохранить комментарий',
+        'comment-cancel-edit': /*[[#{comment.cancel_edit}]]*/ 'Отменить редактирование',
+        'comment-saving': /*[[#{comment.saving}]]*/ 'Сохранение...',
+        'comment-adding': /*[[#{comment.adding}]]*/ 'Добавление...',
+        'comment-deleting': /*[[#{comment.deleting}]]*/ 'Удаление...',
+        'comment-login-required': /*[[#{comment.login_required}]]*/ 'Войдите, чтобы оставить комментарий',
+        'comment-updated': /*[[#{comment.updated}]]*/ 'Комментарий успешно обновлен',
+        'comment-edit-success': /*[[#{comment.edit_success}]]*/ 'Комментарий успешно обновлен',
+        'comment-delete-success': /*[[#{comment.delete_success}]]*/ 'Комментарий успешно удален',
+        'comment-add-success': /*[[#{comment.add_success}]]*/ 'Комментарий успешно добавлен'
+    };
+</script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html th:replace="~{admin/admin-layout :: layout(
+    pageTitle='admin.authors.title',
+    pageSubtitle='admin.authors.subtitle'
+)}" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="#{admin.authors.title} + ' - ' + #{page.title}">Управление авторами - Кулинарная книга</title>
+    <style>
+        .filter-badge {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .filter-badge.active {
+            background-color: #0d6efd !important;
+            color: white !important;
+        }
+        .table th {
+            border-top: none;
+            font-weight: 600;
+        }
+        .role-badge {
+            font-size: 0.75em;
+        }
+        .author-row:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+<!-- Контент страницы -->
+<div th:fragment="content">
+    <!-- Фильтры и статистика -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title" th:text="#{admin.authors.filters}">Фильтры по ролям</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge filter-badge bg-light text-dark active" data-role="ALL">
+                            <span th:text="#{admin.authors.filter_all}">Все</span>
+                            <small class="ms-1 text-muted" id="count-all">0</small>
+                        </span>
+                        <span class="badge filter-badge bg-light text-dark" data-role="ADMIN">
+                            <span th:text="#{admin.authors.role_admin}">Администраторы</span>
+                            <small class="ms-1 text-muted" id="count-admin">0</small>
+                        </span>
+                        <span class="badge filter-badge bg-light text-dark" data-role="USER">
+                            <span th:text="#{admin.authors.role_user}">Пользователи</span>
+                            <small class="ms-1 text-muted" id="count-user">0</small>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4 id="total-authors">0</h4>
+                    <small th:text="#{admin.authors.total}">Всего авторов</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица авторов -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">👥 <span th:text="#{admin.authors.list}">Список авторов</span></h5>
+            <div class="text-white small">
+                <span id="filter-status" th:text="#{admin.authors.showing_all}">Показаны все авторы</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th width="5%" th:text="#{author.id}">ID</th>
+                        <th width="15%" th:text="#{admin.table.username}">Имя пользователя</th>
+                        <th width="20%" th:text="#{admin.table.email}">Email</th>
+                        <th width="15%" th:text="#{admin.table.roles}">Роли</th>
+                        <th width="25%" th:text="#{admin.table.bio}">Биография</th>
+                        <th width="10%" th:text="#{admin.table.recipe_count}">Рецептов</th>
+                        <th width="10%" th:text="#{admin.table.created_date}">Дата создания</th>
+                    </tr>
+                    </thead>
+                    <tbody id="authorsTableBody">
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden" th:text="#{author.loading}">Загрузка...</span>
+                            </div>
+                            <p class="mt-2 text-muted" th:text="#{author.loading}">Загрузка авторов...</p>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна для авторов -->
+<div th:fragment="modals">
+    <!-- Модальное окно деталей автора -->
+    <div class="modal fade" id="authorDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" th:text="#{admin.authors.details}">Детали автора</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 th:text="#{admin.table.username}">Имя пользователя</h6>
+                            <p id="detail-username" class="fw-bold">-</p>
+
+                            <h6 th:text="#{admin.table.email}">Email</h6>
+                            <p id="detail-email">-</p>
+
+                            <h6 th:text="#{admin.table.roles}">Роли</h6>
+                            <div id="detail-roles">-</div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 th:text="#{admin.table.bio}">Биография</h6>
+                            <p id="detail-bio" class="fst-italic">-</p>
+
+                            <h6 th:text="#{admin.table.recipe_count}">Рецептов</h6>
+                            <p id="detail-recipe-count">-</p>
+
+                            <h6 th:text="#{admin.table.created_date}">Дата создания</h6>
+                            <p id="detail-created-at">-</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.close}">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Скрипты для авторов -->
+<div th:fragment="scripts">
+    <script th:src="@{/js/admin-authors.js}"></script>
+</div>
+</body>
+</html>

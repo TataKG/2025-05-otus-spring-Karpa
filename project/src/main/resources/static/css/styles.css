@@ -1,0 +1,104 @@
+/* Общие стили для всех страниц */
+.recipe-card {
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+.recipe-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.language-switcher {
+    cursor: pointer;
+}
+.navbar-brand {
+    font-weight: 600;
+}
+.table th {
+    border-top: none;
+    font-weight: 600;
+}
+.badge {
+    font-size: 0.75em;
+}
+.action-buttons {
+    min-width: 200px;
+}
+.btn-action {
+    margin: 2px;
+}
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1055;
+}
+
+/* Стили для кнопки публикации */
+.publish-recipe {
+    transition: all 0.3s ease;
+}
+.publish-recipe:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.publish-recipe:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.btn-group-sm .btn {
+    margin: 1px;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Стили для страницы редактирования */
+.ingredient-row {
+    margin-bottom: 10px;
+}
+.ingredient-actions {
+    margin-left: 10px;
+}
+.form-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+.form-section h5 {
+    color: #495057;
+    margin-bottom: 1rem;
+}
+.loading-spinner {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+}
+.form-control.is-invalid {
+    border-color: #dc3545;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath d='m5.8 3.6.4.4.4-.4'/%3e%3cpath d='M6 7v1'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+/* Стили для главной страницы */
+.filter-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+.filter-row {
+    align-items: end;
+}
+.admin-panel-link {
+    display: none;
+}
+.welcome-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 3rem 2rem;
+    margin-bottom: 2rem;
+}

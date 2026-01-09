@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/head :: head(#{myrecipes.create_new})">
+</head>
+<body>
+<!-- Навигационная панель -->
+<div th:replace="fragments/navbar :: navbar"></div>
+
+<!-- Основной контент -->
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Заголовок -->
+            <div class="row mb-4">
+                <div class="col">
+                    <h1 class="text-primary mb-2" id="pageHeader">
+                        <span th:if="${isEdit}">✏️ <span th:text="#{myrecipes.edit}">Редактирование рецепта</span></span>
+                        <span th:unless="${isEdit}">➕ <span th:text="#{myrecipes.create_new}">Создание нового рецепта</span></span>
+                    </h1>
+                    <p class="lead text-muted" id="pageDescription">
+                        <span th:if="${isEdit}" th:text="#{myrecipes.edit_description}">Внесите изменения в ваш рецепт</span>
+                        <span th:unless="${isEdit}" th:text="#{myrecipes.create_description}">Заполните информацию о новом рецепте</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Индикатор загрузки -->
+            <div class="loading-spinner" id="loadingSpinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden" th:text="#{common.loading}">Загрузка...</span>
+                </div>
+                <p class="mt-2 text-muted" th:text="#{recipes.loading}">Загрузка данных...</p>
+            </div>
+
+            <!-- Форма -->
+            <form id="recipeForm" style="display: none;" novalidate>
+                <!-- Основная информация -->
+                <div class="form-section mb-4">
+                    <h5>📝 <span th:text="#{recipe.basic_info}">Основная информация</span></h5>
+
+                    <!-- Заголовок -->
+                    <div class="mb-3">
+                        <label for="title" class="form-label fw-bold" th:text="#{recipes.table.name}">Название рецепта</label>
+                        <input type="text" class="form-control" id="title" name="title"
+                               th:placeholder="#{recipe.title.placeholder}">
+                    </div>
+
+                    <!-- Категория -->
+                    <div class="mb-3">
+                        <label for="category" class="form-label fw-bold" th:text="#{recipe.category}">Категория</label>
+                        <select class="form-select" id="category" name="categoryId">
+                            <option value="" th:text="#{recipe.category.placeholder}">Выберите категорию</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Ингредиенты -->
+                <div class="form-section mb-4">
+                    <h5>🛒 <span th:text="#{recipe.ingredients}">Ингредиенты</span></h5>
+                    <p class="text-muted mb-3" th:text="#{recipe.ingredients.description}">Добавьте все необходимые ингредиенты для рецепта</p>
+
+                    <div id="ingredientsContainer">
+                        <div class="ingredient-row input-group mb-2">
+                            <input type="text" class="form-control ingredient-input" name="ingredients"
+                                   th:placeholder="#{recipe.ingredient.placeholder}">
+                            <button type="button" class="btn btn-outline-danger remove-ingredient" style="display: none;">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Инвентарь -->
+                <div class="form-section mb-4">
+                    <h5>🔧 <span th:text="#{recipe.inventory}">Необходимый инвентарь</span></h5>
+                    <p class="text-muted mb-3" th:text="#{recipe.inventory.description}">Выберите кухонный инвентарь из справочника</p>
+
+                    <!-- Поиск инвентаря -->
+                    <div class="mb-3">
+                        <label for="inventorySearch" class="form-label fw-bold" th:text="#{recipe.inventory.search}">🔍 Поиск инвентаря</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="inventorySearch"
+                                   th:placeholder="#{recipe.inventory.search.placeholder}">
+                            <button type="button" class="btn btn-outline-success" id="addInventoryBtn">
+                                ➕ <span th:text="#{action.add}">Добавить</span>
+                            </button>
+                        </div>
+                        <select class="form-select mt-2" id="inventorySelect" size="5" style="max-height: 200px; overflow-y: auto;">
+                            <option value="" disabled selected th:text="#{recipe.inventory.search.start}">Начните вводить для поиска инвентаря</option>
+                        </select>
+                    </div>
+
+                    <!-- Выбранный инвентарь -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold" th:text="#{recipe.inventory.selected}">✅ Выбранный инвентарь</label>
+                        <div id="inventoryContainer" class="border rounded p-3 bg-light">
+                            <div class="text-muted" id="noInventorySelected" th:text="#{recipe.inventory.none}">Инвентарь не выбран</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Описание -->
+                <div class="form-section mb-4">
+                    <h5>📝 <span th:text="#{recipe.description}">Описание рецепта</span></h5>
+                    <div class="mb-3">
+                        <label for="description" class="form-label fw-bold" th:text="#{recipe.description}">Подробное описание</label>
+                        <textarea class="form-control" id="description" name="description" rows="6"
+                                  th:placeholder="#{recipe.description.placeholder}"></textarea>
+                    </div>
+                </div>
+
+                <!-- Скрытые поля -->
+                <input type="hidden" id="authorId" name="authorId">
+                <input type="hidden" id="inventoryIds" name="inventoryIds">
+
+                <!-- Кнопки действий -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex gap-2 justify-content-end">
+                            <button type="button" class="btn btn-secondary" onclick="window.history.back()">
+                                ↩️ <span th:text="#{common.cancel}">Отмена</span>
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="saveDraftBtn" name="published" value="false">
+                                💾 <span th:text="#{recipe.save_draft}">Сохранить черновик</span>
+                            </button>
+                            <button type="submit" class="btn btn-success" id="publishBtn" name="published" value="true">
+                                🚀 <span th:text="#{recipe.publish}">Опубликовать</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Сообщение об ошибке загрузки -->
+            <div class="alert alert-danger mt-4" id="errorAlert" style="display: none;">
+                <h4 class="alert-heading">❌ <span th:text="#{common.error}">Ошибка</span></h4>
+                <p id="errorMessage"></p>
+                <button class="btn btn-outline-primary" onclick="window.location.reload()">
+                    🔄 <span th:text="#{common.retry}">Повторить попытку</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast уведомления -->
+<div th:replace="fragments/toasts :: toasts"></div>
+
+<!-- Скрипты -->
+<div th:replace="fragments/scripts :: scripts"></div>
+
+<script th:src="@{/js/recipe-edit.js}"></script>
+
+<script th:inline="javascript">
+    window.i18nMessages = {
+        ...window.i18nMessages,
+        'common.saving': /*[[#{common.saving}]]*/ 'Сохранение...',
+        'common.publishing': /*[[#{common.publishing}]]*/ 'Публикация...',
+        'recipe.category.placeholder': /*[[#{recipe.category.placeholder}]]*/ 'Выберите категорию',
+        'recipe.ingredient.placeholder': /*[[#{recipe.ingredient.placeholder}]]*/ 'Введите ингредиент...',
+        'recipe.inventory.none': /*[[#{recipe.inventory.none}]]*/ 'Инвентарь не выбран',
+        'recipe.inventory.search.placeholder': /*[[#{recipe.inventory.search.placeholder}]]*/ 'Начните вводить название инвентаря...'
+    };
+</script>
+
+<style>
+    .form-section {
+        padding: 1.5rem;
+        border: 1px solid #e9ecef;
+        border-radius: 0.5rem;
+        background: white;
+    }
+    .inventory-row {
+        background-color: white;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        margin-bottom: 0.5rem;
+        padding: 0.75rem;
+    }
+    .inventory-row:last-child {
+        margin-bottom: 0;
+    }
+    .inventory-name {
+        font-weight: 600;
+        color: #212529;
+    }
+    .inventory-description {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    .remove-inventory {
+        transition: all 0.2s ease;
+    }
+    .remove-inventory:hover {
+        transform: scale(1.1);
+    }
+    .loading-spinner {
+        text-align: center;
+        padding: 3rem;
+    }
+</style>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html th:replace="~{admin/admin-layout :: layout(
+    pageTitle='admin.categories.title',
+    pageSubtitle='admin.categories.subtitle'
+)}" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="#{admin.categories.title} + ' - ' + #{page.title}">Управление категориями - Кулинарная книга</title>
+</head>
+<body>
+<!-- Контент страницы -->
+<div th:fragment="content">
+    <!-- Кнопка добавления и таблица -->
+    <div class="row mb-4">
+        <div class="col">
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCategoryModal">
+                ➕ <span th:text="#{admin.button.add}">Добавить</span>
+            </button>
+        </div>
+    </div>
+    <!-- Таблица категорий -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">📋 <span th:text="#{admin.categories.list}">Список категорий</span></h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th width="10%" th:text="#{admin.table.id}">ID</th>
+                        <th width="20%" th:text="#{admin.table.name}">Название</th>
+                        <th width="30%" th:text="#{admin.table.description}">Описание</th>
+                        <th width="15%" th:text="#{admin.table.created_date}">Дата создания</th>
+                        <th width="15%" th:text="#{admin.table.usage}">Использование</th>
+                        <th width="10%" th:text="#{admin.table.actions}">Действия</th>
+                    </tr>
+                    </thead>
+                    <tbody id="categoriesTableBody">
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden" th:text="#{common.loading}">Загрузка...</span>
+                            </div>
+                            <p class="mt-2 text-muted" th:text="#{admin.error.load}">Загрузка категорий...</p>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна для категорий -->
+<div th:fragment="modals">
+    <!-- Модальное окно создания категории -->
+    <div class="modal fade" id="createCategoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" th:text="#{admin.modal.create} + ' ' + #{admin.nav.categories}">Создать категорию</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createCategoryForm" onsubmit="return false;">
+                        <div class="mb-3">
+                            <label for="categoryName" class="form-label" th:text="#{admin.table.name} + ' *'">Название категории *</label>
+                            <input type="text" class="form-control" id="categoryName" required
+                                   th:placeholder="#{admin.table.name.placeholder}">
+                            <div class="invalid-feedback" th:text="#{validation.required}">Пожалуйста, введите название категории</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryDescription" class="form-label" th:text="#{admin.table.description}">Описание</label>
+                            <textarea class="form-control" id="categoryDescription" rows="3"
+                                      th:placeholder="#{admin.table.description.placeholder}"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.cancel}">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="createCategoryBtn" th:text="#{admin.button.create}">
+                        Создать
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно редактирования категории -->
+    <div class="modal fade" id="editCategoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" th:text="#{admin.modal.edit} + ' ' + #{admin.nav.categories}">Редактировать категорию</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editCategoryForm" onsubmit="return false;">
+                        <input type="hidden" id="editCategoryId">
+                        <div class="mb-3">
+                            <label for="editCategoryName" class="form-label" th:text="#{admin.table.name} + ' *'">Название категории *</label>
+                            <input type="text" class="form-control" id="editCategoryName" required>
+                            <div class="invalid-feedback" th:text="#{validation.required}">Пожалуйста, введите название категории</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editCategoryDescription" class="form-label" th:text="#{admin.table.description}">Описание</label>
+                            <textarea class="form-control" id="editCategoryDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.cancel}">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="updateCategoryBtn" th:text="#{common.save}">
+                        Сохранить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно удаления категории -->
+    <div class="modal fade" id="deleteCategoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" th:text="#{admin.modal.confirm_delete}">Подтверждение удаления</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p><span th:text="#{admin.modal.delete_message}">Вы уверены, что хотите удалить категорию</span> <strong id="deleteCategoryName"></strong>?</p>
+
+                    <!-- Контейнер для предупреждений (будет заполняться динамически) -->
+                    <div id="deleteWarning" style="display: none;">
+                        <!-- Содержимое будет добавляться через JavaScript -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{common.cancel}">Отмена</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>
+                        <span th:text="#{common.delete}">Удалить</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Скрипты для категорий -->
+<div th:fragment="scripts">
+    <script th:src="@{/js/admin-categories.js}"></script>
+</div>
+</body>
+</html>
